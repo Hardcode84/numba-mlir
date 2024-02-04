@@ -25,9 +25,9 @@ class Group:
         return tuple(_divup(a, b) for a, b in zip(self.work_shape, self.group_shape))
 
 class CurrentSubGroup:
-    def __init__(self, size):
+    def __init__(self, size, subgroup_id):
         self._size = size
-        self._subgroup_id = None
+        self._subgroup_id = subgroup_id
 
     def size(self):
         return self._size
@@ -37,9 +37,9 @@ class CurrentSubGroup:
 
 
 class CurrentWorkitem:
-    def __init__(self):
-        self._local_id = None
-        self._global_id = None
+    def __init__(self, lid, gid):
+        self._local_id = lid
+        self._global_id = gid
 
     def local_id(self):
         return self._local_id
@@ -55,8 +55,6 @@ class CurrentGroup:
         self._subgroup_ranges = (range(group_shape[0]), range(group_shape[1]), range(_divup(group_shape[2], subgroup_size)))
         self._workitem_ranges = (range(group_shape[0]), range(group_shape[1]), range(group_shape[2]))
         self._group_id = None
-        self._subgroup = CurrentSubGroup(subgroup_size)
-        self._workitem = CurrentWorkitem()
         self._tasks = []
         self._current_task = 0
 
@@ -90,9 +88,7 @@ class CurrentGroup:
 
     def subgroups(self, func):
         def _body_wrapper(sgid):
-            sg = self._subgroup
-            sg._subgroup_id = sgid
-            func(sg)
+            func(CurrentSubGroup(self._subgroup_size, sgid))
 
         def _func():
             tasks = self._tasks
@@ -112,10 +108,8 @@ class CurrentGroup:
 
     def workitems(self, func):
         def _body_wrapper(lid):
-            wi = self._workitem
-            wi._local_id = lid
-            wi._global_id = tuple(gi * gs + li for gi, gs, li in zip(self._group_id, self._group_shape, lid))
-            func(wi)
+            gid = tuple(gi * gs + li for gi, gs, li in zip(self._group_id, self._group_shape, lid))
+            func(CurrentWorkitem(lid, gid))
 
         def _func():
             tasks = self._tasks
