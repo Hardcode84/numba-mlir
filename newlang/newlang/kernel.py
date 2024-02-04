@@ -36,13 +36,27 @@ class CurrentSubGroup:
         return self._subgroup_id
 
 
+class CurrentWorkitem:
+    def __init__(self):
+        self._local_id = None
+        self._global_id = None
+
+    def local_id(self):
+        return self._local_id
+
+    def global_id(self):
+        return self._global_id
+
+
 class CurrentGroup:
     def __init__(self, group_shape, subgroup_size):
         self._group_shape = group_shape
         self._subgroup_size = subgroup_size
         self._subgroup_ranges = (range(group_shape[0]), range(group_shape[1]), range(_divup(group_shape[2], subgroup_size)))
+        self._workitem_ranges = (range(group_shape[0]), range(group_shape[1]), range(group_shape[2]))
         self._group_id = None
         self._subgroup = CurrentSubGroup(subgroup_size)
+        self._workitem = CurrentWorkitem()
         self._tasks = []
         self._current_task = 0
 
@@ -86,6 +100,29 @@ class CurrentGroup:
             assert(self._current_task == 0)
             for sgid in product(*self._subgroup_ranges):
                 tasks.append(greenlet(partial(_body_wrapper,sgid)))
+
+            for t in tasks:
+                t.switch()
+
+            self._current_task = 0
+            tasks.clear()
+
+
+        return _func
+
+    def workitems(self, func):
+        def _body_wrapper(lid):
+            wi = self._workitem
+            wi._local_id = lid
+            wi._global_id = tuple(gi * gs + li for gi, gs, li in zip(self._group_id, self._group_shape, lid))
+            func(wi)
+
+        def _func():
+            tasks = self._tasks
+            assert(len(tasks) == 0)
+            assert(self._current_task == 0)
+            for lid in product(*self._workitem_ranges):
+                tasks.append(greenlet(partial(_body_wrapper,lid)))
 
             for t in tasks:
                 t.switch()

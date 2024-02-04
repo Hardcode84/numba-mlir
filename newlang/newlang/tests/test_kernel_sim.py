@@ -131,3 +131,44 @@ def test_subgroup_barrier():
 
     test(Group(gsize, lsize, sgsize))
     assert_equal(res, [(1, (0, 0, 0)), (1, (0, 0, 1)), (2, (0, 0, 1)), (2, (0, 0, 1)), (1, (0, 0, 0)), (1, (0, 0, 1)), (2, (0, 0, 1)), (2, (0, 0, 1))])
+
+
+def test_workitems_iteration():
+    gsize = (1,1,4)
+    lsize = (1,1,2)
+
+    res_gids = []
+    res_lids = []
+
+    @kernel
+    def test(gr):
+        @gr.workitems
+        def inner(wi):
+            res_lids.append(wi.local_id())
+            res_gids.append(wi.global_id())
+
+        inner()
+
+    test(Group(gsize, lsize))
+    assert_equal(res_lids, [(0, 0, 0), (0, 0, 1), (0, 0, 0), (0, 0, 1)])
+    assert_equal(res_gids, [(0, 0, 0), (0, 0, 1), (0, 0, 2), (0, 0, 3)])
+
+
+def test_workitem_barrier():
+    gsize = (1,1,4)
+    lsize = (1,1,2)
+
+    res = []
+
+    @kernel
+    def test(gr):
+        @gr.workitems
+        def inner(wi):
+            res.append((1, wi.global_id()))
+            gr.barrier()
+            res.append((2, wi.global_id()))
+
+        inner()
+
+    test(Group(gsize, lsize))
+    assert_equal(res, [(1, (0, 0, 0)), (1, (0, 0, 1)), (2, (0, 0, 1)), (2, (0, 0, 1)), (1, (0, 0, 2)), (1, (0, 0, 3)), (2, (0, 0, 3)), (2, (0, 0, 3))])
