@@ -83,11 +83,31 @@ def test_group_empty():
     gsize = (8,1,1)
     lsize = (8,1,1)
 
-    res = []
-
     @kernel
     def test(gr):
         a = gr.empty((3,7), dtype=np.int32)
         assert_equal(a.shape, (3,7))
 
     test(Group(gsize, lsize))
+
+
+def test_subgroup_iteration():
+    gsize = (1,1,16)
+    lsize = (1,1,8)
+    sgsize = 4
+
+    res_ids = []
+    res_sizes = []
+
+    @kernel
+    def test(gr):
+        @gr.subgroups
+        def inner(sg):
+            res_ids.append(sg.subgroup_id())
+            res_sizes.append(sg.size())
+
+        inner()
+
+    test(Group(gsize, lsize, sgsize))
+    assert_equal(res_ids, [(0, 0, 0), (0, 0, 1), (0, 0, 0), (0, 0, 1)])
+    assert_equal(res_sizes, [4, 4, 4, 4])
