@@ -111,3 +111,23 @@ def test_subgroup_iteration():
     test(Group(gsize, lsize, sgsize))
     assert_equal(res_ids, [(0, 0, 0), (0, 0, 1), (0, 0, 0), (0, 0, 1)])
     assert_equal(res_sizes, [4, 4, 4, 4])
+
+def test_subgroup_barrier():
+    gsize = (1,1,16)
+    lsize = (1,1,8)
+    sgsize = 4
+
+    res = []
+
+    @kernel
+    def test(gr):
+        @gr.subgroups
+        def inner(sg):
+            res.append((1, sg.subgroup_id()))
+            gr.barrier()
+            res.append((2, sg.subgroup_id()))
+
+        inner()
+
+    test(Group(gsize, lsize, sgsize))
+    assert_equal(res, [(1, (0, 0, 0)), (1, (0, 0, 1)), (2, (0, 0, 1)), (2, (0, 0, 1)), (1, (0, 0, 0)), (1, (0, 0, 1)), (2, (0, 0, 1)), (2, (0, 0, 1))])

@@ -1,8 +1,10 @@
 
-from itertools import product
-import numpy as np
-from numpy import ma
 from collections.abc import Iterable
+from greenlet import greenlet
+from itertools import product
+from numpy import ma
+import numpy as np
+from functools import partial
 
 DEF_GROUP_SHAPE = (64,1,1)
 DEF_SUBGROUP_SIZE = 16
@@ -41,6 +43,8 @@ class CurrentGroup:
         self._subgroup_ranges = (range(group_shape[0]), range(group_shape[1]), range(_divup(group_shape[2], subgroup_size)))
         self._group_id = None
         self._subgroup = CurrentSubGroup(subgroup_size)
+        self._tasks = []
+        self._current_task = 0
 
     def group_id(self):
         return self._group_id
@@ -71,13 +75,40 @@ class CurrentGroup:
         return ma.masked_array(np.full(shape, fill_value=init, dtype=dtype), mask=False)
 
     def subgroups(self, func):
-        def _wrapper():
-            for sgid in product(*self._subgroup_ranges):
-                sg = self._subgroup
-                sg._subgroup_id = sgid
-                func(sg)
+        def _body_wrapper(sgid):
+            sg = self._subgroup
+            sg._subgroup_id = sgid
+            func(sg)
 
-        return _wrapper
+        def _func():
+            tasks = self._tasks
+            assert(len(tasks) == 0)
+            assert(self._current_task == 0)
+            for sgid in product(*self._subgroup_ranges):
+                tasks.append(greenlet(partial(_body_wrapper,sgid)))
+
+            for t in tasks:
+                t.switch()
+
+            self._current_task = 0
+            tasks.clear()
+
+
+        return _func
+
+    def barrier(self):
+        tasks = self._tasks
+        num_tasks = len(tasks)
+        if num_tasks <= 1:
+            return
+
+        next_task = self._current_task + 1
+        if next_task >= num_tasks:
+            next_task = 0
+
+        self._current_task = next_task
+        tasks[next_task].switch()
+
 
 def kernel(func):
     def wrapper(group, *args, **kwargs):
