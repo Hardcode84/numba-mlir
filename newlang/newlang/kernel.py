@@ -106,6 +106,13 @@ class CurrentGroup:
     def vfull(self, shape, dtype, fill_value):
         return self._alloc_impl(shape, dtype, fill_value)
 
+    def vec(self, src, shape=None):
+        if shape is None:
+            shape = src.shape
+
+        s = tuple(slice(0, s) for s in shape)
+        return src.copy()[s]
+
     def subgroups(self, func):
         def _body_wrapper(sgid):
             func(CurrentSubGroup(self._subgroup_size, sgid))
