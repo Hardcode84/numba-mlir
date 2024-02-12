@@ -83,8 +83,28 @@ class CurrentGroup:
         dst[s] = np.where(src.mask[s], dst[s], src[s])
 
     def empty(self, shape, dtype):
-        init = _get_uninit_value(dtype)
-        return ma.masked_array(np.full(shape, fill_value=init, dtype=dtype), mask=False)
+        return self._alloc_impl(shape, dtype, _get_uninit_value(dtype))
+
+    def zeros(self, shape, dtype):
+        return self._alloc_impl(shape, dtype, 0)
+
+    def ones(self, shape, dtype):
+        return self._alloc_impl(shape, dtype, 1)
+
+    def full(self, shape, dtype, fill_value):
+        return self._alloc_impl(shape, dtype, fill_value)
+
+    def vempty(self, shape, dtype):
+        return self._alloc_impl(shape, dtype, _get_uninit_value(dtype))
+
+    def vzeros(self, shape, dtype):
+        return self._alloc_impl(shape, dtype, 0)
+
+    def vones(self, shape, dtype):
+        return self._alloc_impl(shape, dtype, 1)
+
+    def vfull(self, shape, dtype, fill_value):
+        return self._alloc_impl(shape, dtype, fill_value)
 
     def subgroups(self, func):
         def _body_wrapper(sgid):
@@ -139,6 +159,9 @@ class CurrentGroup:
 
         self._current_task = next_task
         tasks[next_task].switch()
+
+    def _alloc_impl(self, shape, dtype, init):
+        return ma.masked_array(np.full(shape, fill_value=init, dtype=dtype), mask=False)
 
 
 def kernel(func):

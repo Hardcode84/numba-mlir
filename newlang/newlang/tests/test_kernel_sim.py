@@ -91,6 +91,88 @@ def test_group_empty():
     test(Group(gsize, lsize))
 
 
+def test_group_zeros():
+    gsize = (8,1,1)
+    lsize = (8,1,1)
+
+    @kernel
+    def test(gr):
+        a = gr.zeros((2,3), dtype=np.int32)
+        assert_equal(a, [[0, 0, 0], [0, 0, 0]])
+
+    test(Group(gsize, lsize))
+
+
+def test_group_ones():
+    gsize = (8,1,1)
+    lsize = (8,1,1)
+
+    @kernel
+    def test(gr):
+        a = gr.ones((2,3), dtype=np.int32)
+        assert_equal(a, [[1, 1, 1], [1, 1, 1]])
+
+    test(Group(gsize, lsize))
+
+def test_group_full():
+    gsize = (8,1,1)
+    lsize = (8,1,1)
+
+    @kernel
+    def test(gr):
+        a = gr.full((2,3), dtype=np.int32, fill_value=42)
+        assert_equal(a, [[42, 42, 42], [42, 42, 42]])
+
+    test(Group(gsize, lsize))
+
+
+def test_group_vempty():
+    gsize = (8,1,1)
+    lsize = (8,1,1)
+
+    @kernel
+    def test(gr):
+        a = gr.vempty((3,7), dtype=np.int32)
+        assert_equal(a.shape, (3,7))
+
+    test(Group(gsize, lsize))
+
+
+def test_group_vzeros():
+    gsize = (8,1,1)
+    lsize = (8,1,1)
+
+    @kernel
+    def test(gr):
+        a = gr.vzeros((2,3), dtype=np.int32)
+        assert_equal(a, [[0, 0, 0], [0, 0, 0]])
+
+    test(Group(gsize, lsize))
+
+
+def test_group_vones():
+    gsize = (8,1,1)
+    lsize = (8,1,1)
+
+    @kernel
+    def test(gr):
+        a = gr.vones((2,3), dtype=np.int32)
+        assert_equal(a, [[1, 1, 1], [1, 1, 1]])
+
+    test(Group(gsize, lsize))
+
+def test_group_vfull():
+    gsize = (8,1,1)
+    lsize = (8,1,1)
+
+    @kernel
+    def test(gr):
+        a = gr.vfull((2,3), dtype=np.int32, fill_value=42)
+        assert_equal(a, [[42, 42, 42], [42, 42, 42]])
+
+    test(Group(gsize, lsize))
+
+
 def test_subgroup_iteration():
     gsize = (1,1,16)
     lsize = (1,1,8)
