@@ -178,7 +178,6 @@ def test_group_vec1():
 
     @kernel
     def test(gr):
-        print('asdasd',flush=True)
         a = gr.full((2,3), dtype=np.int32, fill_value=42)
         v = gr.vec(a)
         assert_equal(v, [[42, 42, 42], [42, 42, 42]])
@@ -193,7 +192,6 @@ def test_group_vec2():
     def test(gr):
         a = gr.full((2,3), dtype=np.int32, fill_value=42)
         v = gr.vec(a, shape=(1,2))
-        print(v)
         assert_equal(v, [[42, 42]])
 
     test(Group(gsize, lsize))
