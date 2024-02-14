@@ -4,7 +4,13 @@ from functools import partial
 from greenlet import greenlet
 from itertools import product
 from numpy import ma
+from sympy import Symbol
+import inspect
 import numpy as np
+import types
+import typing
+
+from .indexing import sym
 
 DEF_GROUP_SHAPE = (64,1,1)
 DEF_SUBGROUP_SIZE = 16
@@ -16,10 +22,10 @@ def _divup(a, b):
     return (a + b - 1) // b
 
 class Group:
-    def __init__(self, work_shape, group_shape_hint = DEF_GROUP_SHAPE, subgroup_size_hint = DEF_SUBGROUP_SIZE):
+    def __init__(self, work_shape, group_shape, subgroup_size):
         self.work_shape = work_shape
-        self.group_shape = group_shape_hint
-        self.subgroup_size = subgroup_size_hint
+        self.group_shape = group_shape
+        self.subgroup_size = subgroup_size
 
     def get_num_groups(self):
         return tuple(_divup(a, b) for a, b in zip(self.work_shape, self.group_shape))
@@ -171,9 +177,73 @@ class CurrentGroup:
         return ma.masked_array(np.full(shape, fill_value=init, dtype=dtype), mask=False)
 
 
-def kernel():
+def _get_dims(arg):
+    if not isinstance(arg, Iterable):
+        return (arg, 1, 1)
+
+    assert len(arg) == 3
+    return arg
+
+
+def _visit_arg_annotation(idx, ann, prev_handler):
+    if isinstance(ann(), tuple):
+        def handler(args):
+            val = args[idx]
+            assert isinstance(val, Iterable)
+            ann_args = typing.get_args(ann)
+            assert len(val) == len(ann_args)
+            return [(s, v) for s, v in zip(ann_args, val) if isinstance(s, Symbol)]
+
+    elif isinstance(ann, Symbol):
+        def handler(args):
+            val = args[idx]
+            return [(ann, val)]
+
+    else:
+        assert False, f"Unsupported annotation: {ann}"
+
+    if prev_handler:
+        return lambda args: prev_handler(args) + handler(args)
+    else:
+        return handler
+
+
+def _visit_func_annotations(func):
+    ann = inspect.get_annotations(func)
+    handler = None
+    for i, arg in enumerate(inspect.signature(func).parameters):
+        arg_ann = ann.get(arg, None);
+        if arg_ann is None:
+            continue;
+
+        handler = _visit_arg_annotation(i - 1, arg_ann, handler)
+
+    return handler
+
+def _handle_dim(src, subs):
+    if isinstance(src, Iterable):
+        return tuple(_handle_dim(v, subs) for v in src)
+
+    if isinstance(src, Symbol):
+        src = src.subs(subs)
+
+    return int(src)
+
+def kernel(work_shape, group_shape=DEF_GROUP_SHAPE, subgroup_size=DEF_SUBGROUP_SIZE):
+    work_shape = _get_dims(work_shape)
+    group_shape = _get_dims(group_shape)
     def _kernel_impl(func):
-        def wrapper(group, *args, **kwargs):
+        handler = _visit_func_annotations(func)
+        def wrapper(*args, **kwargs):
+            if handler:
+                subs_args = handler(args)
+            else:
+                subs_args = []
+
+            ws = _handle_dim(work_shape, subs_args)
+            gs = _handle_dim(group_shape, subs_args)
+            ss = _handle_dim(subgroup_size, subs_args)
+            group = Group(ws, gs, ss)
             n_groups = group.get_num_groups()
             cg = CurrentGroup(group.group_shape, group.subgroup_size)
             for gid in product(*(range(g) for g in n_groups)):

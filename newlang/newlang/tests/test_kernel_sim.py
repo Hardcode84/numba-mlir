@@ -4,7 +4,7 @@ from numpy.testing import assert_equal
 import numpy as np
 import pytest
 
-from newlang.kernel import kernel, Group
+from newlang.kernel import kernel, Group, sym
 
 @pytest.mark.parametrize("gsize", [(512,1,1),(511,1,1),(1,16,1),(1,1,16),(1,1,1)])
 @pytest.mark.parametrize("lsize", [(64,1,1),(1,1,1)])
@@ -18,12 +18,17 @@ def test_group_iteration(gsize, lsize):
     res_ids = []
     res_offsets = []
 
-    @kernel()
-    def test(gr):
+    G1, G2, G3 = sym.G1, sym.G2, sym.G3
+    L1, L2, L3 = sym.L1, sym.L2, sym.L3
+
+    @kernel(work_shape=(G1,G2,G3), group_shape=(L1,L2,L3))
+    def test(gr,
+             gsize: tuple[G1, G2, G3],
+             lsize: tuple[L1, L2, L3]):
         res_ids.append(gr.group_id())
         res_offsets.append(gr.work_offset())
 
-    test(Group(gsize, lsize))
+    test(gsize, lsize)
     exp_res_ids = [(i, j, k) for i, j, k in get_group_ranges()]
     assert(res_ids == exp_res_ids)
     exp_res_offsets = [(i * lsize[0], j * lsize[1], k * lsize[2]) for i, j, k in get_group_ranges()]
