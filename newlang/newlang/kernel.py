@@ -185,25 +185,40 @@ def _get_dims(arg):
     return arg
 
 
+def _add_sub(subs, sym, val):
+    if sym in subs:
+        old_val = subs[sym]
+        assert old_val == val, f"Symbol value conflict for {sym}: {old_val} and {val}"
+    else:
+        subs[sym] = val
+
 def _visit_arg_annotation(idx, ann, prev_handler):
     if isinstance(ann, Symbol):
-        def handler(args):
+        def handler(subs, args):
             val = args[idx]
-            return [(ann, val)]
+            _add_sub(subs, ann, val)
 
     elif isinstance(ann(), tuple):
-        def handler(args):
+        def handler(subs, args):
             val = args[idx]
             assert isinstance(val, Iterable)
             ann_args = typing.get_args(ann)
             assert len(val) == len(ann_args)
-            return [(s, v) for s, v in zip(ann_args, val) if isinstance(s, Symbol)]
+            for s, v in zip(ann_args, val):
+                if not isinstance(s, Symbol):
+                    continue
+
+                _add_sub(subs, s, v)
 
     else:
         assert False, f"Unsupported annotation: {ann}"
 
     if prev_handler:
-        return lambda args: prev_handler(args) + handler(args)
+        def chained(subs, args):
+            prev_handler(subs, args)
+            handler(subs, args)
+
+        return chained
     else:
         return handler
 
@@ -237,7 +252,9 @@ def kernel(work_shape, group_shape=DEF_GROUP_SHAPE, subgroup_size=DEF_SUBGROUP_S
         handler = _visit_func_annotations(func)
         def wrapper(*args, **kwargs):
             if handler:
-                subs_args = handler(args)
+                subs_map = {}
+                handler(subs_map, args)
+                subs_args = list(subs_map.items())
             else:
                 subs_args = []
 
