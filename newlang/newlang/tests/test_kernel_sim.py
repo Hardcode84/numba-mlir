@@ -207,7 +207,7 @@ def test_group_vec2():
 
     test(gsize, lsize)
 
-def test_subgroup_iteration():
+def test_subgroup_iteration1():
     gsize = (1,1,16)
     lsize = (1,1,8)
     sgsize = 4
@@ -229,6 +229,34 @@ def test_subgroup_iteration():
         inner()
 
     test(gsize, lsize)
+    assert_equal(res_ids, [(0, 0, 0), (0, 0, 1), (0, 0, 0), (0, 0, 1)])
+    assert_equal(res_sizes, [4, 4, 4, 4])
+
+
+def test_subgroup_iteration2():
+    gsize = (1,1,16)
+    lsize = (1,1,8)
+    sgsize = 4
+
+    res_ids = []
+    res_sizes = []
+
+    G1, G2, G3 = sym.G1, sym.G2, sym.G3
+    L1, L2, L3 = sym.L1, sym.L2, sym.L3
+    SG = sym.SG
+    @kernel(work_shape=(G1,G2,G3), group_shape=(L1,L2,L3), subgroup_size=SG, literals={SG})
+    def test(gr,
+             gsize: tuple[G1, G2, G3],
+             lsize: tuple[L1, L2, L3],
+             sgsize: SG):
+        @gr.subgroups
+        def inner(sg):
+            res_ids.append(sg.subgroup_id())
+            res_sizes.append(sg.size())
+
+        inner()
+
+    test(gsize, lsize, sgsize)
     assert_equal(res_ids, [(0, 0, 0), (0, 0, 1), (0, 0, 0), (0, 0, 1)])
     assert_equal(res_sizes, [4, 4, 4, 4])
 

@@ -229,7 +229,8 @@ def _handle_dim(src, subs):
 
     return int(src)
 
-def kernel(work_shape, group_shape=DEF_GROUP_SHAPE, subgroup_size=DEF_SUBGROUP_SIZE):
+def kernel(work_shape, group_shape=DEF_GROUP_SHAPE, subgroup_size=DEF_SUBGROUP_SIZE, literals=()):
+    assert isinstance(subgroup_size, int) or subgroup_size in literals, "Subgroup size must be const or literal"
     work_shape = _get_dims(work_shape)
     group_shape = _get_dims(group_shape)
     def _kernel_impl(func):
@@ -240,9 +241,11 @@ def kernel(work_shape, group_shape=DEF_GROUP_SHAPE, subgroup_size=DEF_SUBGROUP_S
             else:
                 subs_args = []
 
+
             ws = _handle_dim(work_shape, subs_args)
             gs = _handle_dim(group_shape, subs_args)
             ss = _handle_dim(subgroup_size, subs_args)
+
             group = Group(ws, gs, ss)
             n_groups = group.get_num_groups()
             cg = CurrentGroup(group.group_shape, group.subgroup_size)
