@@ -196,7 +196,7 @@ def _visit_arg_annotation(idx, ann, prev_handler):
             val = args[idx]
             _add_sub(subs, ann, val)
 
-    elif isinstance(ann(), tuple):
+    elif isinstance(ann, types.GenericAlias) and isinstance(ann(), tuple):
         def handler(subs, args):
             val = args[idx]
             assert isinstance(val, Iterable)
