@@ -1,10 +1,10 @@
 
 from collections.abc import Iterable
+from functools import partial
 from greenlet import greenlet
 from itertools import product
 from numpy import ma
 import numpy as np
-from functools import partial
 
 DEF_GROUP_SHAPE = (64,1,1)
 DEF_SUBGROUP_SIZE = 16
@@ -171,13 +171,15 @@ class CurrentGroup:
         return ma.masked_array(np.full(shape, fill_value=init, dtype=dtype), mask=False)
 
 
-def kernel(func):
-    def wrapper(group, *args, **kwargs):
-        n_groups = group.get_num_groups()
-        cg = CurrentGroup(group.group_shape, group.subgroup_size)
-        for gid in product(*(range(g) for g in n_groups)):
-            cg._group_id = gid
-            func(cg, *args, **kwargs)
+def kernel():
+    def _kernel_impl(func):
+        def wrapper(group, *args, **kwargs):
+            n_groups = group.get_num_groups()
+            cg = CurrentGroup(group.group_shape, group.subgroup_size)
+            for gid in product(*(range(g) for g in n_groups)):
+                cg._group_id = gid
+                func(cg, *args, **kwargs)
 
+        return wrapper
 
-    return wrapper
+    return _kernel_impl
