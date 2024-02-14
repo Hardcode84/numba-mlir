@@ -186,18 +186,18 @@ def _get_dims(arg):
 
 
 def _visit_arg_annotation(idx, ann, prev_handler):
-    if isinstance(ann(), tuple):
+    if isinstance(ann, Symbol):
+        def handler(args):
+            val = args[idx]
+            return [(ann, val)]
+
+    elif isinstance(ann(), tuple):
         def handler(args):
             val = args[idx]
             assert isinstance(val, Iterable)
             ann_args = typing.get_args(ann)
             assert len(val) == len(ann_args)
             return [(s, v) for s, v in zip(ann_args, val) if isinstance(s, Symbol)]
-
-    elif isinstance(ann, Symbol):
-        def handler(args):
-            val = args[idx]
-            return [(ann, val)]
 
     else:
         assert False, f"Unsupported annotation: {ann}"
