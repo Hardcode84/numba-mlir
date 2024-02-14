@@ -21,14 +21,8 @@ def _get_uninit_value(dtype):
 def _divup(a, b):
     return (a + b - 1) // b
 
-class Group:
-    def __init__(self, work_shape, group_shape, subgroup_size):
-        self.work_shape = work_shape
-        self.group_shape = group_shape
-        self.subgroup_size = subgroup_size
-
-    def get_num_groups(self):
-        return tuple(_divup(a, b) for a, b in zip(self.work_shape, self.group_shape))
+def _get_num_groups(work_shape, group_shape):
+    return tuple(_divup(a, b) for a, b in zip(work_shape, group_shape))
 
 class CurrentSubGroup:
     def __init__(self, size, subgroup_id):
@@ -263,9 +257,8 @@ def kernel(work_shape, group_shape=DEF_GROUP_SHAPE, subgroup_size=DEF_SUBGROUP_S
             gs = _handle_dim(group_shape, subs_args)
             ss = _handle_dim(subgroup_size, subs_args)
 
-            group = Group(ws, gs, ss)
-            n_groups = group.get_num_groups()
-            cg = CurrentGroup(group.group_shape, group.subgroup_size)
+            n_groups = _get_num_groups(ws, gs)
+            cg = CurrentGroup(gs, ss)
             for gid in product(*(range(g) for g in n_groups)):
                 cg._group_id = gid
                 func(cg, *args, **kwargs)

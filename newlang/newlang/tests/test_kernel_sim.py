@@ -4,7 +4,7 @@ from numpy.testing import assert_equal
 import numpy as np
 import pytest
 
-from newlang.kernel import kernel, Group, sym
+from newlang.kernel import kernel, sym
 
 @pytest.mark.parametrize("gsize", [(512,1,1),(511,1,1),(1,16,1),(1,1,16),(1,1,1)])
 @pytest.mark.parametrize("lsize", [(64,1,1),(1,1,1)])
