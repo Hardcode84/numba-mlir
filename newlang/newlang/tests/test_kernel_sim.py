@@ -4,7 +4,7 @@ from numpy.testing import assert_equal
 import numpy as np
 import pytest
 
-from newlang.kernel import kernel, sym
+from newlang.kernel import kernel, sym, CurrentGroup, CurrentSubGroup, CurrentWorkitem
 
 @pytest.mark.parametrize("gsize", [(512,1,1),(511,1,1),(1,16,1),(1,1,16),(1,1,1)])
 @pytest.mark.parametrize("lsize", [(64,1,1),(1,1,1)])
@@ -22,7 +22,7 @@ def test_group_iteration(gsize, lsize):
     L1, L2, L3 = sym.L1, sym.L2, sym.L3
 
     @kernel(work_shape=(G1,G2,G3), group_shape=(L1,L2,L3))
-    def test(gr,
+    def test(gr: CurrentGroup,
              gsize: tuple[G1, G2, G3],
              lsize: tuple[L1, L2, L3]):
         res_ids.append(gr.group_id())
@@ -42,7 +42,7 @@ def test_group_load_small():
     res = []
 
     @kernel(work_shape=sym.G, group_shape=sym.L)
-    def test(gr,
+    def test(gr: CurrentGroup,
              gsize: sym.G,
              lsize: sym.L,
              arr):
@@ -61,7 +61,7 @@ def test_group_load():
     res = []
 
     @kernel(work_shape=sym.G, group_shape=sym.L)
-    def test(gr,
+    def test(gr: CurrentGroup,
              gsize: sym.G,
              lsize: sym.L,
              arr):
@@ -218,11 +218,11 @@ def test_subgroup_iteration1():
     G1, G2, G3 = sym.G1, sym.G2, sym.G3
     L1, L2, L3 = sym.L1, sym.L2, sym.L3
     @kernel(work_shape=(G1,G2,G3), group_shape=(L1,L2,L3), subgroup_size=sgsize)
-    def test(gr,
+    def test(gr: CurrentGroup,
              gsize: tuple[G1, G2, G3],
              lsize: tuple[L1, L2, L3]):
         @gr.subgroups
-        def inner(sg):
+        def inner(sg: CurrentSubGroup):
             res_ids.append(sg.subgroup_id())
             res_sizes.append(sg.size())
 
@@ -245,12 +245,12 @@ def test_subgroup_iteration2():
     L1, L2, L3 = sym.L1, sym.L2, sym.L3
     SG = sym.SG
     @kernel(work_shape=(G1,G2,G3), group_shape=(L1,L2,L3), subgroup_size=SG, literals={SG})
-    def test(gr,
+    def test(gr: CurrentGroup,
              gsize: tuple[G1, G2, G3],
              lsize: tuple[L1, L2, L3],
              sgsize: SG):
         @gr.subgroups
-        def inner(sg):
+        def inner(sg: CurrentSubGroup):
             res_ids.append(sg.subgroup_id())
             res_sizes.append(sg.size())
 
@@ -295,11 +295,11 @@ def test_workitems_iteration():
     G1, G2, G3 = sym.G1, sym.G2, sym.G3
     L1, L2, L3 = sym.L1, sym.L2, sym.L3
     @kernel(work_shape=(G1,G2,G3), group_shape=(L1,L2,L3))
-    def test(gr,
+    def test(gr: CurrentGroup,
              gsize: tuple[G1, G2, G3],
              lsize: tuple[L1, L2, L3]):
         @gr.workitems
-        def inner(wi):
+        def inner(wi: CurrentWorkitem):
             res_lids.append(wi.local_id())
             res_gids.append(wi.global_id())
 
@@ -319,11 +319,11 @@ def test_workitem_barrier():
     G1, G2, G3 = sym.G1, sym.G2, sym.G3
     L1, L2, L3 = sym.L1, sym.L2, sym.L3
     @kernel(work_shape=(G1,G2,G3), group_shape=(L1,L2,L3))
-    def test(gr,
+    def test(gr: CurrentGroup,
              gsize: tuple[G1, G2, G3],
              lsize: tuple[L1, L2, L3]):
         @gr.workitems
-        def inner(wi):
+        def inner(wi: CurrentWorkitem):
             res.append((1, wi.global_id()))
             gr.barrier()
             res.append((2, wi.global_id()))

@@ -187,6 +187,10 @@ def _add_sub(subs, sym, val):
         subs[sym] = val
 
 def _visit_arg_annotation(idx, ann, prev_handler):
+    if ann in (CurrentGroup, CurrentSubGroup, CurrentWorkitem):
+        # nothing
+        return
+
     if isinstance(ann, Symbol):
         def handler(subs, args):
             val = args[idx]
