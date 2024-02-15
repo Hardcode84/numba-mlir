@@ -6,7 +6,7 @@ IndexSymbol = sympy.core.Symbol
 IndexExpr = sympy.core.Expr
 
 def index_symbol(name: str) -> IndexSymbol:
-    return sympy.Symbol(name, integer=True, nonnegative=True)
+    return sympy.Symbol(name, integer=True)
 
 
 def index_expr(value: Any) -> IndexExpr:
