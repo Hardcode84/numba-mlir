@@ -4,7 +4,7 @@ from numpy.testing import assert_equal
 import numpy as np
 import pytest
 
-from newlang.kernel import kernel, sym, CurrentGroup, CurrentSubGroup, CurrentWorkitem
+from newlang.kernel import kernel, sym, CurrentGroup, CurrentSubGroup, CurrentWorkitem, Buffer
 
 @pytest.mark.parametrize("gsize", [(512,1,1),(511,1,1),(1,16,1),(1,1,16),(1,1,1)])
 @pytest.mark.parametrize("lsize", [(64,1,1),(1,1,1)])
@@ -332,3 +332,40 @@ def test_workitem_barrier():
 
     test(gsize, lsize)
     assert_equal(res, [(1, (0, 0, 0)), (1, (0, 0, 1)), (2, (0, 0, 0)), (2, (0, 0, 1)), (1, (0, 0, 2)), (1, (0, 0, 3)), (2, (0, 0, 2)), (2, (0, 0, 3))])
+
+
+def test_buffer_dims1():
+    G = sym.G
+    @kernel(work_shape=G)
+    def test(gr: CurrentGroup,
+             arr: Buffer[G]):
+        @gr.workitems
+        def inner(wi: CurrentWorkitem):
+            gid = wi.global_id()[0]
+            if gid < arr.shape[0]:
+                arr[gid] = gid
+
+        inner()
+
+    src = np.zeros(12)
+    test(src)
+    assert_equal(src, np.arange(12))
+
+
+def test_buffer_dims2():
+    G1 = sym.G1
+    G2 = sym.G2
+    @kernel(work_shape=(G1,G2,1))
+    def test(gr: CurrentGroup,
+             arr: Buffer[G1,G2]):
+        @gr.workitems
+        def inner(wi: CurrentWorkitem):
+            gid = wi.global_id()[:2]
+            if gid[0] < arr.shape[0] and gid[1] < arr.shape[1]:
+                arr[gid] = gid[0]*arr.shape[1] + gid[1]
+
+        inner()
+
+    src = np.zeros(12*5).reshape(12,5)
+    test(src)
+    assert_equal(src, np.arange(12*5).reshape(12,5))

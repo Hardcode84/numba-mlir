@@ -170,6 +170,9 @@ class CurrentGroup:
     def _alloc_impl(self, shape, dtype, init):
         return ma.masked_array(np.full(shape, fill_value=init, dtype=dtype), mask=False)
 
+class Buffer(typing.Generic[typing.ParamSpec('Args')]):
+    pass
+
 
 def _get_dims(arg):
     if not isinstance(arg, Iterable):
@@ -196,7 +199,7 @@ def _visit_arg_annotation(idx, ann, prev_handler):
             val = args[idx]
             _add_sub(subs, ann, val)
 
-    elif isinstance(ann, types.GenericAlias) and isinstance(ann(), tuple):
+    elif typing.get_origin(ann) == tuple:
         def handler(subs, args):
             val = args[idx]
             assert isinstance(val, Iterable)
@@ -208,8 +211,19 @@ def _visit_arg_annotation(idx, ann, prev_handler):
 
                 _add_sub(subs, s, v)
 
+    elif typing.get_origin(ann) == Buffer:
+        def handler(subs, args):
+            val = args[idx]
+            ann_args = typing.get_args(ann)[0]
+            assert len(val.shape) == len(ann_args)
+            for s, v in zip(ann_args, val.shape):
+                if not isinstance(s, Symbol):
+                    continue
+
+                _add_sub(subs, s, v)
+
     else:
-        assert False, f"Unsupported annotation: {ann}"
+        assert False, f"Unsupported annotation: {type(ann)} {ann}"
 
     if prev_handler:
         def chained(subs, args):

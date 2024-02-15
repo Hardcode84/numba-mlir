@@ -19,5 +19,3 @@ class _IndexSymbolExpando:
         return index_symbol(n)
 
 sym = _IndexSymbolExpando()
-
-
