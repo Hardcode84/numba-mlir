@@ -281,6 +281,7 @@ def kernel(work_shape, group_shape=DEF_GROUP_SHAPE, subgroup_size=DEF_SUBGROUP_S
                 cg._group_id = gid
                 func(cg, *args, **kwargs)
 
+        setattr(wrapper, "orig_func", func)
         return wrapper
 
     return _kernel_impl
