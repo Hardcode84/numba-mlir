@@ -4,7 +4,7 @@ from numpy.testing import assert_equal
 import numpy as np
 import pytest
 
-from newlang.kernel import kernel, sym, CurrentGroup, CurrentSubGroup, CurrentWorkitem, Buffer
+from newlang.kernel import kernel, sym, CurrentGroup, CurrentSubGroup, CurrentWorkitem, Buffer, TunableParam
 
 @pytest.mark.parametrize("gsize", [(512,1,1),(511,1,1),(1,16,1),(1,1,16),(1,1,1)])
 @pytest.mark.parametrize("lsize", [(64,1,1),(1,1,1)])
@@ -369,3 +369,52 @@ def test_buffer_dims2():
     src = np.zeros(12*5).reshape(12,5)
     test(src)
     assert_equal(src, np.arange(12*5).reshape(12,5))
+
+def test_symbol_resolving_freevar():
+    G = sym.G
+    @kernel(work_shape=G)
+    def test(gr: CurrentGroup,
+             arr: Buffer[G]):
+        arr[:] = G
+
+    src = np.zeros(12)
+    test(src)
+    assert_equal(src, np.full(12, 12))
+
+GG = sym.GG
+def test_symbol_resolving_global():
+    @kernel(work_shape=GG)
+    def test(gr: CurrentGroup,
+             arr: Buffer[GG]):
+        arr[:] = GG
+
+    src = np.zeros(12)
+    test(src)
+    assert_equal(src, np.full(12, 12))
+
+def test_symbol_tuning_param_freevar():
+    G = sym.G
+    TG = TunableParam(G, 5, range(0, 10))
+    @kernel(work_shape=10, tunables=TG)
+    def test(gr: CurrentGroup,
+             arr: Buffer[10]):
+        arr[:] = G
+
+    src = np.zeros(10)
+    test(src)
+    assert_equal(src, np.full(10, 5))
+    test.parametrize({G: 10})(src)
+    assert_equal(src, np.full(10, 10))
+
+def test_symbol_tuning_param_global():
+    TG = TunableParam(GG, 5, range(0, 10))
+    @kernel(work_shape=10, tunables=TG)
+    def test(gr: CurrentGroup,
+             arr: Buffer[10]):
+        arr[:] = GG
+
+    src = np.zeros(10)
+    test(src)
+    assert_equal(src, np.full(10, 5))
+    test.parametrize({GG: 10})(src)
+    assert_equal(src, np.full(10, 10))
