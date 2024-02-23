@@ -15,6 +15,98 @@ from .indexing import sym
 DEF_GROUP_SHAPE = (64,1,1)
 DEF_SUBGROUP_SIZE = 16
 
+class TunableParam:
+    def __init__(self, sym, default, vals, strategy=None):
+        self.sym = sym
+        self.default = default
+        self.vals = vals
+        self.strategy = strategy
+
+def _get_default_tunables(tunables):
+    if isinstance(tunables, TunableParam):
+        return {tunables.sym: tunables.default}
+
+    if isinstance(tunables, Iterable):
+        return {t.sym: t.default for t in tunables}
+
+    assert False, "Unsupported tunables"
+
+def copy_func(f):
+    g = types.FunctionType(f.__code__, f.__globals__, name=f.__name__,
+                           argdefs=f.__defaults__,
+                           closure=f.__closure__)
+    g = functools.update_wrapper(g, f)
+    g.__kwdefaults__ = f.__kwdefaults__
+    return g
+
+def resolve_symbols(func, symbols):
+    old_closure = func.__closure__
+    new_closure = None
+
+    if old_closure is not None:
+        cell_cls = type(old_closure[0])
+        def resolve_cell(cell):
+            if isinstance(cell.cell_contents, Symbol):
+                if cell.cell_contents in symbols.keys():
+                    return cell_cls(symbols[cell.cell_contents])
+
+            return cell
+
+        new_closure = tuple([resolve_cell(cell) for cell in old_closure])
+
+    def resolve_global(val):
+        if isinstance(val, Symbol):
+            if val in symbols.keys():
+                return symbols[val]
+
+        return val
+
+    new_globals = {key: resolve_global(val) for key, val in func.__globals__.items()}
+
+    g = types.FunctionType(func.__code__, new_globals, name=func.__name__,
+                           argdefs=func.__defaults__,
+                           closure=new_closure)
+    g = functools.update_wrapper(g, func)
+    g.__kwdefaults__ = func.__kwdefaults__
+    return g
+
+class _kernel:
+    def __init__(self, func, work_shape, group_shape, subgroup_size, literals, tunables, tuned={}):
+        self.handler = _visit_func_annotations(func)
+        self.orig_func = func
+        self.work_shape = work_shape
+        self.group_shape = group_shape
+        self.subgroup_size = subgroup_size
+        self.literals = literals
+        self.tunables = tunables
+        self.tuned = tuned
+        self.default_tunbles = _get_default_tunables(tunables)
+
+    def __call__(self, *args, **kwargs):
+        if self.handler:
+            subs_map = {}
+            self.handler(subs_map, args)
+            subs_args = list(subs_map.items())
+        else:
+            subs_args = []
+
+        ws = _handle_dim(self.work_shape, subs_args)
+        gs = _handle_dim(self.group_shape, subs_args)
+        ss = _handle_dim(self.subgroup_size, subs_args)
+
+        subs_map = subs_map | self.default_tunbles | self.tuned
+        resolved_func = resolve_symbols(self.orig_func, subs_map)
+
+        n_groups = _get_num_groups(ws, gs)
+        cg = CurrentGroup(gs, ss)
+        for gid in product(*(range(g) for g in n_groups)):
+            cg._group_id = gid
+            resolved_func(cg, *args, **kwargs)
+
+    def parametrize(self, tuned):
+        return _kernel(self.orig_func, self.work_shape, self.group_shape, self.subgroup_size, self.literals, self.tunables, self.tuned | tuned)
+
+
 def _get_uninit_value(dtype):
     return 0
 
@@ -239,9 +331,9 @@ def _visit_func_annotations(func):
     ann = inspect.get_annotations(func)
     handler = None
     for i, arg in enumerate(inspect.signature(func).parameters):
-        arg_ann = ann.get(arg, None);
+        arg_ann = ann.get(arg, None)
         if arg_ann is None:
-            continue;
+            continue
 
         handler = _visit_arg_annotation(i - 1, arg_ann, handler)
 
@@ -256,32 +348,12 @@ def _handle_dim(src, subs):
 
     return int(src)
 
-def kernel(work_shape, group_shape=DEF_GROUP_SHAPE, subgroup_size=DEF_SUBGROUP_SIZE, literals=()):
+
+def kernel(work_shape, group_shape=DEF_GROUP_SHAPE, subgroup_size=DEF_SUBGROUP_SIZE, literals=(), tunables=()):
     assert isinstance(subgroup_size, int) or subgroup_size in literals, "Subgroup size must be const or literal"
     work_shape = _get_dims(work_shape)
     group_shape = _get_dims(group_shape)
     def _kernel_impl(func):
-        handler = _visit_func_annotations(func)
-        def wrapper(*args, **kwargs):
-            if handler:
-                subs_map = {}
-                handler(subs_map, args)
-                subs_args = list(subs_map.items())
-            else:
-                subs_args = []
-
-
-            ws = _handle_dim(work_shape, subs_args)
-            gs = _handle_dim(group_shape, subs_args)
-            ss = _handle_dim(subgroup_size, subs_args)
-
-            n_groups = _get_num_groups(ws, gs)
-            cg = CurrentGroup(gs, ss)
-            for gid in product(*(range(g) for g in n_groups)):
-                cg._group_id = gid
-                func(cg, *args, **kwargs)
-
-        setattr(wrapper, "orig_func", func)
-        return wrapper
+        return _kernel(func, work_shape, group_shape, subgroup_size, literals, tunables)
 
     return _kernel_impl
