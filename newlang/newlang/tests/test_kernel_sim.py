@@ -1,19 +1,30 @@
-
 from itertools import product
 from numpy.testing import assert_equal
 import numpy as np
 import pytest
 
-from newlang.kernel import kernel, sym, CurrentGroup, CurrentSubGroup, CurrentWorkitem, Buffer, TunableParam
+from newlang.kernel import (
+    kernel,
+    sym,
+    CurrentGroup,
+    CurrentSubGroup,
+    CurrentWorkitem,
+    Buffer,
+    TunableParam,
+    atomic_ref,
+)
 
-@pytest.mark.parametrize("gsize", [(512,1,1),(511,1,1),(1,16,1),(1,1,16),(1,1,1)])
-@pytest.mark.parametrize("lsize", [(64,1,1),(1,1,1)])
+
+@pytest.mark.parametrize(
+    "gsize", [(512, 1, 1), (511, 1, 1), (1, 16, 1), (1, 1, 16), (1, 1, 1)]
+)
+@pytest.mark.parametrize("lsize", [(64, 1, 1), (1, 1, 1)])
 def test_group_iteration(gsize, lsize):
     def get_range(i):
         return range((gsize[i] + lsize[i] - 1) // lsize[i])
 
     def get_group_ranges():
-        return product(get_range(0),get_range(1),get_range(2))
+        return product(get_range(0), get_range(1), get_range(2))
 
     res_ids = []
     res_offsets = []
@@ -21,17 +32,17 @@ def test_group_iteration(gsize, lsize):
     G1, G2, G3 = sym.G1, sym.G2, sym.G3
     L1, L2, L3 = sym.L1, sym.L2, sym.L3
 
-    @kernel(work_shape=(G1,G2,G3), group_shape=(L1,L2,L3))
-    def test(gr: CurrentGroup,
-             gsize: tuple[G1, G2, G3],
-             lsize: tuple[L1, L2, L3]):
-        res_ids.append(gr.group_id())
-        res_offsets.append(gr.work_offset())
+    @kernel(work_shape=(G1, G2, G3), group_shape=(L1, L2, L3))
+    def test(gr: CurrentGroup, gsize: tuple[G1, G2, G3], lsize: tuple[L1, L2, L3]):
+        res_ids.append(gr.id)
+        res_offsets.append(gr.work_offset)
 
     test(gsize, lsize)
     exp_res_ids = [(i, j, k) for i, j, k in get_group_ranges()]
-    assert(res_ids == exp_res_ids)
-    exp_res_offsets = [(i * lsize[0], j * lsize[1], k * lsize[2]) for i, j, k in get_group_ranges()]
+    assert res_ids == exp_res_ids
+    exp_res_offsets = [
+        (i * lsize[0], j * lsize[1], k * lsize[2]) for i, j, k in get_group_ranges()
+    ]
     assert_equal(res_offsets, exp_res_offsets)
 
 
@@ -42,17 +53,15 @@ def test_group_load_small():
     res = []
 
     @kernel(work_shape=sym.G, group_shape=sym.L)
-    def test(gr: CurrentGroup,
-             gsize: sym.G,
-             lsize: sym.L,
-             arr):
-        a = gr.load(arr[gr.work_offset()[0]:], shape=gr.group_shape()[0])
+    def test(gr: CurrentGroup, gsize: sym.G, lsize: sym.L, arr):
+        a = gr.load(arr[gr.work_offset[0] :], shape=gr.shape[0])
         res.append(a.compressed())
 
     src = np.arange(12)
     test(gsize, lsize, src)
-    expected = [np.array([0,1,2,3,4,5,6,7])]
+    expected = [np.array([0, 1, 2, 3, 4, 5, 6, 7])]
     assert_equal(res, expected)
+
 
 def test_group_load():
     gsize = 16
@@ -61,16 +70,13 @@ def test_group_load():
     res = []
 
     @kernel(work_shape=sym.G, group_shape=sym.L)
-    def test(gr: CurrentGroup,
-             gsize: sym.G,
-             lsize: sym.L,
-             arr):
-        a = gr.load(arr[gr.work_offset()[0]:], shape=gr.group_shape()[0])
+    def test(gr: CurrentGroup, gsize: sym.G, lsize: sym.L, arr):
+        a = gr.load(arr[gr.work_offset[0] :], shape=gr.shape[0])
         res.append(a.compressed())
 
     src = np.arange(12)
     test(gsize, lsize, src)
-    expected = [np.array([0,1,2,3,4,5,6,7]),np.array([8,9,10,11])]
+    expected = [np.array([0, 1, 2, 3, 4, 5, 6, 7]), np.array([8, 9, 10, 11])]
     assert_equal(res, expected)
 
 
@@ -80,9 +86,9 @@ def test_group_store():
 
     @kernel(work_shape=sym.G, group_shape=sym.L)
     def test(gr, gsize: sym.G, lsize: sym.L, arr1, arr2):
-        gid = gr.work_offset()
-        a = gr.load(arr1[gid[0]:], shape=gr.group_shape()[0])
-        gr.store(arr2[gid[0]:], a)
+        gid = gr.work_offset
+        a = gr.load(arr1[gid[0] :], shape=gr.shape[0])
+        gr.store(arr2[gid[0] :], a)
 
     src = np.arange(12)
     dst = np.full(16, fill_value=-1)
@@ -96,8 +102,8 @@ def test_group_empty():
 
     @kernel(work_shape=sym.G, group_shape=sym.L)
     def test(gr, gsize: sym.G, lsize: sym.L):
-        a = gr.empty((3,7), dtype=np.int32)
-        assert_equal(a.shape, (3,7))
+        a = gr.empty((3, 7), dtype=np.int32)
+        assert_equal(a.shape, (3, 7))
 
     test(gsize, lsize)
 
@@ -108,7 +114,7 @@ def test_group_zeros():
 
     @kernel(work_shape=sym.G, group_shape=sym.L)
     def test(gr, gsize: sym.G, lsize: sym.L):
-        a = gr.zeros((2,3), dtype=np.int32)
+        a = gr.zeros((2, 3), dtype=np.int32)
         assert_equal(a, [[0, 0, 0], [0, 0, 0]])
 
     test(gsize, lsize)
@@ -120,10 +126,11 @@ def test_group_ones():
 
     @kernel(work_shape=sym.G, group_shape=sym.L)
     def test(gr, gsize: sym.G, lsize: sym.L):
-        a = gr.ones((2,3), dtype=np.int32)
+        a = gr.ones((2, 3), dtype=np.int32)
         assert_equal(a, [[1, 1, 1], [1, 1, 1]])
 
     test(gsize, lsize)
+
 
 def test_group_full():
     gsize = 8
@@ -131,7 +138,7 @@ def test_group_full():
 
     @kernel(work_shape=sym.G, group_shape=sym.L)
     def test(gr, gsize: sym.G, lsize: sym.L):
-        a = gr.full((2,3), dtype=np.int32, fill_value=42)
+        a = gr.full((2, 3), dtype=np.int32, fill_value=42)
         assert_equal(a, [[42, 42, 42], [42, 42, 42]])
 
     test(gsize, lsize)
@@ -143,8 +150,8 @@ def test_group_vempty():
 
     @kernel(work_shape=sym.G, group_shape=sym.L)
     def test(gr, gsize: sym.G, lsize: sym.L):
-        a = gr.vempty((3,7), dtype=np.int32)
-        assert_equal(a.shape, (3,7))
+        a = gr.vempty((3, 7), dtype=np.int32)
+        assert_equal(a.shape, (3, 7))
 
     test(gsize, lsize)
 
@@ -155,7 +162,7 @@ def test_group_vzeros():
 
     @kernel(work_shape=sym.G, group_shape=sym.L)
     def test(gr, gsize: sym.G, lsize: sym.L):
-        a = gr.vzeros((2,3), dtype=np.int32)
+        a = gr.vzeros((2, 3), dtype=np.int32)
         assert_equal(a, [[0, 0, 0], [0, 0, 0]])
 
     test(gsize, lsize)
@@ -167,10 +174,11 @@ def test_group_vones():
 
     @kernel(work_shape=sym.G, group_shape=sym.L)
     def test(gr, gsize: sym.G, lsize: sym.L):
-        a = gr.vones((2,3), dtype=np.int32)
+        a = gr.vones((2, 3), dtype=np.int32)
         assert_equal(a, [[1, 1, 1], [1, 1, 1]])
 
     test(gsize, lsize)
+
 
 def test_group_vfull():
     gsize = 8
@@ -178,10 +186,11 @@ def test_group_vfull():
 
     @kernel(work_shape=sym.G, group_shape=sym.L)
     def test(gr, gsize: sym.G, lsize: sym.L):
-        a = gr.vfull((2,3), dtype=np.int32, fill_value=42)
+        a = gr.vfull((2, 3), dtype=np.int32, fill_value=42)
         assert_equal(a, [[42, 42, 42], [42, 42, 42]])
 
     test(gsize, lsize)
+
 
 def test_group_vec1():
     gsize = 8
@@ -189,11 +198,12 @@ def test_group_vec1():
 
     @kernel(work_shape=sym.G, group_shape=sym.L)
     def test(gr, gsize: sym.G, lsize: sym.L):
-        a = gr.full((2,3), dtype=np.int32, fill_value=42)
+        a = gr.full((2, 3), dtype=np.int32, fill_value=42)
         v = gr.vec(a)
         assert_equal(v, [[42, 42, 42], [42, 42, 42]])
 
     test(gsize, lsize)
+
 
 def test_group_vec2():
     gsize = 8
@@ -201,15 +211,16 @@ def test_group_vec2():
 
     @kernel(work_shape=sym.G, group_shape=sym.L)
     def test(gr, gsize: sym.G, lsize: sym.L):
-        a = gr.full((2,3), dtype=np.int32, fill_value=42)
-        v = gr.vec(a, shape=(1,2))
+        a = gr.full((2, 3), dtype=np.int32, fill_value=42)
+        v = gr.vec(a, shape=(1, 2))
         assert_equal(v, [[42, 42]])
 
     test(gsize, lsize)
 
+
 def test_subgroup_iteration1():
-    gsize = (1,1,16)
-    lsize = (1,1,8)
+    gsize = (1, 1, 16)
+    lsize = (1, 1, 8)
     sgsize = 4
 
     res_ids = []
@@ -217,10 +228,9 @@ def test_subgroup_iteration1():
 
     G1, G2, G3 = sym.G1, sym.G2, sym.G3
     L1, L2, L3 = sym.L1, sym.L2, sym.L3
-    @kernel(work_shape=(G1,G2,G3), group_shape=(L1,L2,L3), subgroup_size=sgsize)
-    def test(gr: CurrentGroup,
-             gsize: tuple[G1, G2, G3],
-             lsize: tuple[L1, L2, L3]):
+
+    @kernel(work_shape=(G1, G2, G3), group_shape=(L1, L2, L3), subgroup_size=sgsize)
+    def test(gr: CurrentGroup, gsize: tuple[G1, G2, G3], lsize: tuple[L1, L2, L3]):
         @gr.subgroups
         def inner(sg: CurrentSubGroup):
             res_ids.append(sg.subgroup_id())
@@ -234,8 +244,8 @@ def test_subgroup_iteration1():
 
 
 def test_subgroup_iteration2():
-    gsize = (1,1,16)
-    lsize = (1,1,8)
+    gsize = (1, 1, 16)
+    lsize = (1, 1, 8)
     sgsize = 4
 
     res_ids = []
@@ -244,11 +254,16 @@ def test_subgroup_iteration2():
     G1, G2, G3 = sym.G1, sym.G2, sym.G3
     L1, L2, L3 = sym.L1, sym.L2, sym.L3
     SG = sym.SG
-    @kernel(work_shape=(G1,G2,G3), group_shape=(L1,L2,L3), subgroup_size=SG, literals={SG})
-    def test(gr: CurrentGroup,
-             gsize: tuple[G1, G2, G3],
-             lsize: tuple[L1, L2, L3],
-             sgsize: SG):
+
+    @kernel(
+        work_shape=(G1, G2, G3),
+        group_shape=(L1, L2, L3),
+        subgroup_size=SG,
+        literals={SG},
+    )
+    def test(
+        gr: CurrentGroup, gsize: tuple[G1, G2, G3], lsize: tuple[L1, L2, L3], sgsize: SG
+    ):
         @gr.subgroups
         def inner(sg: CurrentSubGroup):
             res_ids.append(sg.subgroup_id())
@@ -260,19 +275,19 @@ def test_subgroup_iteration2():
     assert_equal(res_ids, [(0, 0, 0), (0, 0, 1), (0, 0, 0), (0, 0, 1)])
     assert_equal(res_sizes, [4, 4, 4, 4])
 
+
 def test_subgroup_barrier():
-    gsize = (1,1,16)
-    lsize = (1,1,8)
+    gsize = (1, 1, 16)
+    lsize = (1, 1, 8)
     sgsize = 4
 
     res = []
 
     G1, G2, G3 = sym.G1, sym.G2, sym.G3
     L1, L2, L3 = sym.L1, sym.L2, sym.L3
-    @kernel(work_shape=(G1,G2,G3), group_shape=(L1,L2,L3), subgroup_size=sgsize)
-    def test(gr,
-             gsize: tuple[G1, G2, G3],
-             lsize: tuple[L1, L2, L3]):
+
+    @kernel(work_shape=(G1, G2, G3), group_shape=(L1, L2, L3), subgroup_size=sgsize)
+    def test(gr, gsize: tuple[G1, G2, G3], lsize: tuple[L1, L2, L3]):
         @gr.subgroups
         def inner(sg):
             res.append((1, sg.subgroup_id()))
@@ -282,22 +297,33 @@ def test_subgroup_barrier():
         inner()
 
     test(gsize, lsize)
-    assert_equal(res, [(1, (0, 0, 0)), (1, (0, 0, 1)), (2, (0, 0, 0)), (2, (0, 0, 1)), (1, (0, 0, 0)), (1, (0, 0, 1)), (2, (0, 0, 0)), (2, (0, 0, 1))])
+    assert_equal(
+        res,
+        [
+            (1, (0, 0, 0)),
+            (1, (0, 0, 1)),
+            (2, (0, 0, 0)),
+            (2, (0, 0, 1)),
+            (1, (0, 0, 0)),
+            (1, (0, 0, 1)),
+            (2, (0, 0, 0)),
+            (2, (0, 0, 1)),
+        ],
+    )
 
 
 def test_workitems_iteration():
-    gsize = (1,1,4)
-    lsize = (1,1,2)
+    gsize = (1, 1, 4)
+    lsize = (1, 1, 2)
 
     res_gids = []
     res_lids = []
 
     G1, G2, G3 = sym.G1, sym.G2, sym.G3
     L1, L2, L3 = sym.L1, sym.L2, sym.L3
-    @kernel(work_shape=(G1,G2,G3), group_shape=(L1,L2,L3))
-    def test(gr: CurrentGroup,
-             gsize: tuple[G1, G2, G3],
-             lsize: tuple[L1, L2, L3]):
+
+    @kernel(work_shape=(G1, G2, G3), group_shape=(L1, L2, L3))
+    def test(gr: CurrentGroup, gsize: tuple[G1, G2, G3], lsize: tuple[L1, L2, L3]):
         @gr.workitems
         def inner(wi: CurrentWorkitem):
             res_lids.append(wi.local_id())
@@ -311,17 +337,16 @@ def test_workitems_iteration():
 
 
 def test_workitem_barrier():
-    gsize = (1,1,4)
-    lsize = (1,1,2)
+    gsize = (1, 1, 4)
+    lsize = (1, 1, 2)
 
     res = []
 
     G1, G2, G3 = sym.G1, sym.G2, sym.G3
     L1, L2, L3 = sym.L1, sym.L2, sym.L3
-    @kernel(work_shape=(G1,G2,G3), group_shape=(L1,L2,L3))
-    def test(gr: CurrentGroup,
-             gsize: tuple[G1, G2, G3],
-             lsize: tuple[L1, L2, L3]):
+
+    @kernel(work_shape=(G1, G2, G3), group_shape=(L1, L2, L3))
+    def test(gr: CurrentGroup, gsize: tuple[G1, G2, G3], lsize: tuple[L1, L2, L3]):
         @gr.workitems
         def inner(wi: CurrentWorkitem):
             res.append((1, wi.global_id()))
@@ -331,14 +356,26 @@ def test_workitem_barrier():
         inner()
 
     test(gsize, lsize)
-    assert_equal(res, [(1, (0, 0, 0)), (1, (0, 0, 1)), (2, (0, 0, 0)), (2, (0, 0, 1)), (1, (0, 0, 2)), (1, (0, 0, 3)), (2, (0, 0, 2)), (2, (0, 0, 3))])
+    assert_equal(
+        res,
+        [
+            (1, (0, 0, 0)),
+            (1, (0, 0, 1)),
+            (2, (0, 0, 0)),
+            (2, (0, 0, 1)),
+            (1, (0, 0, 2)),
+            (1, (0, 0, 3)),
+            (2, (0, 0, 2)),
+            (2, (0, 0, 3)),
+        ],
+    )
 
 
 def test_buffer_dims1():
     G = sym.G
+
     @kernel(work_shape=G)
-    def test(gr: CurrentGroup,
-             arr: Buffer[G]):
+    def test(gr: CurrentGroup, arr: Buffer[G]):
         @gr.workitems
         def inner(wi: CurrentWorkitem):
             gid = wi.global_id()[0]
@@ -355,49 +392,53 @@ def test_buffer_dims1():
 def test_buffer_dims2():
     G1 = sym.G1
     G2 = sym.G2
-    @kernel(work_shape=(G1,G2,1))
-    def test(gr: CurrentGroup,
-             arr: Buffer[G1,G2]):
+
+    @kernel(work_shape=(G1, G2, 1))
+    def test(gr: CurrentGroup, arr: Buffer[G1, G2]):
         @gr.workitems
         def inner(wi: CurrentWorkitem):
             gid = wi.global_id()[:2]
             if gid[0] < arr.shape[0] and gid[1] < arr.shape[1]:
-                arr[gid] = gid[0]*arr.shape[1] + gid[1]
+                arr[gid] = gid[0] * arr.shape[1] + gid[1]
 
         inner()
 
-    src = np.zeros(12*5).reshape(12,5)
+    src = np.zeros(12 * 5).reshape(12, 5)
     test(src)
-    assert_equal(src, np.arange(12*5).reshape(12,5))
+    assert_equal(src, np.arange(12 * 5).reshape(12, 5))
+
 
 def test_symbol_resolving_freevar():
     G = sym.G
+
     @kernel(work_shape=G)
-    def test(gr: CurrentGroup,
-             arr: Buffer[G]):
+    def test(gr: CurrentGroup, arr: Buffer[G]):
         arr[:] = G
 
     src = np.zeros(12)
     test(src)
     assert_equal(src, np.full(12, 12))
 
+
 GG = sym.GG
+
+
 def test_symbol_resolving_global():
     @kernel(work_shape=GG)
-    def test(gr: CurrentGroup,
-             arr: Buffer[GG]):
+    def test(gr: CurrentGroup, arr: Buffer[GG]):
         arr[:] = GG
 
     src = np.zeros(12)
     test(src)
     assert_equal(src, np.full(12, 12))
 
+
 def test_symbol_tuning_param_freevar():
     G = sym.G
     TG = TunableParam(G, 5, range(0, 10))
+
     @kernel(work_shape=10, tunables=TG)
-    def test(gr: CurrentGroup,
-             arr: Buffer[10]):
+    def test(gr: CurrentGroup, arr: Buffer[10]):
         arr[:] = G
 
     src = np.zeros(10)
@@ -406,11 +447,12 @@ def test_symbol_tuning_param_freevar():
     test.parametrize({G: 10})(src)
     assert_equal(src, np.full(10, 10))
 
+
 def test_symbol_tuning_param_global():
     TG = TunableParam(GG, 5, range(0, 10))
+
     @kernel(work_shape=10, tunables=TG)
-    def test(gr: CurrentGroup,
-             arr: Buffer[10]):
+    def test(gr: CurrentGroup, arr: Buffer[10]):
         arr[:] = GG
 
     src = np.zeros(10)
@@ -418,3 +460,45 @@ def test_symbol_tuning_param_global():
     assert_equal(src, np.full(10, 5))
     test.parametrize({GG: 10})(src)
     assert_equal(src, np.full(10, 10))
+
+
+def test_reduction_1():
+    WS = sym.WS
+
+    @kernel(work_shape=WS)
+    def reduction(gr: CurrentGroup, a: Buffer[WS], result: Buffer[1]):
+        a_view = gr.load(a[gr.work_offset[0] :], shape=gr.size)
+        atomic_ref(result)[0] += a_view.sum()
+
+    a = np.arange(0, 10)
+    result = np.zeros(1)
+
+    reduction(a, result)
+
+    assert_equal(result[0], a.sum())
+
+
+def test_reduction_2():
+    def ceil_div(a, b):
+        return (a + b - 1) // b
+
+    WS, GS, N = sym.WS, sym.GS, sym.N
+
+    @kernel(work_shape=ceil_div(WS, N), group_shape=GS)
+    def reduction(
+        group: CurrentGroup, a: Buffer[WS], result: Buffer[1], n: N, gshape: GS
+    ):
+        temp_result = group.zeros(group.size, dtype=a.dtype)
+        for i in range(n):
+            work_offset = group.work_offset[0] * n + i * group.size
+            a_view = group.load(a[work_offset:], shape=group.size)
+            temp_result += a_view
+
+        atomic_ref(result)[0] += temp_result.sum()
+
+    a = np.arange(0, 9)
+    result = np.zeros(1)
+
+    reduction(a, result, 2, 4)
+
+    assert_equal(result[0], a.sum())
