@@ -36,7 +36,9 @@ config.substitutions.append(("%shlibext", config.llvm_shlib_ext))
 config.substitutions.append(("%shlibprefix", config.hckernel_shlib_prefix))
 config.substitutions.append(("%mlir_wrappers_dir", config.mlir_wrappers_dir))
 
-llvm_config.with_system_environment(["HOME", "INCLUDE", "LIB", "TMP", "TEMP", "CONDA_PREFIX"])
+llvm_config.with_system_environment(
+    ["HOME", "INCLUDE", "LIB", "TMP", "TEMP", "CONDA_PREFIX"]
+)
 
 llvm_config.use_default_substitutions()
 
@@ -47,9 +49,7 @@ config.excludes = ["Inputs", "Examples", "CMakeLists.txt", "README.txt", "LICENS
 
 # test_exec_root: The root path where tests should be run.
 config.test_exec_root = os.path.join(config.hckernel_obj_root, "tests")
-config.pyfront_dir = os.path.join(
-    config.hckernel_obj_root, "tools", "pyfront"
-)
+config.pyfront_dir = os.path.join(config.hckernel_obj_root, "tools", "pyfront")
 
 # Tweak the PATH to include the tools dir.
 llvm_config.with_environment("PATH", config.llvm_tools_dir, append_path=True)
