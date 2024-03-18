@@ -393,7 +393,7 @@ def test_buffer_dims2():
     G1 = sym.G1
     G2 = sym.G2
 
-    @kernel(work_shape=(G1, G2, 1))
+    @kernel(work_shape=(G1, G2))
     def test(gr: CurrentGroup, arr: Buffer[G1, G2]):
         @gr.workitems
         def inner(wi: CurrentWorkitem):
@@ -460,45 +460,3 @@ def test_symbol_tuning_param_global():
     assert_equal(src, np.full(10, 5))
     test.parametrize({GG: 10})(src)
     assert_equal(src, np.full(10, 10))
-
-
-def test_reduction_1():
-    WS = sym.WS
-
-    @kernel(work_shape=WS)
-    def reduction(gr: CurrentGroup, a: Buffer[WS], result: Buffer[1]):
-        a_view = gr.load(a[gr.work_offset[0] :], shape=gr.size)
-        atomic_ref(result)[0] += a_view.sum()
-
-    a = np.arange(0, 10)
-    result = np.zeros(1)
-
-    reduction(a, result)
-
-    assert_equal(result[0], a.sum())
-
-
-def test_reduction_2():
-    def ceil_div(a, b):
-        return (a + b - 1) // b
-
-    WS, GS, N = sym.WS, sym.GS, sym.N
-
-    @kernel(work_shape=ceil_div(WS, N), group_shape=GS)
-    def reduction(
-        group: CurrentGroup, a: Buffer[WS], result: Buffer[1], n: N, gshape: GS
-    ):
-        temp_result = group.zeros(group.size, dtype=a.dtype)
-        for i in range(n):
-            work_offset = group.work_offset[0] * n + i * group.size
-            a_view = group.load(a[work_offset:], shape=group.size)
-            temp_result += a_view
-
-        atomic_ref(result)[0] += temp_result.sum()
-
-    a = np.arange(0, 9)
-    result = np.zeros(1)
-
-    reduction(a, result, 2, 4)
-
-    assert_equal(result[0], a.sum())

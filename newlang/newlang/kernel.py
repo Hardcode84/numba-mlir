@@ -4,6 +4,7 @@ from greenlet import greenlet
 from itertools import product
 from numpy import ma
 from sympy import Symbol
+from sympy.core.expr import Expr
 from math import prod
 import inspect
 import numpy as np
@@ -14,7 +15,7 @@ import operator
 
 from .indexing import sym
 
-DEF_GROUP_SHAPE = (64, 1, 1)
+DEF_GROUP_SHAPE = 64
 DEF_SUBGROUP_SIZE = 16
 
 
@@ -47,6 +48,8 @@ def resolve_symbols(func, symbols):
             if isinstance(cell.cell_contents, Symbol):
                 if cell.cell_contents in symbols.keys():
                     return cell_cls(symbols[cell.cell_contents])
+            elif isinstance(cell.cell_contents, Expr):
+                return cell_cls(cell.cell_contents.subs(symbols))
 
             return cell
 
@@ -56,6 +59,8 @@ def resolve_symbols(func, symbols):
         if isinstance(val, Symbol):
             if val in symbols.keys():
                 return symbols[val]
+        elif isinstance(val, Expr):
+            return val.subs(symbols)
 
         return val
 
@@ -91,6 +96,7 @@ class _kernel:
         if self.handler:
             subs_map = {}
             self.handler(subs_map, args)
+            subs_map = subs_map | self.default_tunbles | self.tuned
             subs_args = list(subs_map.items())
         else:
             subs_args = []
@@ -99,7 +105,6 @@ class _kernel:
         gs = _handle_dim(self.group_shape, subs_args)
         ss = _handle_dim(self.subgroup_size, subs_args)
 
-        subs_map = subs_map | self.default_tunbles | self.tuned
         resolved_func = resolve_symbols(self.orig_func, subs_map)
 
         n_groups = _get_num_groups(ws, gs)
@@ -161,7 +166,7 @@ class _masked_array:
             self.__set_mask(key, True)
 
     def __getitem__(self, key):
-        return self.__ma[key]
+        return _masked_array(self.__ma[key])
 
     def _bin_op_implementation(self, other, op):
         if isinstance(other, _masked_array):
@@ -179,6 +184,9 @@ class _masked_array:
 
     def __getattr__(self, name):
         return getattr(self.__ma, name)
+
+    def __repr__(self):
+        return f"_masked_array(data={self.__ma.data},\n mask={self.mask})"
 
 
 def set_arithm_methods():
@@ -276,21 +284,26 @@ class CurrentWorkitem:
 
 class CurrentGroup:
     def __init__(self, group_shape, subgroup_size):
+        self._dims = len(group_shape)
         self._group_shape = group_shape
         self._subgroup_size = subgroup_size
-        self._subgroup_ranges = (
-            range(group_shape[0]),
-            range(group_shape[1]),
-            range(_divup(group_shape[2], subgroup_size)),
-        )
-        self._workitem_ranges = (
-            range(group_shape[0]),
-            range(group_shape[1]),
-            range(group_shape[2]),
-        )
+        self._subgroup_ranges = self.__get_subgroup_ranges()
+        self._workitem_ranges = self.__get_workitems_ranges()
         self._group_id = None
         self._tasks = []
         self._current_task = 0
+
+    def __get_subgroup_ranges(self):
+        rngs = []
+        if len(self._group_shape) > 1:
+            rngs += [range(v) for v in self._group_shape[0:-1]]
+
+        rngs += [range(_divup(self._group_shape[-1], self._subgroup_size))]
+
+        return tuple(rngs)
+
+    def __get_workitems_ranges(self):
+        return tuple([range(v) for v in self._group_shape])
 
     @property
     def id(self):
@@ -325,7 +338,10 @@ class CurrentGroup:
 
     def store(self, dst, src):
         s = tuple(slice(0, min(s1, s2)) for s1, s2 in zip(src.shape, dst.shape))
-        dst[s] = np.where(src.mask[s], src[s], dst[s])
+        if isinstance(src, _masked_array):
+            dst[s] = np.where(src.mask[s], src[s], dst[s])
+        else:
+            dst[s] = src[s]
 
     def empty(self, shape, dtype):
         return self._alloc_impl(shape, dtype, _get_uninit_value(dtype))
@@ -423,9 +439,8 @@ class Buffer(typing.Generic[typing.ParamSpec("Args")]):
 
 def _get_dims(arg):
     if not isinstance(arg, Iterable):
-        return (arg, 1, 1)
+        return (arg,)
 
-    assert len(arg) == 3
     return arg
 
 
@@ -438,6 +453,18 @@ def _add_sub(subs, sym, val):
 
 
 def _visit_arg_annotation(idx, ann, prev_handler):
+    def istypingtype(a, typ):
+        return typing.get_origin(ann) == typ or isinstance(ann, typ)
+
+    def get_typing_args(ann):
+        if isinstance(ann, (types.GenericAlias, typing._GenericAlias)):
+            return typing.get_args(ann)
+
+        if isinstance(ann, Iterable):
+            return ann
+
+        assert False
+
     if ann in (CurrentGroup, CurrentSubGroup, CurrentWorkitem):
         # nothing
         return
@@ -448,12 +475,12 @@ def _visit_arg_annotation(idx, ann, prev_handler):
             val = args[idx]
             _add_sub(subs, ann, val)
 
-    elif typing.get_origin(ann) == tuple:
+    elif istypingtype(ann, tuple):
 
         def handler(subs, args):
             val = args[idx]
             assert isinstance(val, Iterable)
-            ann_args = typing.get_args(ann)
+            ann_args = get_typing_args(ann)
             assert len(val) == len(ann_args)
             for s, v in zip(ann_args, val):
                 if not isinstance(s, Symbol):
@@ -461,7 +488,7 @@ def _visit_arg_annotation(idx, ann, prev_handler):
 
                 _add_sub(subs, s, v)
 
-    elif typing.get_origin(ann) == Buffer:
+    elif istypingtype(ann, Buffer):
 
         def handler(subs, args):
             val = args[idx]
@@ -504,7 +531,7 @@ def _handle_dim(src, subs):
     if isinstance(src, Iterable):
         return tuple(_handle_dim(v, subs) for v in src)
 
-    if hasattr(src, "subs"):
+    if isinstance(src, Expr):
         src = src.subs(subs)
 
     return int(src)
@@ -512,16 +539,28 @@ def _handle_dim(src, subs):
 
 def kernel(
     work_shape,
-    group_shape=DEF_GROUP_SHAPE,
-    subgroup_size=DEF_SUBGROUP_SIZE,
+    group_shape=None,
+    subgroup_size=None,
     literals=(),
     tunables=(),
 ):
+    if subgroup_size is None:
+        subgroup_size = DEF_SUBGROUP_SIZE
+
     assert (
         isinstance(subgroup_size, int) or subgroup_size in literals
     ), "Subgroup size must be const or literal"
     work_shape = _get_dims(work_shape)
+
+    if group_shape is None:
+        group_shape = (DEF_GROUP_SHAPE,)
+        while len(group_shape) < len(work_shape):
+            group_shape = (1,) + group_shape
+
     group_shape = _get_dims(group_shape)
+
+    assert len(work_shape) <= 3
+    assert len(work_shape) == len(group_shape)
 
     def _kernel_impl(func):
         return _kernel(func, work_shape, group_shape, subgroup_size, literals, tunables)
