@@ -18,6 +18,7 @@ def PyAST_Dialect : Dialect {
     TBD
   }];
 
+  let useDefaultAttributePrinterParser = 1;
   let useDefaultTypePrinterParser = 1;
 }
 
@@ -26,6 +27,14 @@ class PyAST_Type<string name, string typeMnemonic, list<Trait> traits = [],
     : TypeDef<PyAST_Dialect, name, traits, baseCppClass> {
   let mnemonic = typeMnemonic;
 }
+
+class PyAST_Attr<string name, string attrMnemonic, list<Trait> traits = []>
+    : AttrDef<PyAST_Dialect, name, traits> {
+  let mnemonic = attrMnemonic;
+}
+
+class PyAST_OpBase<string mnemonic, list<Trait> traits = []>
+    : Op<PyAST_Dialect, mnemonic, traits>;
 
 def PyAST_BoolOpTypeAttr : I64EnumAttr<
     "BoolOpType", "",
@@ -73,10 +82,9 @@ def PyAST_BinOpAttr : I64EnumAttr<
   let cppNamespace = "::hckernel::py_ast";
 }
 
-def PyAST_ASTNodeType : PyAST_Type<"Node", "node", [], "::mlir::Type">;
+def PyAST_NoneAttr : PyAST_Attr<"None", "none">;
 
-class PyAST_OpBase<string mnemonic, list<Trait> traits = []>
-    : Op<PyAST_Dialect, mnemonic, traits>;
+def PyAST_ASTNodeType : PyAST_Type<"Node", "node", [], "::mlir::Type">;
 
 def PyAST_PyModuleOp : PyAST_OpBase<"module", [
       IsolatedFromAbove, SingleBlockImplicitTerminator<"PyModuleEndOp">

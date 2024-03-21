@@ -324,6 +324,8 @@ struct ConstantHandler {
     } else if (py::isinstance<py::str>(val)) {
       auto str = val.cast<std::string>();
       attr = builder.getStringAttr(str);
+    } else if (py::isinstance<py::none>(val)) {
+      attr = hckernel::py_ast::NoneAttr::get(builder.getContext());
     } else {
       reportError(llvm::Twine("unhandled const type \"") +
                   py::str(val.get_type()).cast<std::string>() + "\"");

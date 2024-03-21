@@ -82,12 +82,15 @@ def func():
 #       CHECK: py_ast.expr %[[C4]]
 #       CHECK: %[[C5:.*]] = py_ast.constant "Test"
 #       CHECK: py_ast.expr %[[C5]]
+#       CHECK: %[[C6:.*]] = py_ast.constant #py_ast.none
+#       CHECK: py_ast.expr %[[C6]]
 def func():
     1
     0xFF
     2.5
     3j
     "Test"
+    None
 
 # -----
 
