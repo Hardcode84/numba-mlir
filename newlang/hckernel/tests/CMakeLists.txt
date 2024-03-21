@@ -16,6 +16,7 @@ set(TESTS_DEPENDS
     Python3::Interpreter
     FileCheck
     pyfront
+    hc-opt
     )
 
 add_lit_testsuite(check-hckernel "Running the regression tests"

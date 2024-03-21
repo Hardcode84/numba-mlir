@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 #include "hckernel/PyFront/Import.hpp"
 
 #include <llvm/ADT/StringRef.h>

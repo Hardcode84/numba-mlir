@@ -26,12 +26,17 @@ include(HandleLLVMOptions)
 #endif()
 
 add_subdirectory(include/hckernel/Dialect/PyAST/IR)
+add_subdirectory(include/hckernel/Transforms)
 
 set(SOURCES_LIST
     lib/Dialect/PyAST/IR/PyASTOps.cpp
+    lib/Transforms/SimplifyAST.cpp
     )
 set(HEADERS_LIST
     include/hckernel/Dialect/PyAST/IR/PyASTOps.hpp
+    include/hckernel/InitHCDialects.hpp
+    include/hckernel/InitHCPasses.hpp
+    include/hckernel/Transforms/Passes.hpp
     )
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES_LIST} ${HEADERS_LIST})
@@ -54,4 +59,4 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${PROJECT_BINARY_DIR}/include
     )
 
-add_dependencies(${PROJECT_NAME} MLIRPyASTOpsIncGen)
+add_dependencies(${PROJECT_NAME} MLIRPyASTOpsIncGen HCTransformsPassIncGen)

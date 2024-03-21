@@ -38,7 +38,9 @@ endmacro()
 
 add_subdirectory(mlir)
 add_subdirectory(frontend)
+
 add_subdirectory(tools/pyfront)
+add_subdirectory(tools/hc-opt)
 
 if (HCKERNEL_ENABLE_TESTS)
   add_subdirectory(tests)
