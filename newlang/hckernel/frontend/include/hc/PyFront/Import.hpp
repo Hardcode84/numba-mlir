@@ -11,6 +11,6 @@ struct LogicalResult;
 class ModuleOp;
 } // namespace mlir
 
-namespace hckernel {
+namespace hc {
 mlir::LogicalResult importPyModule(llvm::StringRef str, mlir::ModuleOp module);
 }

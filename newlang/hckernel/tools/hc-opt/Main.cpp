@@ -5,16 +5,16 @@
 #include <mlir/InitAllPasses.h>
 #include <mlir/Tools/mlir-opt/MlirOptMain.h>
 
-#include <hckernel/InitHCDialects.hpp>
-#include <hckernel/InitHCPasses.hpp>
+#include <hc/InitHCDialects.hpp>
+#include <hc/InitHCPasses.hpp>
 
 int main(int argc, char **argv) {
   mlir::registerAllPasses();
-  hckernel::registerAllPasses();
+  hc::registerAllPasses();
 
   mlir::DialectRegistry registry;
   registerAllDialects(registry);
-  hckernel::registerAllDialects(registry);
+  hc::registerAllDialects(registry);
   registerAllExtensions(registry);
 
   return mlir::asMainReturnCode(

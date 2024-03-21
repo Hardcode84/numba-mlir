@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include "hckernel/PyFront/Import.hpp"
+#include "hc/PyFront/Import.hpp"
 
 #include <llvm/ADT/StringRef.h>
 #include <llvm/Support/raw_ostream.h>
@@ -13,7 +13,7 @@
 #include <pybind11/complex.h>
 #include <pybind11/pybind11.h>
 
-#include "hckernel/Dialect/PyAST/IR/PyASTOps.hpp"
+#include "hc/Dialect/PyAST/IR/PyASTOps.hpp"
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -132,7 +132,7 @@ struct ModuleHandler {
   static void parse(ParserState &state, py::handle node) {
     state.pushGuard();
     auto &builder = state.builder;
-    auto mod = builder.create<hckernel::py_ast::PyModuleOp>(state.getLoc(node));
+    auto mod = builder.create<hc::py_ast::PyModuleOp>(state.getLoc(node));
     builder.setInsertionPointToStart(mod.getBody());
     state.pushHandler(node, &popGuard);
     state.pushHandlers(node.attr("body"));
@@ -165,8 +165,8 @@ struct FuncHandler {
     auto posArgs = args.drop_back(nDecors).take_back(nArgs);
     auto decors = args.take_back(nDecors);
 
-    auto mod = builder.create<hckernel::py_ast::PyFuncOp>(state.getLoc(node),
-                                                          posArgs, decors);
+    auto mod = builder.create<hc::py_ast::PyFuncOp>(state.getLoc(node), posArgs,
+                                                    decors);
     state.argsStack.pop_back_n(nArgs + nDecors);
 
     builder.setInsertionPointToStart(mod.getBody());
@@ -184,7 +184,7 @@ struct PassHandler {
 
   static void parse(ParserState &state, py::handle node) {
     auto &builder = state.builder;
-    builder.create<hckernel::py_ast::PassOp>(state.getLoc(node));
+    builder.create<hc::py_ast::PassOp>(state.getLoc(node));
   }
 };
 
@@ -206,8 +206,8 @@ struct ArgHandler {
 
     auto name = node.attr("arg").cast<std::string>();
     auto &builder = state.builder;
-    mlir::Value val = builder.create<hckernel::py_ast::ArgOp>(
-        state.getLoc(node), name, annotVal);
+    mlir::Value val =
+        builder.create<hc::py_ast::ArgOp>(state.getLoc(node), name, annotVal);
     state.argsStack.push_back(val);
   }
 };
@@ -219,7 +219,7 @@ struct NameHandler {
     auto &builder = state.builder;
     auto id = node.attr("id").cast<std::string>();
     mlir::Value val =
-        builder.create<hckernel::py_ast::NameOp>(state.getLoc(node), id);
+        builder.create<hc::py_ast::NameOp>(state.getLoc(node), id);
     state.argsStack.push_back(val);
   }
 };
@@ -239,8 +239,8 @@ struct SubscriptHandler {
     auto slice = state.argsStack.pop_back_val();
     auto val = state.argsStack.pop_back_val();
     auto &builder = state.builder;
-    mlir::Value res = builder.create<hckernel::py_ast::SubscriptOp>(
-        state.getLoc(node), val, slice);
+    mlir::Value res =
+        builder.create<hc::py_ast::SubscriptOp>(state.getLoc(node), val, slice);
     state.argsStack.push_back(res);
   }
 };
@@ -256,7 +256,7 @@ struct ExprHandler {
   static void processArgs(ParserState &state, py::handle node) {
     auto val = state.argsStack.pop_back_val();
     auto &builder = state.builder;
-    builder.create<hckernel::py_ast::ExprOp>(state.getLoc(node), val);
+    builder.create<hc::py_ast::ExprOp>(state.getLoc(node), val);
   }
 };
 
@@ -274,7 +274,7 @@ struct TupleHandler {
     mlir::ValueRange args(state.argsStack);
     args = args.take_back(nArgs);
     mlir::Value res =
-        builder.create<hckernel::py_ast::TupleOp>(state.getLoc(node), args);
+        builder.create<hc::py_ast::TupleOp>(state.getLoc(node), args);
     state.argsStack.push_back(res);
   }
 };
@@ -293,7 +293,7 @@ struct AttributeHandler {
     auto value = state.argsStack.pop_back_val();
     auto attr = node.attr("attr").cast<std::string>();
     auto &builder = state.builder;
-    mlir::Value res = builder.create<hckernel::py_ast::AttributeOp>(
+    mlir::Value res = builder.create<hc::py_ast::AttributeOp>(
         state.getLoc(node), value, attr);
     state.argsStack.push_back(res);
   }
@@ -327,14 +327,14 @@ struct ConstantHandler {
       auto str = val.cast<std::string>();
       attr = builder.getStringAttr(str);
     } else if (py::isinstance<py::none>(val)) {
-      attr = hckernel::py_ast::NoneAttr::get(builder.getContext());
+      attr = hc::py_ast::NoneAttr::get(builder.getContext());
     } else {
       reportError(llvm::Twine("unhandled const type \"") +
                   py::str(val.get_type()).cast<std::string>() + "\"");
     }
 
     mlir::Value res =
-        builder.create<hckernel::py_ast::ConstantOp>(state.getLoc(node), attr);
+        builder.create<hc::py_ast::ConstantOp>(state.getLoc(node), attr);
     state.argsStack.push_back(res);
   }
 };
@@ -361,8 +361,8 @@ struct SliceHandler {
     auto upper = popArg("upper");
     auto lower = popArg("lower");
     auto &builder = state.builder;
-    mlir::Value res = builder.create<hckernel::py_ast::SliceOp>(
-        state.getLoc(node), lower, upper, step);
+    mlir::Value res = builder.create<hc::py_ast::SliceOp>(state.getLoc(node),
+                                                          lower, upper, step);
     state.argsStack.push_back(res);
   }
 };
@@ -386,7 +386,7 @@ struct AssignHandler {
     args = args.take_back(nArgs);
 
     auto &builder = state.builder;
-    builder.create<hckernel::py_ast::AssignOp>(state.getLoc(node), args, value);
+    builder.create<hc::py_ast::AssignOp>(state.getLoc(node), args, value);
     state.argsStack.pop_back_n(nArgs);
   }
 };
@@ -411,8 +411,8 @@ struct CallHandler {
     auto posArgs = args.drop_back(nKeywods).take_back(nArgs);
 
     auto &builder = state.builder;
-    mlir::Value res = builder.create<hckernel::py_ast::CallOp>(
-        state.getLoc(node), func, posArgs, kwArgs);
+    mlir::Value res = builder.create<hc::py_ast::CallOp>(state.getLoc(node),
+                                                         func, posArgs, kwArgs);
     state.argsStack.pop_back_n(nArgs + nKeywods);
 
     state.argsStack.push_back(res);
@@ -434,8 +434,8 @@ struct KeywordHandler {
     auto &builder = state.builder;
 
     auto arg = node.attr("arg").cast<std::string>();
-    mlir::Value res = builder.create<hckernel::py_ast::KeywordOp>(
-        state.getLoc(node), arg, val);
+    mlir::Value res =
+        builder.create<hc::py_ast::KeywordOp>(state.getLoc(node), arg, val);
 
     state.argsStack.push_back(res);
   }
@@ -459,7 +459,7 @@ struct BoolOpHandler {
     py::handle astMod = state.astModule;
     auto pyOp = node.attr("op");
 
-    using BT = hckernel::py_ast::BoolOpType;
+    using BT = hc::py_ast::BoolOpType;
     BT Op;
     if (py::isinstance(pyOp, astMod.attr("Or"))) {
       Op = BT::or_;
@@ -472,7 +472,7 @@ struct BoolOpHandler {
 
     auto &builder = state.builder;
     mlir::Value res =
-        builder.create<hckernel::py_ast::BoolOp>(state.getLoc(node), Op, args);
+        builder.create<hc::py_ast::BoolOp>(state.getLoc(node), Op, args);
     state.argsStack.pop_back_n(nArgs);
 
     state.argsStack.push_back(res);
@@ -495,8 +495,8 @@ struct IfHandler {
     auto test = state.argsStack.pop_back_val();
 
     auto hasElse = !node.attr("orelse").is_none();
-    auto op = builder.create<hckernel::py_ast::IfOp>(state.getLoc(node), test,
-                                                     hasElse);
+    auto op =
+        builder.create<hc::py_ast::IfOp>(state.getLoc(node), test, hasElse);
 
     builder.setInsertionPointToStart(op.getBody(0));
 
@@ -550,7 +550,7 @@ struct CompareHandler {
     args = args.take_back(nArgs);
     auto left = args.drop_back(nArgs).back();
 
-    using CmpOp = hckernel::py_ast::CmpOp;
+    using CmpOp = hc::py_ast::CmpOp;
     py::handle astMod = state.astModule;
     std::pair<py::handle, CmpOp> cmpHandlers[] = {
         {astMod.attr("Eq"), CmpOp::eq}, {astMod.attr("NotEq"), CmpOp::ne},
@@ -574,8 +574,8 @@ struct CompareHandler {
       ops.emplace_back(getCmpOp(op));
 
     auto &builder = state.builder;
-    mlir::Value res = builder.create<hckernel::py_ast::CompareOp>(
-        state.getLoc(node), left, ops, args);
+    mlir::Value res = builder.create<hc::py_ast::CompareOp>(state.getLoc(node),
+                                                            left, ops, args);
     state.argsStack.pop_back_n(nArgs + 1);
 
     state.argsStack.push_back(res);
@@ -595,7 +595,7 @@ struct BinOpHandler {
     auto right = state.argsStack.pop_back_val();
     auto left = state.argsStack.pop_back_val();
 
-    using BinOpVal = hckernel::py_ast::BinOpVal;
+    using BinOpVal = hc::py_ast::BinOpVal;
     py::handle astMod = state.astModule;
     std::pair<py::handle, BinOpVal> handlers[] = {
         {astMod.attr("Add"), BinOpVal::add},
@@ -623,7 +623,7 @@ struct BinOpHandler {
     };
 
     auto &builder = state.builder;
-    mlir::Value res = builder.create<hckernel::py_ast::BinOp>(
+    mlir::Value res = builder.create<hc::py_ast::BinOp>(
         state.getLoc(node), left, getBinOp(node.attr("op")), right);
 
     state.argsStack.push_back(res);
@@ -639,7 +639,7 @@ struct ReturnHandler {
     auto value = node.attr("value");
     if (value.is_none()) {
       auto &builder = state.builder;
-      builder.create<hckernel::py_ast::ReturnOp>(state.getLoc(node), nullptr);
+      builder.create<hc::py_ast::ReturnOp>(state.getLoc(node), nullptr);
       return;
     }
 
@@ -650,7 +650,7 @@ struct ReturnHandler {
   static void processArgs(ParserState &state, py::handle node) {
     auto val = state.argsStack.pop_back_val();
     auto &builder = state.builder;
-    builder.create<hckernel::py_ast::ReturnOp>(state.getLoc(node), val);
+    builder.create<hc::py_ast::ReturnOp>(state.getLoc(node), val);
   }
 };
 
@@ -686,7 +686,7 @@ void fillHandlers(
 static void parseModule(py::handle astMod, py::handle ast,
                         mlir::ModuleOp module) {
   auto ctx = module->getContext();
-  ctx->loadDialect<hckernel::py_ast::PyASTDialect>();
+  ctx->loadDialect<hc::py_ast::PyASTDialect>();
   ParserState parser(ctx, astMod);
 
   parser.parse(module.getBody(), ast);
@@ -705,8 +705,8 @@ static mlir::LogicalResult importPyModuleImpl(llvm::StringRef str,
   return mlir::success();
 }
 
-mlir::LogicalResult hckernel::importPyModule(llvm::StringRef str,
-                                             mlir::ModuleOp module) {
+mlir::LogicalResult hc::importPyModule(llvm::StringRef str,
+                                       mlir::ModuleOp module) {
   try {
     return importPyModuleImpl(str, module);
   } catch (std::exception &e) {

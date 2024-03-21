@@ -1,25 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include "hckernel/Transforms/Passes.hpp"
+#include "hc/Transforms/Passes.hpp"
 
-#include "hckernel/Dialect/PyAST/IR/PyASTOps.hpp"
+#include "hc/Dialect/PyAST/IR/PyASTOps.hpp"
 
 #include <mlir/IR/PatternMatch.h>
 #include <mlir/Transforms/GreedyPatternRewriteDriver.h>
 
-namespace hckernel {
+namespace hc {
 #define GEN_PASS_DEF_SIMPLIFYASTPASS
-#include "hckernel/Transforms/Passes.h.inc"
-} // namespace hckernel
+#include "hc/Transforms/Passes.h.inc"
+} // namespace hc
 
 namespace {
-class CleanupPassOp final
-    : public mlir::OpRewritePattern<hckernel::py_ast::PassOp> {
+class CleanupPassOp final : public mlir::OpRewritePattern<hc::py_ast::PassOp> {
 public:
   using OpRewritePattern::OpRewritePattern;
 
   mlir::LogicalResult
-  matchAndRewrite(hckernel::py_ast::PassOp op,
+  matchAndRewrite(hc::py_ast::PassOp op,
                   mlir::PatternRewriter &rewriter) const override {
     rewriter.eraseOp(op);
     return mlir::success();
@@ -27,7 +26,7 @@ public:
 };
 
 class CleanupNoReturn final
-    : public mlir::OpTraitRewritePattern<hckernel::py_ast::NoReturn> {
+    : public mlir::OpTraitRewritePattern<hc::py_ast::NoReturn> {
 public:
   using OpTraitRewritePattern::OpTraitRewritePattern;
 
@@ -55,11 +54,11 @@ public:
 };
 
 struct SimplifyASTPass final
-    : public hckernel::impl::SimplifyASTPassBase<SimplifyASTPass> {
+    : public hc::impl::SimplifyASTPassBase<SimplifyASTPass> {
 
   void runOnOperation() override {
     mlir::RewritePatternSet patterns(&getContext());
-    hckernel::populateSimplifyASTPatterns(patterns);
+    hc::populateSimplifyASTPatterns(patterns);
 
     if (mlir::failed(
             applyPatternsAndFoldGreedily(getOperation(), std::move(patterns))))
@@ -68,6 +67,6 @@ struct SimplifyASTPass final
 };
 } // namespace
 
-void hckernel::populateSimplifyASTPatterns(mlir::RewritePatternSet &patterns) {
+void hc::populateSimplifyASTPatterns(mlir::RewritePatternSet &patterns) {
   patterns.insert<CleanupPassOp, CleanupNoReturn>(patterns.getContext());
 }

@@ -18,7 +18,7 @@ from lit.llvm.subst import FindTool
 # Configuration file for the 'lit' test runner.
 
 # name: The name of this test suite.
-config.name = "hckernel-mlir-tests"
+config.name = "hc-mlir-tests"
 
 config.test_format = lit.formats.ShTest(not llvm_config.use_lit_shell)
 
@@ -29,11 +29,11 @@ config.suffixes = [".mlir", ".pymlir"]
 config.test_source_root = os.path.dirname(__file__)
 
 # test_exec_root: The root path where tests should be run.
-config.test_exec_root = os.path.join(config.hckernel_obj_root, "test")
+config.test_exec_root = os.path.join(config.hc_obj_root, "test")
 
 config.substitutions.append(("%PATH%", config.environment["PATH"]))
 config.substitutions.append(("%shlibext", config.llvm_shlib_ext))
-config.substitutions.append(("%shlibprefix", config.hckernel_shlib_prefix))
+config.substitutions.append(("%shlibprefix", config.hc_shlib_prefix))
 config.substitutions.append(("%mlir_wrappers_dir", config.mlir_wrappers_dir))
 
 llvm_config.with_system_environment(
@@ -48,9 +48,9 @@ llvm_config.use_default_substitutions()
 config.excludes = ["Inputs", "Examples", "CMakeLists.txt", "README.txt", "LICENSE.txt"]
 
 # test_exec_root: The root path where tests should be run.
-config.test_exec_root = os.path.join(config.hckernel_obj_root, "tests")
-config.pyfront_dir = os.path.join(config.hckernel_obj_root, "tools", "pyfront")
-config.hc_opt_dir = os.path.join(config.hckernel_obj_root, "tools", "hc-opt")
+config.test_exec_root = os.path.join(config.hc_obj_root, "tests")
+config.pyfront_dir = os.path.join(config.hc_obj_root, "tools", "pyfront")
+config.hc_opt_dir = os.path.join(config.hc_obj_root, "tools", "hc-opt")
 
 # Tweak the PATH to include the tools dir.
 llvm_config.with_environment("PATH", config.llvm_tools_dir, append_path=True)

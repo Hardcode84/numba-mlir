@@ -14,7 +14,7 @@
 #include <mlir/Support/LogicalResult.h>
 #include <mlir/Tools/mlir-opt/MlirOptMain.h>
 
-#include "hckernel/PyFront/Import.hpp"
+#include "hc/PyFront/Import.hpp"
 
 using ChunkBufferHandler = llvm::function_ref<mlir::LogicalResult(
     std::unique_ptr<llvm::MemoryBuffer> chunkBuffer, llvm::raw_ostream &os)>;
@@ -118,7 +118,7 @@ static mlir::LogicalResult pyfrontMain(llvm::StringRef inputFilename) {
   auto processBuffer = [&](std::unique_ptr<llvm::MemoryBuffer> chunkBuffer,
                            llvm::raw_ostream &os) -> mlir::LogicalResult {
     auto mod = mlir::ModuleOp::create(loc);
-    auto res = hckernel::importPyModule(chunkBuffer->getBuffer(), mod);
+    auto res = hc::importPyModule(chunkBuffer->getBuffer(), mod);
     if (mlir::succeeded(res)) {
       if (mlir::failed(mlir::verify(mod)))
         res = mlir::failure();

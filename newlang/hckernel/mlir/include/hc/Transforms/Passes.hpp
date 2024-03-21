@@ -4,12 +4,12 @@
 
 #include <mlir/Pass/Pass.h>
 
-namespace hckernel {
+namespace hc {
 #define GEN_PASS_DECL
-#include "hckernel/Transforms/Passes.h.inc"
+#include "hc/Transforms/Passes.h.inc"
 
 #define GEN_PASS_REGISTRATION
-#include "hckernel/Transforms/Passes.h.inc"
+#include "hc/Transforms/Passes.h.inc"
 
 void populateSimplifyASTPatterns(mlir::RewritePatternSet &patterns);
-} // namespace hckernel
+} // namespace hc

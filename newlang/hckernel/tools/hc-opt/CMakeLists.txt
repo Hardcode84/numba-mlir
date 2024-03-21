@@ -35,5 +35,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ${mlir_conversion_libs}
     ${mlir_extension_libs}
     MLIROptLib
-    hckernel_core
+    hc_core
     )

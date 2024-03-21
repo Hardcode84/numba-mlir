@@ -16,19 +16,19 @@
 //#include <mlir/Interfaces/SideEffectInterfaces.h>
 #include <mlir/Interfaces/ViewLikeInterface.h>
 
-namespace hckernel::py_ast {
+namespace hc::py_ast {
 template <typename ConcreteType>
 class NoReturn : public mlir::OpTrait::TraitBase<ConcreteType, NoReturn> {};
-} // namespace hckernel::py_ast
+} // namespace hc::py_ast
 
-#include "hckernel/Dialect/PyAST/IR/PyASTOpsDialect.h.inc"
-#include "hckernel/Dialect/PyAST/IR/PyASTOpsEnums.h.inc"
+#include "hc/Dialect/PyAST/IR/PyASTOpsDialect.h.inc"
+#include "hc/Dialect/PyAST/IR/PyASTOpsEnums.h.inc"
 
 #define GET_TYPEDEF_CLASSES
-#include "hckernel/Dialect/PyAST/IR/PyASTOpsTypes.h.inc"
+#include "hc/Dialect/PyAST/IR/PyASTOpsTypes.h.inc"
 
 #define GET_ATTRDEF_CLASSES
-#include "hckernel/Dialect/PyAST/IR/PyASTOpsAttributes.h.inc"
+#include "hc/Dialect/PyAST/IR/PyASTOpsAttributes.h.inc"
 
 #define GET_OP_CLASSES
-#include "hckernel/Dialect/PyAST/IR/PyASTOps.h.inc"
+#include "hc/Dialect/PyAST/IR/PyASTOps.h.inc"

@@ -5,17 +5,17 @@
 #include <mlir/IR/DialectRegistry.h>
 #include <mlir/IR/MLIRContext.h>
 
-#include <hckernel/Dialect/PyAST/IR/PyASTOps.hpp>
+#include <hc/Dialect/PyAST/IR/PyASTOps.hpp>
 
-namespace hckernel {
+namespace hc {
 inline void registerAllDialects(mlir::DialectRegistry &registry) {
-  registry.insert<hckernel::py_ast::PyASTDialect>();
+  registry.insert<hc::py_ast::PyASTDialect>();
 }
 
 inline void registerAllDialects(mlir::MLIRContext &context) {
   mlir::DialectRegistry registry;
-  ::hckernel::registerAllDialects(registry);
+  ::hc::registerAllDialects(registry);
   context.appendDialectRegistry(registry);
 }
 
-} // namespace hckernel
+} // namespace hc

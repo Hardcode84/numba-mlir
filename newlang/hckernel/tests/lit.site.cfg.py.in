@@ -28,14 +28,14 @@ config.host_ldflags = '@HOST_LDFLAGS@'
 config.llvm_use_sanitizer = "@LLVM_USE_SANITIZER@"
 config.llvm_host_triple = '@LLVM_HOST_TRIPLE@'
 config.host_arch = "@HOST_ARCH@"
-config.hckernel_src_root = "@CMAKE_SOURCE_DIR@"
-config.hckernel_obj_root = "@CMAKE_BINARY_DIR@"
+config.hc_src_root = "@CMAKE_SOURCE_DIR@"
+config.hc_obj_root = "@CMAKE_BINARY_DIR@"
 if sys.platform.startswith('win32'):
     config.mlir_wrappers_dir = os.path.join(config.llvm_obj_root, "bin")
-    config.hckernel_shlib_prefix = ""
+    config.hc_shlib_prefix = ""
 else:
     config.mlir_wrappers_dir = os.path.join(config.llvm_obj_root, "lib")
-    config.hckernel_shlib_prefix = "lib"
+    config.hc_shlib_prefix = "lib"
 
 # Support substitution of the tools_dir with user parameters. This is
 # used when we can't determine the tool dir at configuration time.

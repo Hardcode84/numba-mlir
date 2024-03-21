@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-project(hckernel_frontend LANGUAGES CXX C)
+project(hc_frontend LANGUAGES CXX C)
 
 find_package(LLVM REQUIRED CONFIG)
 find_package(MLIR REQUIRED CONFIG)
@@ -14,13 +14,13 @@ set(SOURCES_LIST
     lib/Import.cpp
     )
 set(HEADERS_LIST
-    include/hckernel/PyFront/Import.hpp
+    include/hc/PyFront/Import.hpp
     )
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES_LIST} ${HEADERS_LIST})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    hckernel_core
+    hc_core
     pybind11::module
     )
 

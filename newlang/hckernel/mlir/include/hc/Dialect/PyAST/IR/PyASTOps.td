@@ -11,7 +11,7 @@ include "mlir/IR/OpBase.td"
 
 def PyAST_Dialect : Dialect {
   let name = "py_ast";
-  let cppNamespace = "::hckernel::py_ast";
+  let cppNamespace = "::hc::py_ast";
 
   let summary = "TBD.";
   let description = [{
@@ -42,7 +42,7 @@ def PyAST_BoolOpTypeAttr : I64EnumAttr<
       I64EnumAttrCase<"and_", 0, "and">,
       I64EnumAttrCase<"or_", 1, "or">,
     ]> {
-  let cppNamespace = "::hckernel::py_ast";
+  let cppNamespace = "::hc::py_ast";
 }
 
 def PyAST_CmpOpAttr : I64EnumAttr<
@@ -59,7 +59,7 @@ def PyAST_CmpOpAttr : I64EnumAttr<
       I64EnumAttrCase<"in", 8>,
       I64EnumAttrCase<"nin", 9>,
     ]> {
-  let cppNamespace = "::hckernel::py_ast";
+  let cppNamespace = "::hc::py_ast";
 }
 
 def PyAST_BinOpAttr : I64EnumAttr<
@@ -79,7 +79,7 @@ def PyAST_BinOpAttr : I64EnumAttr<
       I64EnumAttrCase<"bit_and", 11>,
       I64EnumAttrCase<"matmul", 12>,
     ]> {
-  let cppNamespace = "::hckernel::py_ast";
+  let cppNamespace = "::hc::py_ast";
 }
 
 def PyAST_NoneAttr : PyAST_Attr<"None", "none">;
@@ -87,7 +87,7 @@ def PyAST_NoneAttr : PyAST_Attr<"None", "none">;
 def PyAST_ASTNodeType : PyAST_Type<"Node", "node", [], "::mlir::Type">;
 
 def NoReturn : NativeOpTrait<"NoReturn"> {
-  let cppNamespace = "::hckernel::py_ast";
+  let cppNamespace = "::hc::py_ast";
 }
 
 def PyAST_PyModuleOp : PyAST_OpBase<"module", [

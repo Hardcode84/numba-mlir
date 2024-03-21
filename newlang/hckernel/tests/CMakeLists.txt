@@ -19,10 +19,10 @@ set(TESTS_DEPENDS
     hc-opt
     )
 
-add_lit_testsuite(check-hckernel "Running the regression tests"
+add_lit_testsuite(check-hc "Running the regression tests"
         ${CMAKE_CURRENT_BINARY_DIR}
         DEPENDS ${TESTS_DEPENDS}
         )
-set_target_properties(check-hckernel PROPERTIES FOLDER "Tests")
+set_target_properties(check-hc PROPERTIES FOLDER "Tests")
 
-add_lit_testsuites(check-hckernel ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ${TESTS_DEPENDS})
+add_lit_testsuites(check-hc ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ${TESTS_DEPENDS})

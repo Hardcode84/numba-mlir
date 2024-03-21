@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-project(hckernel_core LANGUAGES CXX C)
+project(hc_core LANGUAGES CXX C)
 
 find_package(LLVM REQUIRED CONFIG)
 find_package(MLIR REQUIRED CONFIG)
@@ -25,18 +25,18 @@ include(HandleLLVMOptions)
 #    message(FATAL_ERROR "Invalid llvm version")
 #endif()
 
-add_subdirectory(include/hckernel/Dialect/PyAST/IR)
-add_subdirectory(include/hckernel/Transforms)
+add_subdirectory(include/hc/Dialect/PyAST/IR)
+add_subdirectory(include/hc/Transforms)
 
 set(SOURCES_LIST
     lib/Dialect/PyAST/IR/PyASTOps.cpp
     lib/Transforms/SimplifyAST.cpp
     )
 set(HEADERS_LIST
-    include/hckernel/Dialect/PyAST/IR/PyASTOps.hpp
-    include/hckernel/InitHCDialects.hpp
-    include/hckernel/InitHCPasses.hpp
-    include/hckernel/Transforms/Passes.hpp
+    include/hc/Dialect/PyAST/IR/PyASTOps.hpp
+    include/hc/InitHCDialects.hpp
+    include/hc/InitHCPasses.hpp
+    include/hc/Transforms/Passes.hpp
     )
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES_LIST} ${HEADERS_LIST})

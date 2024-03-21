@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "hckernel/Transforms/Passes.hpp"
+#include "hc/Transforms/Passes.hpp"
 
-namespace hckernel {
+namespace hc {
 inline void registerAllPasses() { registerTransformsPasses(); }
-} // namespace hckernel
+} // namespace hc

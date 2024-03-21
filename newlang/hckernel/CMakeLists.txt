@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.20)
 
-project(hc-kernel LANGUAGES CXX C)
+project(hc LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -22,12 +22,12 @@ if(POLICY CMP0148)
     cmake_policy(SET CMP0148 OLD)
 endif()
 
-option(HCKERNEL_ENABLE_TESTS
+option(HC_ENABLE_TESTS
     "Enable Tests"
     OFF
 )
 
-message(STATUS "HCKERNEL_ENABLE_TESTS ${HCKERNEL_ENABLE_TESTS}")
+message(STATUS "HC_ENABLE_TESTS ${HC_ENABLE_TESTS}")
 
 macro(apply_llvm_compile_flags target)
     if (MSVC)
@@ -42,6 +42,6 @@ add_subdirectory(frontend)
 add_subdirectory(tools/pyfront)
 add_subdirectory(tools/hc-opt)
 
-if (HCKERNEL_ENABLE_TESTS)
+if (HC_ENABLE_TESTS)
   add_subdirectory(tests)
 endif()
