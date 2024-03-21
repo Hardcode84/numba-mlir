@@ -147,7 +147,7 @@ def PyAST_ArgOp : PyAST_OpBase<"arg"> {
   let builders = [
     OpBuilder<(ins
         "::llvm::StringRef":$name,
-        CArg<"::mlir::Value", "nullptr"> :$annotation)>
+        CArg<"::mlir::Value", "nullptr">:$annotation)>
   ];
 
   let assemblyFormat = "attr-dict $name ( `:` $annotation^ )?";
@@ -347,6 +347,12 @@ def PyAST_BinOp : PyAST_OpBase<"binop"> {
   ];
 
   let assemblyFormat = "attr-dict $left $op $right";
+}
+
+def PyAST_ReturnOp : PyAST_OpBase<"return"> {
+  let arguments = (ins Optional<PyAST_ASTNodeType>:$value);
+
+  let assemblyFormat = "attr-dict $value";
 }
 
 #endif // PYAST_OPS

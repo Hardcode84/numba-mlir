@@ -292,3 +292,20 @@ def func():
 #       CHECK: py_ast.expr %[[R]]
 def func():
     A + B
+
+# -----
+
+# CHECK-LABEL: py_ast.module
+#       CHECK: py_ast.func()
+#       CHECK: py_ast.return
+def func():
+    return
+
+# -----
+
+# CHECK-LABEL: py_ast.module
+#       CHECK: py_ast.func()
+#       CHECK: %[[R:.*]] = py_ast.constant #py_ast.none
+#       CHECK: py_ast.return %[[R]]
+def func():
+    return None

@@ -628,6 +628,30 @@ struct BinOpHandler {
   }
 };
 
+struct ReturnHandler {
+  static py::object getClass(py::handle astMod) {
+    return astMod.attr("Return");
+  }
+
+  static void parse(ParserState &state, py::handle node) {
+    auto value = node.attr("value");
+    if (value.is_none()) {
+      auto &builder = state.builder;
+      builder.create<hckernel::py_ast::ReturnOp>(state.getLoc(node), nullptr);
+      return;
+    }
+
+    state.pushHandler(node, &processArgs);
+    state.pushHandler(value);
+  }
+
+  static void processArgs(ParserState &state, py::handle node) {
+    auto val = state.argsStack.pop_back_val();
+    auto &builder = state.builder;
+    builder.create<hckernel::py_ast::ReturnOp>(state.getLoc(node), val);
+  }
+};
+
 template <typename T> static HandlerPair getHandler(py::handle astMod) {
   return {T::getClass(astMod), &T::parse};
 }
@@ -653,6 +677,7 @@ void fillHandlers(
   handlers.emplace_back(getHandler<IfHandler>(astMod));
   handlers.emplace_back(getHandler<CompareHandler>(astMod));
   handlers.emplace_back(getHandler<BinOpHandler>(astMod));
+  handlers.emplace_back(getHandler<ReturnHandler>(astMod));
 }
 } // namespace
 
