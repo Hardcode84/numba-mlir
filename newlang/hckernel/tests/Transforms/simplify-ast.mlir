@@ -1,5 +1,14 @@
 // RUN: hc-opt -allow-unregistered-dialect -split-input-file %s --hc-simplify-ast-pass | FileCheck %s
 
+// CHECK-LABEL: py_ast.func()
+//   CHECK-NOT: py_ast.pass
+py_ast.module {
+  py_ast.func() {
+    py_ast.pass
+  }
+}
+
+// -----
 
 // CHECK-LABEL: py_ast.func()
 //       CHECK: py_ast.return

@@ -13,6 +13,19 @@ namespace hckernel {
 } // namespace hckernel
 
 namespace {
+class CleanupPassOp final
+    : public mlir::OpRewritePattern<hckernel::py_ast::PassOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hckernel::py_ast::PassOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    rewriter.eraseOp(op);
+    return mlir::success();
+  }
+};
+
 class CleanupNoReturn final
     : public mlir::OpTraitRewritePattern<hckernel::py_ast::NoReturn> {
 public:
@@ -56,5 +69,5 @@ struct SimplifyASTPass final
 } // namespace
 
 void hckernel::populateSimplifyASTPatterns(mlir::RewritePatternSet &patterns) {
-  patterns.insert<CleanupNoReturn>(patterns.getContext());
+  patterns.insert<CleanupPassOp, CleanupNoReturn>(patterns.getContext());
 }
