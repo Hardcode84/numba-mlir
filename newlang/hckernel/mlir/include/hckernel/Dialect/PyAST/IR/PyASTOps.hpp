@@ -16,6 +16,11 @@
 //#include <mlir/Interfaces/SideEffectInterfaces.h>
 #include <mlir/Interfaces/ViewLikeInterface.h>
 
+namespace hckernel::py_ast {
+template <typename ConcreteType>
+class NoReturn : public mlir::OpTrait::TraitBase<ConcreteType, NoReturn> {};
+} // namespace hckernel::py_ast
+
 #include "hckernel/Dialect/PyAST/IR/PyASTOpsDialect.h.inc"
 #include "hckernel/Dialect/PyAST/IR/PyASTOpsEnums.h.inc"
 

@@ -2,6 +2,9 @@
 
 #include "hckernel/Transforms/Passes.hpp"
 
+#include "hckernel/Dialect/PyAST/IR/PyASTOps.hpp"
+
+#include <mlir/IR/PatternMatch.h>
 #include <mlir/Transforms/GreedyPatternRewriteDriver.h>
 
 namespace hckernel {
@@ -10,6 +13,34 @@ namespace hckernel {
 } // namespace hckernel
 
 namespace {
+class CleanupNoReturn final
+    : public mlir::OpTraitRewritePattern<hckernel::py_ast::NoReturn> {
+public:
+  using OpTraitRewritePattern::OpTraitRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(mlir::Operation *op,
+                  mlir::PatternRewriter &rewriter) const override {
+    mlir::Block *block = op->getBlock();
+    mlir::Operation *term = block->getTerminator();
+    if (term == op)
+      return mlir::failure();
+
+    auto begin = op->getIterator();
+    auto it = std::prev(term->getIterator());
+    bool changed = false;
+    while (it != begin) {
+      mlir::Operation &current = *it;
+      it = std::prev(it);
+      if (current.use_empty()) {
+        rewriter.eraseOp(&current);
+        changed = true;
+      }
+    }
+    return mlir::success(changed);
+  }
+};
+
 struct SimplifyASTPass final
     : public hckernel::impl::SimplifyASTPassBase<SimplifyASTPass> {
 
@@ -24,4 +55,6 @@ struct SimplifyASTPass final
 };
 } // namespace
 
-void hckernel::populateSimplifyASTPatterns(mlir::RewritePatternSet &patterns) {}
+void hckernel::populateSimplifyASTPatterns(mlir::RewritePatternSet &patterns) {
+  patterns.insert<CleanupNoReturn>(patterns.getContext());
+}

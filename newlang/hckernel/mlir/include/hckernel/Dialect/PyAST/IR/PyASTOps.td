@@ -86,6 +86,10 @@ def PyAST_NoneAttr : PyAST_Attr<"None", "none">;
 
 def PyAST_ASTNodeType : PyAST_Type<"Node", "node", [], "::mlir::Type">;
 
+def NoReturn : NativeOpTrait<"NoReturn"> {
+  let cppNamespace = "::hckernel::py_ast";
+}
+
 def PyAST_PyModuleOp : PyAST_OpBase<"module", [
       IsolatedFromAbove, SingleBlockImplicitTerminator<"PyModuleEndOp">
     ]> {
@@ -349,7 +353,7 @@ def PyAST_BinOp : PyAST_OpBase<"binop"> {
   let assemblyFormat = "attr-dict $left $op $right";
 }
 
-def PyAST_ReturnOp : PyAST_OpBase<"return"> {
+def PyAST_ReturnOp : PyAST_OpBase<"return", [NoReturn]> {
   let arguments = (ins Optional<PyAST_ASTNodeType>:$value);
 
   let assemblyFormat = "attr-dict $value";
