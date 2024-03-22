@@ -1,12 +1,15 @@
 # RUN: pyfront %s | FileCheck %s
 
+
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
 #       CHECK: py_ast.pass
 def func():
     pass
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: %[[A1:.*]] = py_ast.arg "a"
@@ -17,7 +20,9 @@ def func():
 def func(a, b, c):
     pass
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: %[[A:.*]] = py_ast.name "Foo"
@@ -27,7 +32,9 @@ def func(a, b, c):
 def func(a: Foo):
     pass
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: %[[F:.*]] = py_ast.name "Foo"
@@ -37,7 +44,9 @@ def func(a: Foo):
 def func(a: Foo[Bar]):
     pass
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -46,7 +55,9 @@ def func(a: Foo[Bar]):
 def func():
     Foo
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -58,7 +69,9 @@ def func():
 def func():
     Foo, Bar, Baz
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -68,7 +81,9 @@ def func():
 def func():
     Foo.Bar
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -92,7 +107,9 @@ def func():
     "Test"
     None
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -106,7 +123,9 @@ def func():
 def func():
     A[1:2:3]
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -116,7 +135,9 @@ def func():
 def func():
     Foo = Bar
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -127,7 +148,9 @@ def func():
 def func():
     Foo = Bar = Baz
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -139,7 +162,9 @@ def func():
 def func():
     foo(a, b)
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -152,7 +177,9 @@ def func():
 def func():
     foo(a, B=b)
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -166,7 +193,9 @@ def func():
 def func():
     foo(A=a, B=b)
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -177,7 +206,9 @@ def func():
 def func():
     A and B
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -189,7 +220,9 @@ def func():
 def func():
     A or B or C
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -202,7 +235,9 @@ def func():
     if A:
         B
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -220,7 +255,9 @@ def func():
     else:
         C
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -245,7 +282,9 @@ def func():
     else:
         E
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: %[[A1:.*]] = py_ast.arg "a"
@@ -259,7 +298,9 @@ def func():
 def func(a, b):
     pass
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -270,7 +311,9 @@ def func(a, b):
 def func():
     A == B
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -282,7 +325,9 @@ def func():
 def func():
     A < B > C
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -293,7 +338,9 @@ def func():
 def func():
     A + B
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
@@ -301,7 +348,9 @@ def func():
 def func():
     return
 
+
 # -----
+
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func()
