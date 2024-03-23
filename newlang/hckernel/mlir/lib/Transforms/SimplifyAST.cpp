@@ -13,6 +13,25 @@ namespace hc {
 } // namespace hc
 
 namespace {
+class ReturnOpNoArg final
+    : public mlir::OpRewritePattern<hc::py_ast::ReturnOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hc::py_ast::ReturnOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    if (op.getValue())
+      return mlir::failure();
+
+    mlir::Attribute attr = hc::py_ast::NoneAttr::get(getContext());
+    mlir::Value arg =
+        rewriter.create<hc::py_ast::ConstantOp>(op.getLoc(), attr);
+    rewriter.replaceOpWithNewOp<hc::py_ast::ReturnOp>(op, arg);
+    return mlir::success();
+  }
+};
+
 class CleanupPassOp final : public mlir::OpRewritePattern<hc::py_ast::PassOp> {
 public:
   using OpRewritePattern::OpRewritePattern;
@@ -68,5 +87,6 @@ struct SimplifyASTPass final
 } // namespace
 
 void hc::populateSimplifyASTPatterns(mlir::RewritePatternSet &patterns) {
-  patterns.insert<CleanupPassOp, CleanupNoReturn>(patterns.getContext());
+  patterns.insert<ReturnOpNoArg, CleanupPassOp, CleanupNoReturn>(
+      patterns.getContext());
 }
