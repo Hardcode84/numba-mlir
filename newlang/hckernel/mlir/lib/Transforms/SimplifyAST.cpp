@@ -13,6 +13,26 @@ namespace hc {
 } // namespace hc
 
 namespace {
+class AddReturn final : public mlir::OpRewritePattern<hc::py_ast::PyFuncEndOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hc::py_ast::PyFuncEndOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto it = op->getIterator();
+    if (it != op->getBlock()->begin() &&
+        mlir::isa<hc::py_ast::ReturnOp>(*std::prev(it)))
+      return mlir::failure();
+
+    mlir::Attribute attr = hc::py_ast::NoneAttr::get(getContext());
+    mlir::Location loc = op.getLoc();
+    mlir::Value arg = rewriter.create<hc::py_ast::ConstantOp>(loc, attr);
+    rewriter.create<hc::py_ast::ReturnOp>(loc, arg);
+    return mlir::success();
+  }
+};
+
 class ReturnOpNoArg final
     : public mlir::OpRewritePattern<hc::py_ast::ReturnOp> {
 public:
@@ -87,6 +107,10 @@ struct SimplifyASTPass final
 } // namespace
 
 void hc::populateSimplifyASTPatterns(mlir::RewritePatternSet &patterns) {
+  // Set lowerbenefit to AddReturn so it will run after other return cleanups,
+  // to avoid creating return ops, which will be immediately deleted next.
+  patterns.insert<AddReturn>(patterns.getContext(), /*benefit*/ 0);
+
   patterns.insert<ReturnOpNoArg, CleanupPassOp, CleanupNoReturn>(
       patterns.getContext());
 }

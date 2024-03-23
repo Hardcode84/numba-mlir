@@ -33,3 +33,13 @@ py_ast.module {
     py_ast.return
   }
 }
+
+// -----
+
+// CHECK-LABEL: py_ast.func()
+//       CHECK: %[[R:.*]] = py_ast.constant #py_ast.none
+//       CHECK: py_ast.return %[[R]]
+py_ast.module {
+  py_ast.func() {
+  }
+}
