@@ -40,6 +40,17 @@ getArg(mlir::Value astNode) {
   return std::pair(argOp.getName(), getType(annotation));
 }
 
+static bool isTopLevel(mlir::Operation *op) {
+  auto parent = op->getParentOp();
+  return parent && mlir::isa<hc::py_ir::PyFuncOp>(op->getParentOp());
+}
+
+static mlir::Value boolCast(mlir::OpBuilder &builder, mlir::Location loc,
+                            mlir::Value val) {
+  auto type = builder.getIntegerType(1);
+  return builder.create<hc::py_ir::CastOp>(loc, type, val);
+}
+
 namespace {
 class ConvertModule final
     : public mlir::OpRewritePattern<hc::py_ast::PyModuleOp> {
@@ -130,7 +141,7 @@ public:
   mlir::LogicalResult
   matchAndRewrite(hc::py_ast::ReturnOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    if (!mlir::isa<hc::py_ir::PyFuncOp>(op->getParentOp()))
+    if (!isTopLevel(op))
       return mlir::failure();
 
     auto term = op->getBlock()->getTerminator();
@@ -148,29 +159,75 @@ public:
   }
 };
 
+class ConvertIf final : public mlir::OpRewritePattern<hc::py_ast::IfOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hc::py_ast::IfOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    if (!isTopLevel(op))
+      return mlir::failure();
+
+    mlir::Location loc = op.getLoc();
+    mlir::Value cond = getVar(rewriter, loc, op.getTest());
+    cond = boolCast(rewriter, loc, cond);
+
+    mlir::Block *condBlock = rewriter.getInsertionBlock();
+    auto opPosition = rewriter.getInsertionPoint();
+    auto *remainingOpsBlock = rewriter.splitBlock(condBlock, opPosition);
+
+    mlir::OpBuilder::InsertionGuard g(rewriter);
+    mlir::Block *thenBlock = &op.getBodyRegion().front();
+    rewriter.setInsertionPointToEnd(thenBlock);
+    rewriter.replaceOpWithNewOp<mlir::cf::BranchOp>(thenBlock->getTerminator(),
+                                                    remainingOpsBlock);
+    rewriter.inlineRegionBefore(op.getBodyRegion(), remainingOpsBlock);
+
+    mlir::Block *elseBlock;
+    if (op.getOrelseRegion().empty()) {
+      elseBlock = remainingOpsBlock;
+    } else {
+      elseBlock = &op.getOrelseRegion().front();
+      rewriter.setInsertionPointToEnd(elseBlock);
+      rewriter.replaceOpWithNewOp<mlir::cf::BranchOp>(
+          elseBlock->getTerminator(), remainingOpsBlock);
+      rewriter.inlineRegionBefore(op.getOrelseRegion(), remainingOpsBlock);
+    }
+
+    rewriter.setInsertionPointToEnd(condBlock);
+    rewriter.create<mlir::cf::CondBranchOp>(loc, cond, thenBlock, elseBlock);
+    rewriter.eraseOp(op);
+    return mlir::success();
+  }
+};
+
 struct ConvertPyASTToIRPass final
     : public hc::impl::ConvertPyASTToIRPassBase<ConvertPyASTToIRPass> {
 
   void runOnOperation() override {
-    mlir::RewritePatternSet patterns(&getContext());
+    auto *ctx = &getContext();
+    mlir::RewritePatternSet patterns(ctx);
     hc::populateConvertPyASTToIRPatterns(patterns);
+    mlir::cf::BranchOp::getCanonicalizationPatterns(patterns, ctx);
+    mlir::cf::CondBranchOp::getCanonicalizationPatterns(patterns, ctx);
 
     if (mlir::failed(
             applyPatternsAndFoldGreedily(getOperation(), std::move(patterns))))
       return signalPassFailure();
 
-    getOperation()->walk([&](mlir::Operation *op) {
-      if (!mlir::isa<hc::py_ast::PyASTDialect>(op->getDialect()))
-        return;
+    //    getOperation()->walk([&](mlir::Operation *op) {
+    //      if (!mlir::isa<hc::py_ast::PyASTDialect>(op->getDialect()))
+    //        return;
 
-      op->emitError("Unconverted AST op");
-      signalPassFailure();
-    });
+    //      op->emitError("Unconverted AST op");
+    //      signalPassFailure();
+    //    });
   }
 };
 } // namespace
 
 void hc::populateConvertPyASTToIRPatterns(mlir::RewritePatternSet &patterns) {
-  patterns.insert<ConvertModule, ConvertFunc, ConvertReturn>(
+  patterns.insert<ConvertModule, ConvertFunc, ConvertReturn, ConvertIf>(
       patterns.getContext());
 }

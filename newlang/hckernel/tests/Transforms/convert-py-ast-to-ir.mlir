@@ -36,3 +36,57 @@ py_ast.module {
     py_ast.return %3
   }
 }
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK:  py_ir.func "func"
+//       CHECK:  %[[C1:.*]] = py_ir.loadvar "Cond" : !py_ir.undefined
+//       CHECK:  %[[C2:.*]] = py_ir.cast %[[C1]] : !py_ir.undefined to i1
+//       CHECK:  cf.cond_br %[[C2]], ^bb1, ^bb2
+//       CHECK:  ^bb1
+//       CHECK:  "test.test1"() : () -> ()
+//       CHECK:  cf.br ^bb2
+//       CHECK:  ^bb2
+//       CHECK:  %[[R:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:  py_ir.return %[[R]] : !py_ir.undefined
+py_ast.module {
+  py_ast.func "func"() {
+    %0 = py_ast.name "Cond"
+    py_ast.if %0 {
+      "test.test1"() : () -> ()
+    } {}
+    %1 = py_ast.name "A"
+    py_ast.return %1
+  }
+}
+
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK:  py_ir.func "func"
+//       CHECK:  %[[C1:.*]] = py_ir.loadvar "Cond" : !py_ir.undefined
+//       CHECK:  %[[C2:.*]] = py_ir.cast %[[C1]] : !py_ir.undefined to i1
+//       CHECK:  cf.cond_br %[[C2]], ^bb1, ^bb2
+//       CHECK:  ^bb1
+//       CHECK:  "test.test1"() : () -> ()
+//       CHECK:  cf.br ^bb3
+//       CHECK:  ^bb2
+//       CHECK:  "test.test2"() : () -> ()
+//       CHECK:  cf.br ^bb3
+//       CHECK:  ^bb3
+//       CHECK:  %[[R:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:  py_ir.return %[[R]] : !py_ir.undefined
+py_ast.module {
+  py_ast.func "func"() {
+    %0 = py_ast.name "Cond"
+    py_ast.if %0 {
+      "test.test1"() : () -> ()
+    } {
+      "test.test2"() : () -> ()
+    }
+    %1 = py_ast.name "A"
+    py_ast.return %1
+  }
+}

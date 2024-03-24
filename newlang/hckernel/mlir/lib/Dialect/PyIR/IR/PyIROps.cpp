@@ -43,6 +43,15 @@ void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
   odsBuilder.createBlock(region, {}, argTypes, locs);
 }
 
+bool hc::py_ir::CastOp::areCastCompatible(mlir::TypeRange inputs,
+                                          mlir::TypeRange outputs) {
+  (void)inputs;
+  (void)outputs;
+  assert(inputs.size() == 1 && "expected one input");
+  assert(outputs.size() == 1 && "expected one output");
+  return true;
+}
+
 #include "hc/Dialect/PyIR/IR/PyIROpsDialect.cpp.inc"
 
 #define GET_OP_CLASSES
