@@ -113,8 +113,7 @@ def PyAST_PyModuleEndOp : PyAST_OpBase<"module_end", [
 }
 
 def PyAST_PyFuncOp : PyAST_OpBase<"func", [
-      IsolatedFromAbove, SingleBlockImplicitTerminator<"PyFuncEndOp">,
-      AttrSizedOperandSegments
+      SingleBlockImplicitTerminator<"PyFuncEndOp">, AttrSizedOperandSegments
     ]> {
 
   let arguments = (ins
