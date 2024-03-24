@@ -26,14 +26,17 @@ include(HandleLLVMOptions)
 #endif()
 
 add_subdirectory(include/hc/Dialect/PyAST/IR)
+add_subdirectory(include/hc/Dialect/PyIR/IR)
 add_subdirectory(include/hc/Transforms)
 
 set(SOURCES_LIST
     lib/Dialect/PyAST/IR/PyASTOps.cpp
+    lib/Dialect/PyIR/IR/PyIROps.cpp
     lib/Transforms/SimplifyAST.cpp
     )
 set(HEADERS_LIST
     include/hc/Dialect/PyAST/IR/PyASTOps.hpp
+    include/hc/Dialect/PyIR/IR/PyIROps.hpp
     include/hc/InitHCDialects.hpp
     include/hc/InitHCPasses.hpp
     include/hc/Transforms/Passes.hpp
@@ -59,4 +62,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${PROJECT_BINARY_DIR}/include
     )
 
-add_dependencies(${PROJECT_NAME} MLIRPyASTOpsIncGen HCTransformsPassIncGen)
+add_dependencies(${PROJECT_NAME}
+    MLIRPyASTOpsIncGen
+    MLIRPyIROpsIncGen
+    HCTransformsPassIncGen)

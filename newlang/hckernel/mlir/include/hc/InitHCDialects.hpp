@@ -6,10 +6,11 @@
 #include <mlir/IR/MLIRContext.h>
 
 #include <hc/Dialect/PyAST/IR/PyASTOps.hpp>
+#include <hc/Dialect/PyIR/IR/PyIROps.hpp>
 
 namespace hc {
 inline void registerAllDialects(mlir::DialectRegistry &registry) {
-  registry.insert<hc::py_ast::PyASTDialect>();
+  registry.insert<hc::py_ast::PyASTDialect, hc::py_ir::PyIRDialect>();
 }
 
 inline void registerAllDialects(mlir::MLIRContext &context) {
