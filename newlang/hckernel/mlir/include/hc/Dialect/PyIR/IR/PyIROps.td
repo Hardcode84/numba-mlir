@@ -77,7 +77,7 @@ def PyIR_PyFuncOp : PyIR_OpBase<"func"> {
   let assemblyFormat = "attr-dict $name ( `decorators` $decorators^ `:` type($decorators) )? $bodyRegion";
 }
 
-def ReturnOp : PyIR_OpBase<"return", [Pure, HasParent<"PyFuncOp">,
+def PyIR_ReturnOp : PyIR_OpBase<"return", [Pure, HasParent<"PyFuncOp">,
                                       ReturnLike, Terminator]> {
 
   let arguments = (ins AnyType:$operand);
@@ -85,5 +85,12 @@ def ReturnOp : PyIR_OpBase<"return", [Pure, HasParent<"PyFuncOp">,
   let assemblyFormat = "attr-dict $operand `:` type($operand)";
 }
 
+def PyIR_StoreVarOp : PyIR_OpBase<"storevar"> {
+  let arguments = (ins
+    StrAttr:$name,
+    AnyType:$value);
+
+  let assemblyFormat = "attr-dict $name $value `:` type($value)";
+}
 
 #endif // PYIR_OPS

@@ -109,9 +109,11 @@ public:
     mlir::OpBuilder::InsertionGuard g(rewriter);
 
     rewriter.setInsertionPointToEnd(&entryBlock);
+    for (auto &&[name, arg] : llvm::zip(argNames, entryBlock.getArguments()))
+      rewriter.create<hc::py_ir::StoreVarOp>(loc, name, arg);
+
     rewriter.create<mlir::cf::BranchOp>(loc, &bodyBlock);
     rewriter.eraseOp(op);
-    llvm::errs() << "asdasd 5\n";
     return mlir::success();
   }
 };

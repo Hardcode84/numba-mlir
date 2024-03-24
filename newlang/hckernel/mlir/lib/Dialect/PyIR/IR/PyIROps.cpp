@@ -37,7 +37,10 @@ void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
   mlir::Region *region = odsState.addRegion();
 
   mlir::OpBuilder::InsertionGuard g(odsBuilder);
-  odsBuilder.createBlock(region, {}, argTypes);
+
+  llvm::SmallVector<mlir::Location> locs(argTypes.size(),
+                                         odsBuilder.getUnknownLoc());
+  odsBuilder.createBlock(region, {}, argTypes, locs);
 }
 
 #include "hc/Dialect/PyIR/IR/PyIROpsDialect.cpp.inc"
