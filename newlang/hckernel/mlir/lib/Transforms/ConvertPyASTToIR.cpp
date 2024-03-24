@@ -14,9 +14,13 @@ namespace hc {
 #include "hc/Transforms/Passes.h.inc"
 } // namespace hc
 
-static mlir::Value getVar(mlir::OpBuilder & /*builder*/, mlir::Location /*loc*/,
+static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
                           mlir::Value val) {
-  // TODO
+  if (auto name = val.getDefiningOp<hc::py_ast::NameOp>()) {
+    auto type = hc::py_ir::UndefinedType::get(builder.getContext());
+    return builder.create<hc::py_ir::LoadVarOp>(loc, type, name.getId());
+  }
+
   return val;
 }
 

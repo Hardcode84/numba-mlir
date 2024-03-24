@@ -8,8 +8,8 @@ py_ast.module {
 
 // CHECK-LABEL: py_ir.module
 //       CHECK:  py_ir.func "func"
-//       CHECK:  %[[R:.*]] = py_ast.name "A"
-//       CHECK:  py_ir.return %[[R]] : !py_ast.node
+//       CHECK:  %[[R:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:  py_ir.return %[[R]] : !py_ir.undefined
 py_ast.module {
   py_ast.func "func"() {
     %0 = py_ast.name "A"
@@ -25,8 +25,8 @@ py_ast.module {
 //       CHECK:  py_ir.storevar "a" %[[ARG1]] : !py_ir.undefined
 //       CHECK:  py_ir.storevar "b" %[[ARG2]] : !py_ir.undefined
 //       CHECK:  py_ir.storevar "c" %[[ARG3]] : !py_ir.undefined
-//       CHECK:  %[[R:.*]] = py_ast.name "A"
-//       CHECK:  py_ir.return %[[R]] : !py_ast.node
+//       CHECK:  %[[R:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:  py_ir.return %[[R]] : !py_ir.undefined
 py_ast.module {
   %0 = py_ast.arg "a"
   %1 = py_ast.arg "b"
