@@ -218,7 +218,7 @@ struct ConvertPyASTToIRPass final
 
     getOperation()->walk([&](mlir::Operation *op) {
       auto *dialect = op->getDialect();
-      if (!dialect || !mlir::isa_and_nonnull<hc::py_ast::PyASTDialect>(dialect))
+      if (!dialect || !mlir::isa<hc::py_ast::PyASTDialect>(dialect))
         return;
 
       op->emitError("Unconverted AST op");
