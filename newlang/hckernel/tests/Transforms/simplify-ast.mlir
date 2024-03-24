@@ -1,7 +1,5 @@
 // RUN: hc-opt -allow-unregistered-dialect -split-input-file %s --hc-simplify-ast-pass | FileCheck %s
 
-// -----
-
 // CHECK-LABEL: py_ast.func()
 //       CHECK: %[[R:.*]] = py_ast.constant #py_ast.none
 //       CHECK: py_ast.return %[[R]]
