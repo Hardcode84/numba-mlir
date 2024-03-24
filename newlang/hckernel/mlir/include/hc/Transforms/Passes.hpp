@@ -12,4 +12,5 @@ namespace hc {
 #include "hc/Transforms/Passes.h.inc"
 
 void populateSimplifyASTPatterns(mlir::RewritePatternSet &patterns);
+void populateConvertPyASTToIRPatterns(mlir::RewritePatternSet &patterns);
 } // namespace hc
