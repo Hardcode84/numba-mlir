@@ -35,6 +35,8 @@ void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
   odsState.addOperands(decorators);
 
   mlir::Region *region = odsState.addRegion();
+
+  mlir::OpBuilder::InsertionGuard g(odsBuilder);
   odsBuilder.createBlock(region, {}, argTypes);
 }
 

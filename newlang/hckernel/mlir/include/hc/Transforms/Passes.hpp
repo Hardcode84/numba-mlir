@@ -4,6 +4,10 @@
 
 #include <mlir/Pass/Pass.h>
 
+namespace mlir::cf {
+class ControlFlowDialect;
+}
+
 namespace hc {
 #define GEN_PASS_DECL
 #include "hc/Transforms/Passes.h.inc"

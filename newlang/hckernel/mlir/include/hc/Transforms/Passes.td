@@ -20,6 +20,7 @@ def ConvertPyASTToIRPass : Pass<"hc-convert-py-ast-to-ir-pass"> {
 
   let dependentDialects = [
     "::hc::py_ir::PyIRDialect",
+    "::mlir::cf::ControlFlowDialect",
   ];
 }
 
