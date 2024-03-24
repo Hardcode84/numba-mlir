@@ -12,7 +12,7 @@ def SimplifyASTPass : Pass<"hc-simplify-ast-pass"> {
   }];
 }
 
-def ConvertPyASTToIRPass : Pass<"hc-convert-py-ast-to-ir"> {
+def ConvertPyASTToIRPass : Pass<"hc-convert-py-ast-to-ir-pass"> {
   let summary = "TBD";
   let description = [{
     TBD

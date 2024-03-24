@@ -36,4 +36,21 @@ class PyIR_Attr<string name, string attrMnemonic, list<Trait> traits = []>
 class PyIR_OpBase<string mnemonic, list<Trait> traits = []>
     : Op<PyIR_Dialect, mnemonic, traits>;
 
+
+def PyIR_PyModuleOp : PyIR_OpBase<"module", [
+      IsolatedFromAbove, SingleBlockImplicitTerminator<"PyModuleEndOp">
+    ]> {
+
+
+  let regions = (region SizedRegion<1>:$bodyRegion);
+
+  let assemblyFormat = "attr-dict-with-keyword $bodyRegion";
+}
+
+def PyIR_PyModuleEndOp : PyIR_OpBase<"module_end", [
+  Terminator, HasParent<"PyModuleOp">
+]> {
+  let assemblyFormat = "attr-dict";
+}
+
 #endif // PYIR_OPS
