@@ -21,7 +21,7 @@ def PyIR_Dialect : Dialect {
   }];
 
 //  let useDefaultAttributePrinterParser = 1;
-//  let useDefaultTypePrinterParser = 1;
+  let useDefaultTypePrinterParser = 1;
 }
 
 class PyIR_Type<string name, string typeMnemonic, list<Trait> traits = [],
@@ -38,6 +38,8 @@ class PyIR_Attr<string name, string attrMnemonic, list<Trait> traits = []>
 class PyIR_OpBase<string mnemonic, list<Trait> traits = []>
     : Op<PyIR_Dialect, mnemonic, traits>;
 
+
+def PyIR_UndefinedType : PyIR_Type<"Undefined", "undefined", [], "::mlir::Type">;
 
 def PyIR_PyModuleOp : PyIR_OpBase<"module", [
       IsolatedFromAbove, SingleBlockImplicitTerminator<"PyModuleEndOp">

@@ -20,6 +20,22 @@ static mlir::Value getVar(mlir::OpBuilder & /*builder*/, mlir::Location /*loc*/,
   return val;
 }
 
+static mlir::Type getType(mlir::Value astNode) {
+  auto ctx = astNode.getContext();
+  return hc::py_ir::UndefinedType::get(ctx);
+}
+
+static std::optional<std::pair<mlir::StringRef, mlir::Type>>
+getArg(mlir::Value astNode) {
+  auto argOp = astNode.getDefiningOp<hc::py_ast::ArgOp>();
+  mlir::Value annotation = argOp.getAnnotation();
+  if (!annotation)
+    return std::pair(argOp.getName(),
+                     hc::py_ir::UndefinedType::get(astNode.getContext()));
+
+  return std::pair(argOp.getName(), getType(annotation));
+}
+
 namespace {
 class ConvertModule final
     : public mlir::OpRewritePattern<hc::py_ast::PyModuleOp> {
@@ -65,11 +81,23 @@ public:
     if (!checkFuncReturn(op.getBody()))
       return mlir::failure();
 
-    // TODO
+    llvm::SmallVector<mlir::StringRef> argNames;
     llvm::SmallVector<mlir::Type> argTypes;
-    llvm::SmallVector<mlir::Value> decorators;
+    for (auto arg : op.getArgs()) {
+      auto argsDesc = getArg(arg);
+      if (!argsDesc)
+        return mlir::failure();
+
+      auto [name, type] = *argsDesc;
+      argNames.emplace_back(name);
+      argTypes.emplace_back(type);
+    }
 
     mlir::Location loc = op.getLoc();
+    llvm::SmallVector<mlir::Value> decorators;
+    for (auto decor : decorators)
+      decorators.emplace_back(getVar(rewriter, loc, decor));
+
     auto newOp = rewriter.create<hc::py_ir::PyFuncOp>(loc, op.getName(),
                                                       argTypes, decorators);
     mlir::Region &dstRegion = newOp.getRegion();
