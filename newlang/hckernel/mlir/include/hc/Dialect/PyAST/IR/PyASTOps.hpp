@@ -9,6 +9,7 @@
 #include <mlir/IR/OpImplementation.h>
 
 #include <mlir/Bytecode/BytecodeOpInterface.h>
+#include <mlir/Interfaces/SideEffectInterfaces.h>
 
 namespace hc::py_ast {
 template <typename ConcreteType>

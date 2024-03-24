@@ -3,6 +3,7 @@
 #ifndef PYAST_OPS
 #define PYAST_OPS
 
+include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/IR/AttrTypeBase.td"
 include "mlir/IR/BuiltinTypeInterfaces.td"
 include "mlir/IR/EnumAttr.td"
@@ -35,6 +36,9 @@ class PyAST_Attr<string name, string attrMnemonic, list<Trait> traits = []>
 
 class PyAST_OpBase<string mnemonic, list<Trait> traits = []>
     : Op<PyAST_Dialect, mnemonic, traits>;
+
+class PyAST_PureOpBase<string mnemonic, list<Trait> traits = []>
+    : Op<PyAST_Dialect, mnemonic, !listconcat(traits, [Pure])> {}
 
 def PyAST_BoolOpTypeAttr : I64EnumAttr<
     "BoolOpType", "",
@@ -145,7 +149,7 @@ def PyAST_PassOp : PyAST_OpBase<"pass"> {
   let assemblyFormat = "attr-dict";
 }
 
-def PyAST_ArgOp : PyAST_OpBase<"arg"> {
+def PyAST_ArgOp : PyAST_PureOpBase<"arg"> {
   let arguments = (ins StrAttr:$name, Optional<PyAST_ASTNodeType>:$annotation);
   let results = (outs PyAST_ASTNodeType:$result);
 
@@ -158,7 +162,7 @@ def PyAST_ArgOp : PyAST_OpBase<"arg"> {
   let assemblyFormat = "attr-dict $name ( `:` $annotation^ )?";
 }
 
-def PyAST_NameOp : PyAST_OpBase<"name"> {
+def PyAST_NameOp : PyAST_PureOpBase<"name"> {
   let arguments = (ins StrAttr:$id);
   let results = (outs PyAST_ASTNodeType:$result);
 

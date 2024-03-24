@@ -158,6 +158,14 @@ struct ConvertPyASTToIRPass final
     if (mlir::failed(
             applyPatternsAndFoldGreedily(getOperation(), std::move(patterns))))
       return signalPassFailure();
+
+    getOperation()->walk([&](mlir::Operation *op) {
+      if (!mlir::isa<hc::py_ast::PyASTDialect>(op->getDialect()))
+        return;
+
+      op->emitError("Unconverted AST op");
+      signalPassFailure();
+    });
   }
 };
 } // namespace
