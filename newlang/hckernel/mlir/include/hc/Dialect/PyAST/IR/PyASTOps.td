@@ -117,6 +117,7 @@ def PyAST_PyFuncOp : PyAST_OpBase<"func", [
     ]> {
 
   let arguments = (ins
+      StrAttr:$name,
       Variadic<PyAST_ASTNodeType>:$args,
       Variadic<PyAST_ASTNodeType>:$decorators);
 
@@ -124,13 +125,14 @@ def PyAST_PyFuncOp : PyAST_OpBase<"func", [
 
   let builders = [
     OpBuilder<(ins
+        "::llvm::StringRef":$name,
         "::mlir::ValueRange":$args,
         "::mlir::ValueRange":$decorators)>
   ];
 
   let skipDefaultBuilders = 1;
 
-  let assemblyFormat = "attr-dict `(` $args `)` ( `decorators` $decorators^ )? $bodyRegion";
+  let assemblyFormat = "attr-dict $name `(` $args `)` ( `decorators` $decorators^ )? $bodyRegion";
 }
 
 def PyAST_PyFuncEndOp : PyAST_OpBase<"func_end", [

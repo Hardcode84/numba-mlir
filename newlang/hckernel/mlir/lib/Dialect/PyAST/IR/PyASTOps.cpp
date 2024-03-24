@@ -33,8 +33,10 @@ void hc::py_ast::PyModuleOp::build(::mlir::OpBuilder &odsBuilder,
 
 void hc::py_ast::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
                                  ::mlir::OperationState &odsState,
-                                 mlir::ValueRange args,
+                                 llvm::StringRef name, mlir::ValueRange args,
                                  mlir::ValueRange decorators) {
+  odsState.addAttribute(getNameAttrName(odsState.name),
+                        odsBuilder.getStringAttr(name));
   odsState.addOperands(args);
   odsState.addOperands(decorators);
 

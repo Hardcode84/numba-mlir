@@ -165,8 +165,9 @@ struct FuncHandler {
     auto posArgs = args.drop_back(nDecors).take_back(nArgs);
     auto decors = args.take_back(nDecors);
 
-    auto mod = builder.create<hc::py_ast::PyFuncOp>(state.getLoc(node), posArgs,
-                                                    decors);
+    auto name = node.attr("name").cast<std::string>();
+    auto mod = builder.create<hc::py_ast::PyFuncOp>(state.getLoc(node), name,
+                                                    posArgs, decors);
     state.argsStack.pop_back_n(nArgs + nDecors);
 
     builder.setInsertionPointToStart(mod.getBody());

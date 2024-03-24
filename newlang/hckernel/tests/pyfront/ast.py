@@ -2,7 +2,7 @@
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: py_ast.pass
 def func():
     pass
@@ -15,7 +15,7 @@ def func():
 #       CHECK: %[[A1:.*]] = py_ast.arg "a"
 #       CHECK: %[[A2:.*]] = py_ast.arg "b"
 #       CHECK: %[[A3:.*]] = py_ast.arg "c"
-#       CHECK: py_ast.func(%[[A1]], %[[A2]], %[[A3]])
+#       CHECK: py_ast.func "func"(%[[A1]], %[[A2]], %[[A3]])
 #       CHECK: py_ast.pass
 def func(a, b, c):
     pass
@@ -27,7 +27,7 @@ def func(a, b, c):
 # CHECK-LABEL: py_ast.module
 #       CHECK: %[[A:.*]] = py_ast.name "Foo"
 #       CHECK: %[[ARG:.*]] = py_ast.arg "a" : %[[A]]
-#       CHECK: py_ast.func(%[[ARG]])
+#       CHECK: py_ast.func "func"(%[[ARG]])
 #       CHECK: py_ast.pass
 def func(a: Foo):
     pass
@@ -49,7 +49,7 @@ def func(a: Foo[Bar]):
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[F:.*]] = py_ast.name "Foo"
 #       CHECK: py_ast.expr %[[F]]
 def func():
@@ -60,7 +60,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[A1:.*]] = py_ast.name "Foo"
 #       CHECK: %[[A2:.*]] = py_ast.name "Bar"
 #       CHECK: %[[A3:.*]] = py_ast.name "Baz"
@@ -74,7 +74,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[F:.*]] = py_ast.name "Foo"
 #       CHECK: %[[A:.*]] = py_ast.attribute %[[F]] attr "Bar"
 #       CHECK: py_ast.expr %[[A]]
@@ -86,7 +86,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[C1:.*]] = py_ast.constant 1 : i64
 #       CHECK: py_ast.expr %[[C1]]
 #       CHECK: %[[C2:.*]] = py_ast.constant 255 : i64
@@ -112,7 +112,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[A:.*]] = py_ast.name "A"
 #       CHECK: %[[I1:.*]] = py_ast.constant 1 : i64
 #       CHECK: %[[I2:.*]] = py_ast.constant 2 : i64
@@ -128,7 +128,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[F:.*]] = py_ast.name "Foo"
 #       CHECK: %[[B:.*]] = py_ast.name "Bar"
 #       CHECK: py_ast.assign(%[[F]]) = %[[B]]
@@ -140,7 +140,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[F:.*]] = py_ast.name "Foo"
 #       CHECK: %[[B:.*]] = py_ast.name "Bar"
 #       CHECK: %[[Z:.*]] = py_ast.name "Baz"
@@ -153,7 +153,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[A:.*]] = py_ast.name "a"
 #       CHECK: %[[B:.*]] = py_ast.name "b"
 #       CHECK: %[[F:.*]] = py_ast.name "foo"
@@ -167,7 +167,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[A:.*]] = py_ast.name "a"
 #       CHECK: %[[B:.*]] = py_ast.name "b"
 #       CHECK: %[[BB:.*]] = py_ast.keyword "B" = %[[B]]
@@ -182,7 +182,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[A:.*]] = py_ast.name "a"
 #       CHECK: %[[AA:.*]] = py_ast.keyword "A" = %[[A]]
 #       CHECK: %[[B:.*]] = py_ast.name "b"
@@ -198,7 +198,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[A:.*]] = py_ast.name "A"
 #       CHECK: %[[B:.*]] = py_ast.name "B"
 #       CHECK: %[[R:.*]] = py_ast.bool_op and, %[[A]], %[[B]]
@@ -211,7 +211,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[A:.*]] = py_ast.name "A"
 #       CHECK: %[[B:.*]] = py_ast.name "B"
 #       CHECK: %[[C:.*]] = py_ast.name "C"
@@ -225,7 +225,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[T:.*]] = py_ast.name "A"
 #       CHECK: py_ast.if %[[T]] {
 #       CHECK: %[[B:.*]] = py_ast.name "B"
@@ -240,7 +240,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[T:.*]] = py_ast.name "A"
 #       CHECK: py_ast.if %[[T]] {
 #       CHECK: %[[B:.*]] = py_ast.name "B"
@@ -260,7 +260,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[T:.*]] = py_ast.name "A"
 #       CHECK: py_ast.if %[[T]] {
 #       CHECK: %[[B:.*]] = py_ast.name "B"
@@ -291,7 +291,7 @@ def func():
 #       CHECK: %[[A2:.*]] = py_ast.arg "b"
 #       CHECK: %[[F:.*]] = py_ast.name "foo"
 #       CHECK: %[[B:.*]] = py_ast.name "bar"
-#       CHECK: py_ast.func(%[[A1]], %[[A2]]) decorators %[[F]], %[[B]]
+#       CHECK: py_ast.func "func"(%[[A1]], %[[A2]]) decorators %[[F]], %[[B]]
 #       CHECK: py_ast.pass
 @foo
 @bar
@@ -303,7 +303,7 @@ def func(a, b):
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[A:.*]] = py_ast.name "A"
 #       CHECK: %[[B:.*]] = py_ast.name "B"
 #       CHECK: %[[R:.*]] = py_ast.compare %[[A]] [0] %[[B]]
@@ -316,7 +316,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[A:.*]] = py_ast.name "A"
 #       CHECK: %[[B:.*]] = py_ast.name "B"
 #       CHECK: %[[C:.*]] = py_ast.name "C"
@@ -330,7 +330,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[A:.*]] = py_ast.name "A"
 #       CHECK: %[[B:.*]] = py_ast.name "B"
 #       CHECK: %[[R:.*]] = py_ast.binop %[[A]] add %[[B]]
@@ -343,7 +343,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: py_ast.return
 def func():
     return
@@ -353,7 +353,7 @@ def func():
 
 
 # CHECK-LABEL: py_ast.module
-#       CHECK: py_ast.func()
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[R:.*]] = py_ast.constant #py_ast.none
 #       CHECK: py_ast.return %[[R]]
 def func():
