@@ -26,6 +26,18 @@ void hc::py_ir::PyIRDialect::initialize() {
       >();
 }
 
+void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
+                                ::mlir::OperationState &odsState,
+                                llvm::StringRef name, mlir::TypeRange argTypes,
+                                mlir::ValueRange decorators) {
+  odsState.addAttribute(getNameAttrName(odsState.name),
+                        odsBuilder.getStringAttr(name));
+  odsState.addOperands(decorators);
+
+  mlir::Region *region = odsState.addRegion();
+  odsBuilder.createBlock(region, {}, argTypes);
+}
+
 #include "hc/Dialect/PyIR/IR/PyIROpsDialect.cpp.inc"
 
 #define GET_OP_CLASSES

@@ -9,6 +9,8 @@
 #include <mlir/IR/OpImplementation.h>
 
 #include <mlir/Bytecode/BytecodeOpInterface.h>
+#include <mlir/Interfaces/ControlFlowInterfaces.h>
+#include <mlir/Interfaces/SideEffectInterfaces.h>
 
 #include "hc/Dialect/PyIR/IR/PyIROpsDialect.h.inc"
 #include "hc/Dialect/PyIR/IR/PyIROpsEnums.h.inc"

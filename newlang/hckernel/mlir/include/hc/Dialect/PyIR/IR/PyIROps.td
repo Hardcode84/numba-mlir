@@ -3,6 +3,8 @@
 #ifndef PYIR_OPS
 #define PYIR_OPS
 
+include "mlir/Interfaces/ControlFlowInterfaces.td"
+include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/IR/AttrTypeBase.td"
 include "mlir/IR/BuiltinTypeInterfaces.td"
 include "mlir/IR/EnumAttr.td"
@@ -52,5 +54,34 @@ def PyIR_PyModuleEndOp : PyIR_OpBase<"module_end", [
 ]> {
   let assemblyFormat = "attr-dict";
 }
+
+def PyIR_PyFuncOp : PyIR_OpBase<"func"> {
+
+  let arguments = (ins
+      StrAttr:$name,
+      Variadic<AnyType>:$decorators);
+
+  let regions = (region AnyRegion:$bodyRegion);
+
+  let builders = [
+    OpBuilder<(ins
+        "::llvm::StringRef":$name,
+        "::mlir::TypeRange":$argTypes,
+        "::mlir::ValueRange":$decorators)>
+  ];
+
+  let skipDefaultBuilders = 1;
+
+  let assemblyFormat = "attr-dict $name ( `decorators` $decorators^ `:` type($decorators) )? $bodyRegion";
+}
+
+def ReturnOp : PyIR_OpBase<"return", [Pure, HasParent<"PyFuncOp">,
+                                      ReturnLike, Terminator]> {
+
+  let arguments = (ins AnyType:$operand);
+
+  let assemblyFormat = "attr-dict $operand `:` type($operand)";
+}
+
 
 #endif // PYIR_OPS
