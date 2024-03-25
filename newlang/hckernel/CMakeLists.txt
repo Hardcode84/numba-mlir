@@ -22,11 +22,10 @@ if(POLICY CMP0148)
     cmake_policy(SET CMP0148 OLD)
 endif()
 
-option(HC_ENABLE_TESTS
-    "Enable Tests"
-    OFF
-)
+option(HC_ENABLE_TOOLS "Enable Tools" ON)
+option(HC_ENABLE_TESTS "Enable Tests" OFF)
 
+message(STATUS "HC_ENABLE_TOOLS ${HC_ENABLE_TOOLS}")
 message(STATUS "HC_ENABLE_TESTS ${HC_ENABLE_TESTS}")
 
 macro(apply_llvm_compile_flags target)
@@ -39,8 +38,10 @@ endmacro()
 add_subdirectory(mlir)
 add_subdirectory(frontend)
 
-add_subdirectory(tools/pyfront)
-add_subdirectory(tools/hc-opt)
+if (HC_ENABLE_TOOLS)
+  add_subdirectory(tools/pyfront)
+  add_subdirectory(tools/hc-opt)
+endif()
 
 if (HC_ENABLE_TESTS)
   add_subdirectory(tests)
