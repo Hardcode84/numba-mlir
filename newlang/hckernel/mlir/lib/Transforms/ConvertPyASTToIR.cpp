@@ -35,6 +35,9 @@ static mlir::Type getType(mlir::Value astNode) {
     return hc::py_ir::SubscriptType::get(ctx, value, slice);
   }
 
+  if (auto const_ = astNode.getDefiningOp<hc::py_ast::ConstantOp>())
+    return hc::py_ir::ConstType::get(const_.getValue());
+
   return hc::py_ir::UndefinedType::get(ctx);
 }
 

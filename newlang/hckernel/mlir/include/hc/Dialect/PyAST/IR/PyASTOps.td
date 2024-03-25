@@ -216,7 +216,7 @@ def PyAST_AttributeOp : PyAST_OpBase<"attribute"> {
   let assemblyFormat = "attr-dict $value `attr` $attr";
 }
 
-def PyAST_ConstantOp : PyAST_OpBase<"constant"> {
+def PyAST_ConstantOp : PyAST_PureOpBase<"constant"> {
   let arguments = (ins AnyAttr:$value);
   let results = (outs PyAST_ASTNodeType:$result);
 
