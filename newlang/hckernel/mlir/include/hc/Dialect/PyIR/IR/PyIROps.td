@@ -42,6 +42,21 @@ class PyIR_OpBase<string mnemonic, list<Trait> traits = []>
 
 def PyIR_UndefinedType : PyIR_Type<"Undefined", "undefined", [], "::mlir::Type">;
 
+def PyIR_IdentType : PyIR_Type<"Ident", "ident", [], "::mlir::Type"> {
+  let parameters = (ins "::mlir::StringAttr":$name);
+
+  let builders = [
+    TypeBuilderWithInferredContext<(ins
+      "::mlir::MLIRContext*":$ctx,
+      "::llvm::StringRef":$name
+    ), [{
+      return $_get(ctx, ::mlir::StringAttr::get(ctx, name));
+    }]>
+  ];
+
+  let assemblyFormat = "$name";
+}
+
 def PyIR_PyModuleOp : PyIR_OpBase<"module", [
       IsolatedFromAbove, SingleBlockImplicitTerminator<"PyModuleEndOp">
     ]> {

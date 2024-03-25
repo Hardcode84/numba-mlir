@@ -26,6 +26,9 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
 
 static mlir::Type getType(mlir::Value astNode) {
   auto ctx = astNode.getContext();
+  if (auto name = astNode.getDefiningOp<hc::py_ast::NameOp>())
+    return hc::py_ir::IdentType::get(ctx, name.getId());
+
   return hc::py_ir::UndefinedType::get(ctx);
 }
 
