@@ -29,6 +29,12 @@ static mlir::Type getType(mlir::Value astNode) {
   if (auto name = astNode.getDefiningOp<hc::py_ast::NameOp>())
     return hc::py_ir::IdentType::get(ctx, name.getId());
 
+  if (auto subscript = astNode.getDefiningOp<hc::py_ast::SubscriptOp>()) {
+    auto value = getType(subscript.getValue());
+    auto slice = getType(subscript.getSlice());
+    return hc::py_ir::SubscriptType::get(ctx, value, slice);
+  }
+
   return hc::py_ir::UndefinedType::get(ctx);
 }
 

@@ -57,6 +57,24 @@ def PyIR_IdentType : PyIR_Type<"Ident", "ident", [], "::mlir::Type"> {
   let assemblyFormat = "$name";
 }
 
+def PyIR_SubscriptType : PyIR_Type<"Subscript", "subscript", [], "::mlir::Type"> {
+  let parameters = (ins
+      "::mlir::Type":$value,
+      "::mlir::Type":$slice);
+
+  let builders = [
+    TypeBuilderWithInferredContext<(ins
+      "::mlir::Type":$value,
+      "::mlir::Type":$slice
+    ), [{
+      auto ctx = value.getContext();
+      return $_get(ctx, value, slice);
+    }]>
+  ];
+
+  let assemblyFormat = "$value `[` $slice `]`";
+}
+
 def PyIR_PyModuleOp : PyIR_OpBase<"module", [
       IsolatedFromAbove, SingleBlockImplicitTerminator<"PyModuleEndOp">
     ]> {

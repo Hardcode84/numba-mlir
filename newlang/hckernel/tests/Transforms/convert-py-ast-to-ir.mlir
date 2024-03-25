@@ -58,6 +58,25 @@ py_ast.module {
 
 // CHECK-LABEL: py_ir.module
 //       CHECK:  py_ir.func "func"
+//       CHECK:  ^bb0(%[[ARG1:.*]]: !py_ir<subscript !py_ir<ident "Foo">[!py_ir<ident "Bar">]>):
+//       CHECK:  py_ir.storevar "a" %[[ARG1]] : !py_ir<subscript !py_ir<ident "Foo">[!py_ir<ident "Bar">]>
+//       CHECK:  %[[R:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:  py_ir.return %[[R]] : !py_ir.undefined
+py_ast.module {
+  %0 = py_ast.name "Foo"
+  %1 = py_ast.name "Bar"
+  %2 = py_ast.subscript %0 [%1]
+  %3 = py_ast.arg "a" : %2
+  py_ast.func "func"(%3) {
+    %4 = py_ast.name "A"
+    py_ast.return %4
+  }
+}
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK:  py_ir.func "func"
 //       CHECK:  %[[C1:.*]] = py_ir.loadvar "Cond" : !py_ir.undefined
 //       CHECK:  %[[C2:.*]] = py_ir.cast %[[C1]] : !py_ir.undefined to i1
 //       CHECK:  cf.cond_br %[[C2]], ^bb1, ^bb2

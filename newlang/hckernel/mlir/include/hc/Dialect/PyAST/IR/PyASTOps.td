@@ -173,7 +173,7 @@ def PyAST_NameOp : PyAST_PureOpBase<"name"> {
   let assemblyFormat = "attr-dict $id";
 }
 
-def PyAST_SubscriptOp : PyAST_OpBase<"subscript"> {
+def PyAST_SubscriptOp : PyAST_PureOpBase<"subscript"> {
   let arguments = (ins PyAST_ASTNodeType:$value, PyAST_ASTNodeType:$slice);
   let results = (outs PyAST_ASTNodeType:$result);
 
