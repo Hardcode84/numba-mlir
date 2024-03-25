@@ -142,7 +142,7 @@ def PyIR_StoreVarOp : PyIR_OpBase<"storevar"> {
   let assemblyFormat = "attr-dict $name $value `:` type($value)";
 }
 
-def PyIR_LoadVarOp : PyIR_OpBase<"loadvar", [Pure]> {
+def PyIR_LoadVarOp : PyIR_OpBase<"loadvar", [NoMemoryEffect]> {
   let arguments = (ins StrAttr:$name);
   let results = (outs AnyType:$result);
 
