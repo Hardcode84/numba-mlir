@@ -33,6 +33,16 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
   return val;
 }
 
+static void setVar(mlir::OpBuilder &builder, mlir::Location loc,
+                   mlir::Value target, mlir::Value val) {
+  if (auto name = target.getDefiningOp<hc::py_ast::NameOp>()) {
+    builder.create<hc::py_ir::StoreVarOp>(loc, name.getId(), val);
+    return;
+  }
+
+  llvm_unreachable("Unknown setvar node");
+}
+
 static mlir::Type getType(mlir::Value astNode) {
   auto ctx = astNode.getContext();
   if (auto name = astNode.getDefiningOp<hc::py_ast::NameOp>())
@@ -223,6 +233,25 @@ public:
   }
 };
 
+class ConvertAssign final
+    : public mlir::OpRewritePattern<hc::py_ast::AssignOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hc::py_ast::AssignOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    mlir::Location loc = op.getLoc();
+    mlir::Value val = getVar(rewriter, loc, op.getValue());
+
+    for (auto target : op.getTargets())
+      setVar(rewriter, loc, target, val);
+
+    rewriter.eraseOp(op);
+    return mlir::success();
+  }
+};
+
 struct ConvertPyASTToIRPass final
     : public hc::impl::ConvertPyASTToIRPassBase<ConvertPyASTToIRPass> {
 
@@ -249,6 +278,6 @@ struct ConvertPyASTToIRPass final
 } // namespace
 
 void hc::populateConvertPyASTToIRPatterns(mlir::RewritePatternSet &patterns) {
-  patterns.insert<ConvertModule, ConvertFunc, ConvertReturn, ConvertIf>(
-      patterns.getContext());
+  patterns.insert<ConvertModule, ConvertFunc, ConvertReturn, ConvertIf,
+                  ConvertAssign>(patterns.getContext());
 }

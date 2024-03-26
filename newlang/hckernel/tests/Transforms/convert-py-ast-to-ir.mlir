@@ -141,7 +141,6 @@ py_ast.module {
   }
 }
 
-
 // -----
 
 // CHECK-LABEL: py_ir.module
@@ -168,5 +167,23 @@ py_ast.module {
     }
     %1 = py_ast.constant #py_ast.none
     py_ast.return %1
+  }
+}
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK:  py_ir.func "func"
+//       CHECK:  %[[V:.*]] = py_ir.loadvar "B" : !py_ir.undefined
+//       CHECK:  py_ir.storevar "A" %[[V]] : !py_ir.undefined
+//       CHECK:  %[[R:.*]] = py_ir.none
+//       CHECK:  py_ir.return %[[R]] : none
+py_ast.module {
+  py_ast.func "func"() {
+    %0 = py_ast.name "A"
+    %1 = py_ast.name "B"
+    py_ast.assign(%0) = %1
+    %2 = py_ast.constant #py_ast.none
+    py_ast.return %2
   }
 }
