@@ -52,14 +52,14 @@ py_ast.module {
 //       CHECK:  py_ir.storevar "a" %[[ARG1]] : !py_ir.undefined
 //       CHECK:  py_ir.storevar "b" %[[ARG2]] : !py_ir.undefined
 //       CHECK:  py_ir.storevar "c" %[[ARG3]] : !py_ir.undefined
-//       CHECK:  %[[R:.*]] = py_ir.loadvar "A" : !py_ir.undefined
-//       CHECK:  py_ir.return %[[R]] : !py_ir.undefined
+//       CHECK:  %[[R:.*]] = py_ir.none
+//       CHECK:  py_ir.return %[[R]] : none
 py_ast.module {
   %0 = py_ast.arg "a"
   %1 = py_ast.arg "b"
   %2 = py_ast.arg "c"
   py_ast.func "func"(%0, %1, %2) {
-    %3 = py_ast.name "A"
+    %3 = py_ast.constant #py_ast.none
     py_ast.return %3
   }
 }
@@ -70,13 +70,13 @@ py_ast.module {
 //       CHECK:  py_ir.func "func"
 //       CHECK:  ^bb0(%[[ARG1:.*]]: !py_ir<ident "Foo">):
 //       CHECK:  py_ir.storevar "a" %[[ARG1]] : !py_ir<ident "Foo">
-//       CHECK:  %[[R:.*]] = py_ir.loadvar "A" : !py_ir.undefined
-//       CHECK:  py_ir.return %[[R]] : !py_ir.undefined
+//       CHECK:  %[[R:.*]] = py_ir.none
+//       CHECK:  py_ir.return %[[R]] : none
 py_ast.module {
   %0 = py_ast.name "Foo"
   %1 = py_ast.arg "a" : %0
   py_ast.func "func"(%1) {
-    %3 = py_ast.name "A"
+    %3 = py_ast.constant #py_ast.none
     py_ast.return %3
   }
 }
@@ -87,15 +87,15 @@ py_ast.module {
 //       CHECK:  py_ir.func "func"
 //       CHECK:  ^bb0(%[[ARG1:.*]]: !py_ir<subscript !py_ir<ident "Foo">[!py_ir<ident "Bar">]>):
 //       CHECK:  py_ir.storevar "a" %[[ARG1]] : !py_ir<subscript !py_ir<ident "Foo">[!py_ir<ident "Bar">]>
-//       CHECK:  %[[R:.*]] = py_ir.loadvar "A" : !py_ir.undefined
-//       CHECK:  py_ir.return %[[R]] : !py_ir.undefined
+//       CHECK:  %[[R:.*]] = py_ir.none
+//       CHECK:  py_ir.return %[[R]] : none
 py_ast.module {
   %0 = py_ast.name "Foo"
   %1 = py_ast.name "Bar"
   %2 = py_ast.subscript %0 [%1]
   %3 = py_ast.arg "a" : %2
   py_ast.func "func"(%3) {
-    %4 = py_ast.name "A"
+    %4 = py_ast.constant #py_ast.none
     py_ast.return %4
   }
 }
@@ -106,13 +106,13 @@ py_ast.module {
 //       CHECK:  py_ir.func "func"
 //       CHECK:  ^bb0(%[[ARG1:.*]]: !py_ir<const 42 : i64>):
 //       CHECK:  py_ir.storevar "a" %[[ARG1]] : !py_ir<const 42 : i64>
-//       CHECK:  %[[R:.*]] = py_ir.loadvar "A" : !py_ir.undefined
-//       CHECK:  py_ir.return %[[R]] : !py_ir.undefined
+//       CHECK:  %[[R:.*]] = py_ir.none
+//       CHECK:  py_ir.return %[[R]] : none
 py_ast.module {
   %0 = py_ast.constant 42 : i64
   %1 = py_ast.arg "a" : %0
   py_ast.func "func"(%1) {
-    %3 = py_ast.name "A"
+    %3 = py_ast.constant #py_ast.none
     py_ast.return %3
   }
 }
@@ -128,15 +128,15 @@ py_ast.module {
 //       CHECK:  "test.test1"() : () -> ()
 //       CHECK:  cf.br ^bb2
 //       CHECK:  ^bb2
-//       CHECK:  %[[R:.*]] = py_ir.loadvar "A" : !py_ir.undefined
-//       CHECK:  py_ir.return %[[R]] : !py_ir.undefined
+//       CHECK:  %[[R:.*]] = py_ir.none
+//       CHECK:  py_ir.return %[[R]] : none
 py_ast.module {
   py_ast.func "func"() {
     %0 = py_ast.name "Cond"
     py_ast.if %0 {
       "test.test1"() : () -> ()
     } {}
-    %1 = py_ast.name "A"
+    %1 = py_ast.constant #py_ast.none
     py_ast.return %1
   }
 }
@@ -156,8 +156,8 @@ py_ast.module {
 //       CHECK:  "test.test2"() : () -> ()
 //       CHECK:  cf.br ^bb3
 //       CHECK:  ^bb3
-//       CHECK:  %[[R:.*]] = py_ir.loadvar "A" : !py_ir.undefined
-//       CHECK:  py_ir.return %[[R]] : !py_ir.undefined
+//       CHECK:  %[[R:.*]] = py_ir.none
+//       CHECK:  py_ir.return %[[R]] : none
 py_ast.module {
   py_ast.func "func"() {
     %0 = py_ast.name "Cond"
@@ -166,7 +166,7 @@ py_ast.module {
     } {
       "test.test2"() : () -> ()
     }
-    %1 = py_ast.name "A"
+    %1 = py_ast.constant #py_ast.none
     py_ast.return %1
   }
 }
