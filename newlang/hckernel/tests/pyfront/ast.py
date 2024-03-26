@@ -154,6 +154,22 @@ def func():
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func "func"()
+#       CHECK:  %[[A:.*]] = py_ast.name "A"
+#       CHECK:  %[[B:.*]] = py_ast.name "B"
+#       CHECK:  %[[T:.*]] = py_ast.tuple %[[A]], %[[B]]
+#       CHECK:  %[[C:.*]] = py_ast.name "C"
+#       CHECK:  %[[D:.*]] = py_ast.name "D"
+#       CHECK:  %[[R:.*]] = py_ast.tuple %[[C]], %[[D]]
+#       CHECK: py_ast.assign(%[[T]]) = %[[R]]
+def func():
+    A, B = C, D
+
+
+# -----
+
+
+# CHECK-LABEL: py_ast.module
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[A:.*]] = py_ast.name "a"
 #       CHECK: %[[B:.*]] = py_ast.name "b"
 #       CHECK: %[[F:.*]] = py_ast.name "foo"

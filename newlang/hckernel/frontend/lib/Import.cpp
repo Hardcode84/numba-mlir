@@ -276,6 +276,7 @@ struct TupleHandler {
     args = args.take_back(nArgs);
     mlir::Value res =
         builder.create<hc::py_ast::TupleOp>(state.getLoc(node), args);
+    state.argsStack.pop_back_n(nArgs);
     state.argsStack.push_back(res);
   }
 };
