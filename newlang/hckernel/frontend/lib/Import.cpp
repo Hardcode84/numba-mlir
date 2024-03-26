@@ -490,14 +490,13 @@ struct IfHandler {
   }
 
   static void parseThenBody(ParserState &state, py::handle node) {
-    state.pushGuard();
     auto &builder = state.builder;
-
     auto test = state.argsStack.pop_back_val();
-
     auto hasElse = !node.attr("orelse").is_none();
     auto op =
         builder.create<hc::py_ast::IfOp>(state.getLoc(node), test, hasElse);
+
+    state.pushGuard();
 
     builder.setInsertionPointToStart(op.getBody(0));
 
