@@ -203,7 +203,7 @@ def PyAST_TupleOp : PyAST_OpBase<"tuple"> {
   let assemblyFormat = "attr-dict $elts";
 }
 
-def PyAST_AttributeOp : PyAST_OpBase<"attribute"> {
+def PyAST_AttributeOp : PyAST_PureOpBase<"attribute"> {
   let arguments = (ins PyAST_ASTNodeType:$value, StrAttr:$attr);
   let results = (outs PyAST_ASTNodeType:$result);
 

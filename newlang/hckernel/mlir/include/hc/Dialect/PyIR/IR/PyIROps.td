@@ -204,4 +204,22 @@ def PyIR_GetItemOp : PyIR_OpBase<"getitem"> {
   let assemblyFormat = "attr-dict $target `:` type($target) `[` $index `:` type($index) `]` `->` type($result)";
 }
 
+def PyIR_SetAttrOp : PyIR_OpBase<"setattr"> {
+  let arguments = (ins
+    AnyType:$target,
+    StrAttr:$name,
+    AnyType:$value);
+
+  let assemblyFormat = "attr-dict $target `:` type($target) `_` $name `=` $value `:` type($value)";
+}
+
+def PyIR_GetAttrOp : PyIR_OpBase<"getattr"> {
+  let arguments = (ins
+    AnyType:$target,
+    StrAttr:$name);
+  let results = (outs AnyType:$result);
+
+  let assemblyFormat = "attr-dict $target `:` type($target) `_` $name `->` type($result)";
+}
+
 #endif // PYIR_OPS

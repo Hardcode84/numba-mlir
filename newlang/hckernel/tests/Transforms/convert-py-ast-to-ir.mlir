@@ -213,3 +213,25 @@ py_ast.module {
     py_ast.return %6
   }
 }
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK:  py_ir.func "func"
+//       CHECK:  %[[C:.*]] = py_ir.loadvar "C" : !py_ir.undefined
+//       CHECK:  %[[T:.*]] = py_ir.getattr %0 : !py_ir.undefined _ "D" -> !py_ir.undefined
+//       CHECK:  %[[A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:  py_ir.setattr %[[A]] : !py_ir.undefined _ "B" = %[[T]] : !py_ir.undefined
+//       CHECK:  %[[R:.*]] = py_ir.none
+//       CHECK:  py_ir.return %[[R]] : none
+py_ast.module {
+  py_ast.func "func"() {
+    %0 = py_ast.name "A"
+    %1 = py_ast.attribute %0 attr "B"
+    %2 = py_ast.name "C"
+    %3 = py_ast.attribute %2 attr "D"
+    py_ast.assign(%1) = %3
+    %4 = py_ast.constant #py_ast.none
+    py_ast.return %4
+  }
+}

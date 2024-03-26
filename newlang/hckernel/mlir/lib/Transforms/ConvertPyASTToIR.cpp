@@ -37,6 +37,13 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
     return builder.create<hc::py_ir::GetItemOp>(loc, type, tgt, slice);
   }
 
+  if (auto attr = val.getDefiningOp<hc::py_ast::AttributeOp>()) {
+    mlir::Value tgt = getVar(builder, loc, attr.getValue());
+    auto name = attr.getAttr();
+    auto type = hc::py_ir::UndefinedType::get(builder.getContext());
+    return builder.create<hc::py_ir::GetAttrOp>(loc, type, tgt, name);
+  }
+
   return val;
 }
 
@@ -54,6 +61,14 @@ static void setVar(mlir::OpBuilder &builder, mlir::Location loc,
     return;
   }
 
+  if (auto attr = target.getDefiningOp<hc::py_ast::AttributeOp>()) {
+    mlir::Value tgt = getVar(builder, loc, attr.getValue());
+    auto name = attr.getAttr();
+    builder.create<hc::py_ir::SetAttrOp>(loc, tgt, name, val);
+    return;
+  }
+
+  llvm::errs() << target << "\n";
   llvm_unreachable("Unknown setvar node");
 }
 
