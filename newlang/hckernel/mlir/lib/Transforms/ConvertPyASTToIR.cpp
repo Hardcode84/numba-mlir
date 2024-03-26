@@ -30,6 +30,13 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
     return builder.create<hc::py_ir::LoadVarOp>(loc, type, name.getId());
   }
 
+  if (auto subscript = val.getDefiningOp<hc::py_ast::SubscriptOp>()) {
+    mlir::Value slice = getVar(builder, loc, subscript.getSlice());
+    mlir::Value tgt = getVar(builder, loc, subscript.getValue());
+    auto type = hc::py_ir::UndefinedType::get(builder.getContext());
+    return builder.create<hc::py_ir::GetItemOp>(loc, type, tgt, slice);
+  }
+
   return val;
 }
 
@@ -37,6 +44,13 @@ static void setVar(mlir::OpBuilder &builder, mlir::Location loc,
                    mlir::Value target, mlir::Value val) {
   if (auto name = target.getDefiningOp<hc::py_ast::NameOp>()) {
     builder.create<hc::py_ir::StoreVarOp>(loc, name.getId(), val);
+    return;
+  }
+
+  if (auto subscript = target.getDefiningOp<hc::py_ast::SubscriptOp>()) {
+    mlir::Value slice = getVar(builder, loc, subscript.getSlice());
+    mlir::Value tgt = getVar(builder, loc, subscript.getValue());
+    builder.create<hc::py_ir::SetItemOp>(loc, tgt, slice, val);
     return;
   }
 

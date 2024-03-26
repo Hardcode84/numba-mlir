@@ -186,4 +186,22 @@ def PyIR_CastOp : PyIR_OpBase<"cast", [Pure, DeclareOpInterfaceMethods<CastOpInt
   let assemblyFormat = "attr-dict $value `:` type($value) `to` type($result)";
 }
 
+def PyIR_SetItemOp : PyIR_OpBase<"setitem"> {
+  let arguments = (ins
+    AnyType:$target,
+    AnyType:$index,
+    AnyType:$value);
+
+  let assemblyFormat = "attr-dict $target `:` type($target) `[` $index `:` type($index) `]` `=` $value `:` type($value)";
+}
+
+def PyIR_GetItemOp : PyIR_OpBase<"getitem"> {
+  let arguments = (ins
+    AnyType:$target,
+    AnyType:$index);
+  let results = (outs AnyType:$result);
+
+  let assemblyFormat = "attr-dict $target `:` type($target) `[` $index `:` type($index) `]` `->` type($result)";
+}
+
 #endif // PYIR_OPS
