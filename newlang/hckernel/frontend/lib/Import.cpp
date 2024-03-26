@@ -119,7 +119,7 @@ struct ParserState {
       auto &&[node, handler] = handlersStack.pop_back_val();
       handler(*this, node);
     }
-    assert(argsStack.emty());
+    assert(argsStack.empty());
     assert(guardsStack.empty());
   }
 };
@@ -492,7 +492,7 @@ struct IfHandler {
   static void parseThenBody(ParserState &state, py::handle node) {
     auto &builder = state.builder;
     auto test = state.argsStack.pop_back_val();
-    auto hasElse = !node.attr("orelse").is_none();
+    auto hasElse = py::len(node.attr("orelse")) > 0;
     auto op =
         builder.create<hc::py_ast::IfOp>(state.getLoc(node), test, hasElse);
 
@@ -526,6 +526,44 @@ struct IfHandler {
   static void parseElseBody(ParserState &state, py::handle node) {
     state.pushHandler(node, &popGuard);
     state.pushHandlers(node.attr("orelse"));
+  }
+
+  static void popGuard(ParserState &state, py::handle /*node*/) {
+    state.popGuard();
+  }
+};
+
+struct ForHandler {
+  static py::object getClass(py::handle astMod) { return astMod.attr("For"); }
+
+  static void parse(ParserState &state, py::handle node) {
+    state.pushHandler(node, &parseBody);
+    auto target = node.attr("target");
+    auto iter = node.attr("iter");
+    state.pushHandler(target);
+    state.pushHandler(iter);
+  }
+
+  static void parseBody(ParserState &state, py::handle node) {
+    auto hasElse = py::len(node.attr("orelse")) > 0;
+    if (hasElse) {
+      reportError(llvm::Twine("else statement is not supported for \"for\""
+                              " loop"));
+    }
+
+    auto &builder = state.builder;
+
+    auto target = state.argsStack.pop_back_val();
+    auto iter = state.argsStack.pop_back_val();
+
+    auto op =
+        builder.create<hc::py_ast::ForOp>(state.getLoc(node), target, iter);
+
+    state.pushGuard();
+
+    builder.setInsertionPointToStart(op.getBody(0));
+    state.pushHandler(node, &popGuard);
+    state.pushHandlers(node.attr("body"));
   }
 
   static void popGuard(ParserState &state, py::handle /*node*/) {
@@ -582,6 +620,33 @@ struct CompareHandler {
   }
 };
 
+static hc::py_ast::BinOpVal getBinOpVal(ParserState &state, py::handle obj) {
+  using BinOpVal = hc::py_ast::BinOpVal;
+  py::handle astMod = state.astModule;
+  std::pair<py::handle, BinOpVal> handlers[] = {
+      {astMod.attr("Add"), BinOpVal::add},
+      {astMod.attr("Sub"), BinOpVal::sub},
+      {astMod.attr("Mult"), BinOpVal::mul},
+      {astMod.attr("Div"), BinOpVal::div},
+      {astMod.attr("FloorDiv"), BinOpVal::floor_div},
+      {astMod.attr("Mod"), BinOpVal::mod},
+      {astMod.attr("Pow"), BinOpVal::pow},
+      {astMod.attr("LShift"), BinOpVal::lshift},
+      {astMod.attr("RShift"), BinOpVal::rshift},
+      {astMod.attr("BitOr"), BinOpVal::bit_or},
+      {astMod.attr("BitXor"), BinOpVal::bit_xor},
+      {astMod.attr("BitAnd"), BinOpVal::bit_and},
+      {astMod.attr("MatMult"), BinOpVal::matmul},
+  };
+
+  for (auto &&[t, op] : handlers)
+    if (py::isinstance(obj, t))
+      return op;
+
+  reportError(llvm::Twine("unhandled BinOp type \"") +
+              py::str(obj.get_type()).cast<std::string>() + "\"");
+}
+
 struct BinOpHandler {
   static py::object getClass(py::handle astMod) { return astMod.attr("BinOp"); }
 
@@ -595,38 +660,32 @@ struct BinOpHandler {
     auto right = state.argsStack.pop_back_val();
     auto left = state.argsStack.pop_back_val();
 
-    using BinOpVal = hc::py_ast::BinOpVal;
-    py::handle astMod = state.astModule;
-    std::pair<py::handle, BinOpVal> handlers[] = {
-        {astMod.attr("Add"), BinOpVal::add},
-        {astMod.attr("Sub"), BinOpVal::sub},
-        {astMod.attr("Mult"), BinOpVal::mul},
-        {astMod.attr("Div"), BinOpVal::div},
-        {astMod.attr("FloorDiv"), BinOpVal::floor_div},
-        {astMod.attr("Mod"), BinOpVal::mod},
-        {astMod.attr("Pow"), BinOpVal::pow},
-        {astMod.attr("LShift"), BinOpVal::lshift},
-        {astMod.attr("RShift"), BinOpVal::rshift},
-        {astMod.attr("BitOr"), BinOpVal::bit_or},
-        {astMod.attr("BitXor"), BinOpVal::bit_xor},
-        {astMod.attr("BitAnd"), BinOpVal::bit_and},
-        {astMod.attr("MatMult"), BinOpVal::matmul},
-    };
-
-    auto getBinOp = [&](py::handle obj) -> BinOpVal {
-      for (auto &&[t, op] : handlers)
-        if (py::isinstance(obj, t))
-          return op;
-
-      reportError(llvm::Twine("unhandled BinOp type \"") +
-                  py::str(obj.get_type()).cast<std::string>() + "\"");
-    };
-
     auto &builder = state.builder;
     mlir::Value res = builder.create<hc::py_ast::BinOp>(
-        state.getLoc(node), left, getBinOp(node.attr("op")), right);
+        state.getLoc(node), left, getBinOpVal(state, node.attr("op")), right);
 
     state.argsStack.push_back(res);
+  }
+};
+
+struct AugAssignHandler {
+  static py::object getClass(py::handle astMod) {
+    return astMod.attr("AugAssign");
+  }
+
+  static void parse(ParserState &state, py::handle node) {
+    state.pushHandler(node, &processArgs);
+    state.pushHandler(node.attr("target"));
+    state.pushHandler(node.attr("value"));
+  }
+
+  static void processArgs(ParserState &state, py::handle node) {
+    auto target = state.argsStack.pop_back_val();
+    auto value = state.argsStack.pop_back_val();
+
+    auto &builder = state.builder;
+    builder.create<hc::py_ast::AugAssignOp>(
+        state.getLoc(node), target, getBinOpVal(state, node.attr("op")), value);
   }
 };
 
@@ -677,8 +736,10 @@ void fillHandlers(
   handlers.emplace_back(getHandler<KeywordHandler>(astMod));
   handlers.emplace_back(getHandler<BoolOpHandler>(astMod));
   handlers.emplace_back(getHandler<IfHandler>(astMod));
+  handlers.emplace_back(getHandler<ForHandler>(astMod));
   handlers.emplace_back(getHandler<CompareHandler>(astMod));
   handlers.emplace_back(getHandler<BinOpHandler>(astMod));
+  handlers.emplace_back(getHandler<AugAssignHandler>(astMod));
   handlers.emplace_back(getHandler<ReturnHandler>(astMod));
 }
 } // namespace
