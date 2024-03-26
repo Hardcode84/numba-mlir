@@ -16,6 +16,15 @@ namespace hc {
 
 static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
                           mlir::Value val) {
+  if (auto const_ = val.getDefiningOp<hc::py_ast::ConstantOp>()) {
+    auto attr = const_.getValue();
+    if (mlir::isa<hc::py_ast::NoneAttr>(attr))
+      return builder.create<hc::py_ir::NoneOp>(loc);
+
+    return builder.create<hc::py_ir::ConstantOp>(
+        loc, mlir::cast<mlir::TypedAttr>(attr));
+  }
+
   if (auto name = val.getDefiningOp<hc::py_ast::NameOp>()) {
     auto type = hc::py_ir::UndefinedType::get(builder.getContext());
     return builder.create<hc::py_ir::LoadVarOp>(loc, type, name.getId());

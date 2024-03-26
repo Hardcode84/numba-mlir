@@ -26,6 +26,10 @@ void hc::py_ir::PyIRDialect::initialize() {
       >();
 }
 
+mlir::OpFoldResult hc::py_ir::ConstantOp::fold(FoldAdaptor /*adaptor*/) {
+  return getValue();
+}
+
 void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
                                 ::mlir::OperationState &odsState,
                                 llvm::StringRef name, mlir::TypeRange argTypes,

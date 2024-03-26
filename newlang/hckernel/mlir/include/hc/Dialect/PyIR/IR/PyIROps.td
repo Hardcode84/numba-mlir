@@ -7,6 +7,7 @@ include "mlir/Interfaces/CastInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/IR/AttrTypeBase.td"
+include "mlir/IR/BuiltinAttributeInterfaces.td"
 include "mlir/IR/BuiltinTypeInterfaces.td"
 include "mlir/IR/EnumAttr.td"
 include "mlir/IR/OpAsmInterface.td"
@@ -88,6 +89,35 @@ def PyIR_ConstType : PyIR_Type<"Const", "const", [], "::mlir::Type"> {
   ];
 
   let assemblyFormat = "$value";
+}
+
+def PyIR_NoneOp : PyIR_OpBase<"none", [Pure]> {
+  let results = (outs NoneType:$result);
+
+  let builders = [
+    OpBuilder<(ins), [{
+      build($_builder, $_state, ::mlir::NoneType::get($_builder.getContext()));
+    }]>
+  ];
+
+  let assemblyFormat = "attr-dict";
+}
+
+def PyIR_ConstantOp : PyIR_OpBase<"constant",
+    [ConstantLike, Pure, AllTypesMatch<["value", "result"]>]> {
+
+  let arguments = (ins TypedAttrInterface:$value);
+  let results = (outs AnyType:$result);
+
+  let builders = [
+    OpBuilder<(ins "::mlir::TypedAttr":$value), [{
+      build($_builder, $_state, value.getType(), value);
+    }]>
+  ];
+
+  let assemblyFormat = "attr-dict $value";
+
+  let hasFolder = 1;
 }
 
 def PyIR_PyModuleOp : PyIR_OpBase<"module", [
