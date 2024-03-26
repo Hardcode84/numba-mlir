@@ -141,6 +141,14 @@ void hc::py_ast::ForOp::build(::mlir::OpBuilder &odsBuilder,
   ensureTerminator(*bodyRegion, odsBuilder, odsState.location);
 }
 
+void hc::py_ast::WhileOp::build(::mlir::OpBuilder &odsBuilder,
+                                ::mlir::OperationState &odsState,
+                                mlir::Value test) {
+  odsState.addOperands(test);
+  auto bodyRegion = odsState.addRegion();
+  ensureTerminator(*bodyRegion, odsBuilder, odsState.location);
+}
+
 void hc::py_ast::CompareOp::build(::mlir::OpBuilder &odsBuilder,
                                   ::mlir::OperationState &odsState,
                                   mlir::Value left, mlir::ArrayRef<CmpOp> ops,

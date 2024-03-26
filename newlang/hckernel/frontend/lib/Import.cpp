@@ -189,6 +189,26 @@ struct PassHandler {
   }
 };
 
+struct BreakHandler {
+  static py::object getClass(py::handle astMod) { return astMod.attr("Break"); }
+
+  static void parse(ParserState &state, py::handle node) {
+    auto &builder = state.builder;
+    builder.create<hc::py_ast::BreakOp>(state.getLoc(node));
+  }
+};
+
+struct ContinueHandler {
+  static py::object getClass(py::handle astMod) {
+    return astMod.attr("Continue");
+  }
+
+  static void parse(ParserState &state, py::handle node) {
+    auto &builder = state.builder;
+    builder.create<hc::py_ast::ContinueOp>(state.getLoc(node));
+  }
+};
+
 struct ArgHandler {
   static py::object getClass(py::handle astMod) { return astMod.attr("arg"); }
 
@@ -571,6 +591,40 @@ struct ForHandler {
   }
 };
 
+struct WhileHandler {
+  static py::object getClass(py::handle astMod) { return astMod.attr("While"); }
+
+  static void parse(ParserState &state, py::handle node) {
+    state.pushHandler(node, &parseBody);
+    auto test = node.attr("test");
+    state.pushHandler(test);
+  }
+
+  static void parseBody(ParserState &state, py::handle node) {
+    auto hasElse = py::len(node.attr("orelse")) > 0;
+    if (hasElse) {
+      reportError(llvm::Twine("else statement is not supported for \"while\""
+                              " loop"));
+    }
+
+    auto &builder = state.builder;
+
+    auto test = state.argsStack.pop_back_val();
+
+    auto op = builder.create<hc::py_ast::WhileOp>(state.getLoc(node), test);
+
+    state.pushGuard();
+
+    builder.setInsertionPointToStart(op.getBody(0));
+    state.pushHandler(node, &popGuard);
+    state.pushHandlers(node.attr("body"));
+  }
+
+  static void popGuard(ParserState &state, py::handle /*node*/) {
+    state.popGuard();
+  }
+};
+
 struct CompareHandler {
   static py::object getClass(py::handle astMod) {
     return astMod.attr("Compare");
@@ -723,6 +777,8 @@ void fillHandlers(
   handlers.emplace_back(getHandler<ModuleHandler>(astMod));
   handlers.emplace_back(getHandler<FuncHandler>(astMod));
   handlers.emplace_back(getHandler<PassHandler>(astMod));
+  handlers.emplace_back(getHandler<BreakHandler>(astMod));
+  handlers.emplace_back(getHandler<ContinueHandler>(astMod));
   handlers.emplace_back(getHandler<ArgHandler>(astMod));
   handlers.emplace_back(getHandler<NameHandler>(astMod));
   handlers.emplace_back(getHandler<SubscriptHandler>(astMod));
@@ -737,6 +793,7 @@ void fillHandlers(
   handlers.emplace_back(getHandler<BoolOpHandler>(astMod));
   handlers.emplace_back(getHandler<IfHandler>(astMod));
   handlers.emplace_back(getHandler<ForHandler>(astMod));
+  handlers.emplace_back(getHandler<WhileHandler>(astMod));
   handlers.emplace_back(getHandler<CompareHandler>(astMod));
   handlers.emplace_back(getHandler<BinOpHandler>(astMod));
   handlers.emplace_back(getHandler<AugAssignHandler>(astMod));

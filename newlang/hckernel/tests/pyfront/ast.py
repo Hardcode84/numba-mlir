@@ -384,3 +384,44 @@ def func():
 def func():
     for A in B:
         pass
+
+
+# -----
+
+
+# CHECK-LABEL: py_ast.module
+#       CHECK: py_ast.func "func"()
+#       CHECK-DAG: %[[A:.*]] = py_ast.name "A"
+#       CHECK-DAG: %[[B:.*]] = py_ast.name "B"
+#       CHECK: py_ast.for %[[A]] in %[[B]]
+#       CHECK: py_ast.break
+def func():
+    for A in B:
+        break
+
+
+# -----
+
+
+# CHECK-LABEL: py_ast.module
+#       CHECK: py_ast.func "func"()
+#       CHECK-DAG: %[[A:.*]] = py_ast.name "A"
+#       CHECK-DAG: %[[B:.*]] = py_ast.name "B"
+#       CHECK: py_ast.for %[[A]] in %[[B]]
+#       CHECK: py_ast.continue
+def func():
+    for A in B:
+        continue
+
+
+# -----
+
+
+# CHECK-LABEL: py_ast.module
+#       CHECK: py_ast.func "func"()
+#       CHECK: %[[A:.*]] = py_ast.name "A"
+#       CHECK: py_ast.while %[[A]]
+#       CHECK: py_ast.pass
+def func():
+    while A:
+        pass

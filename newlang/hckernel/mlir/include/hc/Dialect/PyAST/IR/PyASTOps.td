@@ -149,6 +149,14 @@ def PyAST_PassOp : PyAST_OpBase<"pass"> {
   let assemblyFormat = "attr-dict";
 }
 
+def PyAST_ContinueOp : PyAST_OpBase<"continue"> {
+  let assemblyFormat = "attr-dict";
+}
+
+def PyAST_BreakOp : PyAST_OpBase<"break"> {
+  let assemblyFormat = "attr-dict";
+}
+
 def PyAST_ArgOp : PyAST_PureOpBase<"arg"> {
   let arguments = (ins StrAttr:$name, Optional<PyAST_ASTNodeType>:$annotation);
   let results = (outs PyAST_ASTNodeType:$result);
@@ -342,6 +350,29 @@ def PyAST_ForOp : PyAST_OpBase<"for", [
 
 def PyAST_ForEndOp : PyAST_OpBase<"for_end", [
   Terminator, HasParent<"ForOp">
+]> {
+  let assemblyFormat = "attr-dict";
+}
+
+def PyAST_WhileOp : PyAST_OpBase<"while", [
+      SingleBlockImplicitTerminator<"WhileEndOp">
+    ]> {
+
+  let arguments = (ins PyAST_ASTNodeType:$test);
+
+  let regions = (region SizedRegion<1>:$bodyRegion);
+
+  let builders = [
+    OpBuilder<(ins "::mlir::Value":$test)>
+  ];
+
+  let skipDefaultBuilders = 1;
+
+  let assemblyFormat = "attr-dict $test $bodyRegion";
+}
+
+def PyAST_WhileEndOp : PyAST_OpBase<"while_end", [
+  Terminator, HasParent<"WhileOp">
 ]> {
   let assemblyFormat = "attr-dict";
 }
