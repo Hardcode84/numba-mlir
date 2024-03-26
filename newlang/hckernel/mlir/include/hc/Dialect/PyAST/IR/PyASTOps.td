@@ -323,6 +323,29 @@ def PyAST_IfEndOp : PyAST_OpBase<"if_end", [
   let assemblyFormat = "attr-dict";
 }
 
+def PyAST_ForOp : PyAST_OpBase<"for", [
+      SingleBlockImplicitTerminator<"ForEndOp">
+    ]> {
+
+  let arguments = (ins PyAST_ASTNodeType:$target, PyAST_ASTNodeType:$iter);
+
+  let regions = (region SizedRegion<1>:$bodyRegion);
+
+  let builders = [
+    OpBuilder<(ins "::mlir::Value":$target, "::mlir::Value":$iter)>
+  ];
+
+  let skipDefaultBuilders = 1;
+
+  let assemblyFormat = "attr-dict $target `in` $iter $bodyRegion";
+}
+
+def PyAST_ForEndOp : PyAST_OpBase<"for_end", [
+  Terminator, HasParent<"ForOp">
+]> {
+  let assemblyFormat = "attr-dict";
+}
+
 def PyAST_CompareOp : PyAST_OpBase<"compare"> {
   let arguments = (ins
       PyAST_ASTNodeType:$left,
@@ -356,6 +379,15 @@ def PyAST_BinOp : PyAST_OpBase<"binop"> {
   ];
 
   let assemblyFormat = "attr-dict $left $op $right";
+}
+
+def PyAST_AugAssignOp : PyAST_OpBase<"aug_assign"> {
+  let arguments = (ins
+      PyAST_ASTNodeType:$target,
+      PyAST_BinOpAttr:$op,
+      PyAST_ASTNodeType:$value);
+
+  let assemblyFormat = "attr-dict $target $op $value";
 }
 
 def PyAST_ReturnOp : PyAST_OpBase<"return", [NoReturn]> {

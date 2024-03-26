@@ -358,3 +358,29 @@ def func():
 #       CHECK: py_ast.return %[[R]]
 def func():
     return None
+
+
+# -----
+
+
+# CHECK-LABEL: py_ast.module
+#       CHECK: py_ast.func "func"()
+#       CHECK-DAG: %[[A:.*]] = py_ast.name "A"
+#       CHECK-DAG: %[[B:.*]] = py_ast.name "B"
+#       CHECK: py_ast.aug_assign %[[A]] add %[[B]]
+def func():
+    A += B
+
+
+# -----
+
+
+# CHECK-LABEL: py_ast.module
+#       CHECK: py_ast.func "func"()
+#       CHECK-DAG: %[[A:.*]] = py_ast.name "A"
+#       CHECK-DAG: %[[B:.*]] = py_ast.name "B"
+#       CHECK: py_ast.for %[[A]] in %[[B]]
+#       CHECK: py_ast.pass
+def func():
+    for A in B:
+        pass
