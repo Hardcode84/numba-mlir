@@ -48,8 +48,10 @@ add_library(${PROJECT_NAME} STATIC ${SOURCES_LIST} ${HEADERS_LIST})
 apply_llvm_compile_flags(${PROJECT_NAME})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    MLIRIR
     MLIRComplexDialect
+    MLIRControlFlowDialect
+    MLIRIR
+    MLIRTransformUtils
     )
 
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE

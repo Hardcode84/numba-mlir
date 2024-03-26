@@ -1,4 +1,4 @@
-# RUN: pyfront %s | FileCheck %s
+# RUN: pyfront front %s | FileCheck %s
 
 
 # CHECK-LABEL: py_ast.module

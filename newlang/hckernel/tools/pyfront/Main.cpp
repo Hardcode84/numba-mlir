@@ -10,11 +10,18 @@
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/Verifier.h>
 #include <mlir/InitAllDialects.h>
+#include <mlir/Pass/PassManager.h>
 #include <mlir/Support/FileUtilities.h>
 #include <mlir/Support/LogicalResult.h>
 #include <mlir/Tools/mlir-opt/MlirOptMain.h>
 
 #include "hc/PyFront/Import.hpp"
+#include "hc/Transforms/Passes.hpp"
+
+enum class Cmd {
+  Front,
+  Full,
+};
 
 using ChunkBufferHandler = llvm::function_ref<mlir::LogicalResult(
     std::unique_ptr<llvm::MemoryBuffer> chunkBuffer, llvm::raw_ostream &os)>;
@@ -103,7 +110,12 @@ splitAndProcessBuffer(std::unique_ptr<llvm::MemoryBuffer> originalBuffer,
   return failure(hadFailure);
 }
 
-static mlir::LogicalResult pyfrontMain(llvm::StringRef inputFilename) {
+static void populatePasses(mlir::PassManager &pm) {
+  pm.addPass(hc::createSimplifyASTPass());
+  pm.addPass(hc::createConvertPyASTToIRPass());
+}
+
+static mlir::LogicalResult pyfrontMain(llvm::StringRef inputFilename, Cmd cmd) {
   std::string errorMessage;
   auto file = mlir::openInputFile(inputFilename, &errorMessage);
   if (!file) {
@@ -124,6 +136,17 @@ static mlir::LogicalResult pyfrontMain(llvm::StringRef inputFilename) {
         res = mlir::failure();
 
       mod.print(os);
+
+      if (cmd == Cmd::Full) {
+        mlir::PassManager pm(&ctx);
+
+        ctx.disableMultithreading();
+        pm.enableIRPrinting();
+
+        populatePasses(pm);
+        if (mlir::failed(pm.run(mod)))
+          return mlir::failure();
+      }
     }
 
     mod->erase();
@@ -135,8 +158,23 @@ static mlir::LogicalResult pyfrontMain(llvm::StringRef inputFilename) {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 2)
-    return 1;
+  if (argc != 3) {
+    llvm::errs() << argv[0] << " front|full <filename>";
+    return EXIT_FAILURE;
+  }
 
-  return mlir::asMainReturnCode(pyfrontMain(argv[1]));
+  llvm::StringRef cmd = argv[1];
+  Cmd cmdId;
+  if (cmd == "front") {
+    cmdId = Cmd::Front;
+  } else if (cmd == "full") {
+    cmdId = Cmd::Full;
+  } else {
+    llvm::errs() << "Unknown command: " << cmd;
+    return EXIT_FAILURE;
+  }
+
+  llvm::StringRef file = argv[2];
+
+  return mlir::asMainReturnCode(pyfrontMain(file, cmdId));
 }
