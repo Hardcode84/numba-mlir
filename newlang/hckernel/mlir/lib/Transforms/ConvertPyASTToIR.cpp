@@ -143,7 +143,7 @@ public:
                   mlir::PatternRewriter &rewriter) const override {
     {
       auto term =
-          mlir::cast<hc::py_ast::PyModuleEndOp>(op.getBody(0)->getTerminator());
+          mlir::cast<hc::py_ast::BlockEndOp>(op.getBody(0)->getTerminator());
       mlir::OpBuilder::InsertionGuard g(rewriter);
       rewriter.setInsertionPoint(term);
       rewriter.replaceOpWithNewOp<hc::py_ir::PyModuleEndOp>(term);

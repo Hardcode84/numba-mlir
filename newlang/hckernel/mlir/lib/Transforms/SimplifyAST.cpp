@@ -13,13 +13,16 @@ namespace hc {
 } // namespace hc
 
 namespace {
-class AddReturn final : public mlir::OpRewritePattern<hc::py_ast::PyFuncEndOp> {
+class AddReturn final : public mlir::OpRewritePattern<hc::py_ast::BlockEndOp> {
 public:
   using OpRewritePattern::OpRewritePattern;
 
   mlir::LogicalResult
-  matchAndRewrite(hc::py_ast::PyFuncEndOp op,
+  matchAndRewrite(hc::py_ast::BlockEndOp op,
                   mlir::PatternRewriter &rewriter) const override {
+    if (!mlir::isa_and_present<hc::py_ast::PyFuncOp>(op->getParentOp()))
+      return mlir::failure();
+
     auto it = op->getIterator();
     if (it != op->getBlock()->begin() &&
         mlir::isa<hc::py_ast::ReturnOp>(*std::prev(it)))

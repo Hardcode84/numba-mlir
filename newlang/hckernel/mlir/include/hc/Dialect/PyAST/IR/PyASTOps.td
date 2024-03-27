@@ -94,8 +94,14 @@ def NoReturn : NativeOpTrait<"NoReturn"> {
   let cppNamespace = "::hc::py_ast";
 }
 
+def PyAST_BlockEndOp : PyAST_OpBase<"block_end", [Terminator,
+    ParentOneOf<["PyModuleOp", "PyFuncOp", "IfOp", "ForOp", "WhileOp"]>
+]> {
+  let assemblyFormat = "attr-dict";
+}
+
 def PyAST_PyModuleOp : PyAST_OpBase<"module", [
-      IsolatedFromAbove, SingleBlockImplicitTerminator<"PyModuleEndOp">
+      IsolatedFromAbove, SingleBlockImplicitTerminator<"BlockEndOp">
     ]> {
 
 
@@ -110,14 +116,8 @@ def PyAST_PyModuleOp : PyAST_OpBase<"module", [
   let assemblyFormat = "attr-dict-with-keyword $bodyRegion";
 }
 
-def PyAST_PyModuleEndOp : PyAST_OpBase<"module_end", [
-  Terminator, HasParent<"PyModuleOp">
-]> {
-  let assemblyFormat = "attr-dict";
-}
-
 def PyAST_PyFuncOp : PyAST_OpBase<"func", [
-      SingleBlockImplicitTerminator<"PyFuncEndOp">, AttrSizedOperandSegments
+      SingleBlockImplicitTerminator<"BlockEndOp">, AttrSizedOperandSegments
     ]> {
 
   let arguments = (ins
@@ -137,12 +137,6 @@ def PyAST_PyFuncOp : PyAST_OpBase<"func", [
   let skipDefaultBuilders = 1;
 
   let assemblyFormat = "attr-dict $name `(` $args `)` ( `decorators` $decorators^ )? $bodyRegion";
-}
-
-def PyAST_PyFuncEndOp : PyAST_OpBase<"func_end", [
-  Terminator, HasParent<"PyFuncOp">
-]> {
-  let assemblyFormat = "attr-dict";
 }
 
 def PyAST_PassOp : PyAST_OpBase<"pass"> {
@@ -308,7 +302,7 @@ def PyAST_BoolOp : PyAST_OpBase<"bool_op"> {
 }
 
 def PyAST_IfOp : PyAST_OpBase<"if", [
-      SingleBlockImplicitTerminator<"IfEndOp">
+      SingleBlockImplicitTerminator<"BlockEndOp">
     ]> {
 
   let arguments = (ins PyAST_ASTNodeType:$test);
@@ -325,14 +319,8 @@ def PyAST_IfOp : PyAST_OpBase<"if", [
   let assemblyFormat = "attr-dict $test $bodyRegion $orelseRegion";
 }
 
-def PyAST_IfEndOp : PyAST_OpBase<"if_end", [
-  Terminator, HasParent<"IfOp">
-]> {
-  let assemblyFormat = "attr-dict";
-}
-
 def PyAST_ForOp : PyAST_OpBase<"for", [
-      SingleBlockImplicitTerminator<"ForEndOp">
+      SingleBlockImplicitTerminator<"BlockEndOp">
     ]> {
 
   let arguments = (ins PyAST_ASTNodeType:$target, PyAST_ASTNodeType:$iter);
@@ -348,14 +336,8 @@ def PyAST_ForOp : PyAST_OpBase<"for", [
   let assemblyFormat = "attr-dict $target `in` $iter $bodyRegion";
 }
 
-def PyAST_ForEndOp : PyAST_OpBase<"for_end", [
-  Terminator, HasParent<"ForOp">
-]> {
-  let assemblyFormat = "attr-dict";
-}
-
 def PyAST_WhileOp : PyAST_OpBase<"while", [
-      SingleBlockImplicitTerminator<"WhileEndOp">
+      SingleBlockImplicitTerminator<"BlockEndOp">
     ]> {
 
   let arguments = (ins PyAST_ASTNodeType:$test);
@@ -369,12 +351,6 @@ def PyAST_WhileOp : PyAST_OpBase<"while", [
   let skipDefaultBuilders = 1;
 
   let assemblyFormat = "attr-dict $test $bodyRegion";
-}
-
-def PyAST_WhileEndOp : PyAST_OpBase<"while_end", [
-  Terminator, HasParent<"WhileOp">
-]> {
-  let assemblyFormat = "attr-dict";
 }
 
 def PyAST_CompareOp : PyAST_OpBase<"compare"> {
