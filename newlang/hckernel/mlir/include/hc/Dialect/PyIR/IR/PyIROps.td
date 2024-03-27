@@ -222,4 +222,20 @@ def PyIR_GetAttrOp : PyIR_OpBase<"getattr"> {
   let assemblyFormat = "attr-dict $target `:` type($target) `_` $name `->` type($result)";
 }
 
+def PyIR_TuplePackOp : PyIR_OpBase<"tuple_pack"> {
+  let arguments = (ins Variadic<AnyType>:$args);
+
+  let results = (outs AnyType:$result);
+
+  let assemblyFormat = "attr-dict $args `:` type($args) `->` type($result)";
+}
+
+def PyIR_TupleUnpackOp : PyIR_OpBase<"tuple_unpack"> {
+  let arguments = (ins AnyType:$arg);
+
+  let results = (outs Variadic<AnyType>:$results);
+
+  let assemblyFormat = "attr-dict $arg `:` type($arg) `->` type($results)";
+}
+
 #endif // PYIR_OPS

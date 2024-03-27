@@ -192,7 +192,7 @@ def PyAST_ExprOp : PyAST_OpBase<"expr"> {
   let assemblyFormat = "attr-dict $value";
 }
 
-def PyAST_TupleOp : PyAST_OpBase<"tuple"> {
+def PyAST_TupleOp : PyAST_PureOpBase<"tuple"> {
   let arguments = (ins Variadic<PyAST_ASTNodeType>:$elts);
   let results = (outs PyAST_ASTNodeType:$result);
 

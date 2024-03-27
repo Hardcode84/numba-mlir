@@ -235,3 +235,29 @@ py_ast.module {
     py_ast.return %4
   }
 }
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK:  py_ir.func "func"
+//       CHECK:  %[[C:.*]] = py_ir.loadvar "C" : !py_ir.undefined
+//       CHECK:  %[[D:.*]] = py_ir.loadvar "D" : !py_ir.undefined
+//       CHECK:  %[[T1:.*]] = py_ir.tuple_pack %[[C]], %[[D]] : !py_ir.undefined, !py_ir.undefined -> !py_ir.undefined
+//       CHECK:  %[[T2:.*]]:2 = py_ir.tuple_unpack %2 : !py_ir.undefined -> !py_ir.undefined, !py_ir.undefined
+//       CHECK:  py_ir.storevar "A" %[[T2]]#0 : !py_ir.undefined
+//       CHECK:  py_ir.storevar "B" %[[T2]]#1 : !py_ir.undefined
+//       CHECK:  %[[R:.*]] = py_ir.none
+//       CHECK:  py_ir.return %[[R]] : none
+py_ast.module {
+  py_ast.func "func"() {
+    %0 = py_ast.name "A"
+    %1 = py_ast.name "B"
+    %2 = py_ast.tuple %0, %1
+    %3 = py_ast.name "C"
+    %4 = py_ast.name "D"
+    %5 = py_ast.tuple %3, %4
+    py_ast.assign(%2) = %5
+    %6 = py_ast.constant #py_ast.none
+    py_ast.return %6
+  }
+}

@@ -44,6 +44,15 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
     return builder.create<hc::py_ir::GetAttrOp>(loc, type, tgt, name);
   }
 
+  if (auto tuple = val.getDefiningOp<hc::py_ast::TupleOp>()) {
+    llvm::SmallVector<mlir::Value> args;
+    for (auto el : tuple.getElts())
+      args.emplace_back(getVar(builder, loc, el));
+
+    auto type = hc::py_ir::UndefinedType::get(builder.getContext());
+    return builder.create<hc::py_ir::TuplePackOp>(loc, type, args);
+  }
+
   return val;
 }
 
@@ -65,6 +74,18 @@ static void setVar(mlir::OpBuilder &builder, mlir::Location loc,
     mlir::Value tgt = getVar(builder, loc, attr.getValue());
     auto name = attr.getAttr();
     builder.create<hc::py_ir::SetAttrOp>(loc, tgt, name, val);
+    return;
+  }
+
+  if (auto tuple = target.getDefiningOp<hc::py_ast::TupleOp>()) {
+    llvm::SmallVector<mlir::Type> types(
+        tuple.getElts().size(),
+        hc::py_ir::UndefinedType::get(builder.getContext()));
+    auto unpack = builder.create<hc::py_ir::TupleUnpackOp>(loc, types, val);
+
+    for (auto &&[el, arg] : llvm::zip(tuple.getElts(), unpack.getResults()))
+      setVar(builder, loc, el, arg);
+
     return;
   }
 
