@@ -96,7 +96,9 @@ struct ReconstuctPySSA {
     } else if (auto condBr = mlir::dyn_cast<mlir::cf::CondBranchOp>(term)) {
       auto trueArgs = llvm::to_vector(condBr.getTrueDestOperands());
       auto falseArgs = llvm::to_vector(condBr.getFalseDestOperands());
-      if (condBr.getTrueDest() == successor) {
+      if (condBr.getTrueDest() == successor &&
+          !(condBr.getFalseDest() == successor &&
+            trueArgs.size() == successor->getNumArguments())) {
         trueArgs.emplace_back(val);
       } else {
         assert(condBr.getFalseDest() == successor);
