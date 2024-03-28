@@ -32,6 +32,7 @@ add_subdirectory(include/hc/Transforms)
 set(SOURCES_LIST
     lib/Dialect/PyAST/IR/PyASTOps.cpp
     lib/Dialect/PyIR/IR/PyIROps.cpp
+    lib/Transforms/ClenaupPySetVar.cpp
     lib/Transforms/ConvertPyASTToIR.cpp
     lib/Transforms/ReconstructPySSA.cpp
     lib/Transforms/SimplifyAST.cpp

@@ -31,5 +31,12 @@ def ReconstuctPySSAPass : Pass<"hc-reconstruct-py-ssa-pass"> {
   }];
 }
 
+def CleanupPySetVarPass : Pass<"hc-cleanup-py-setvar-pass"> {
+  let summary = "TBD";
+  let description = [{
+    TBD
+  }];
+}
+
 
 #endif // _HC_TRANSFORMS_PASSES_TD_INCLUDED_
