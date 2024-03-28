@@ -32,11 +32,13 @@ mlir::OpFoldResult hc::py_ir::ConstantOp::fold(FoldAdaptor /*adaptor*/) {
 
 void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
                                 ::mlir::OperationState &odsState,
-                                llvm::StringRef name, mlir::TypeRange argTypes,
+                                mlir::Type resultType, llvm::StringRef name,
+                                mlir::TypeRange argTypes,
                                 mlir::ValueRange decorators) {
   odsState.addAttribute(getNameAttrName(odsState.name),
                         odsBuilder.getStringAttr(name));
   odsState.addOperands(decorators);
+  odsState.addTypes(resultType);
 
   mlir::Region *region = odsState.addRegion();
 

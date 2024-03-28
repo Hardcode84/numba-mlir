@@ -4,7 +4,7 @@
 //       CHECK:  %[[B:.*]] = py_ir.loadvar "B" : none
 //       CHECK:  py_ir.return %[[B]] : none
 py_ir.module {
-  py_ir.func "foo" {
+  %f = py_ir.func "foo" -> !py_ir.undefined {
     %0 = py_ir.loadvar "B" : none
     py_ir.storevar "A" %0 : none
     %1 = py_ir.loadvar "A" : none
@@ -20,7 +20,7 @@ py_ir.module {
 //       CHECK:  ^bb1(%[[B1:.*]]: none):
 //       CHECK:  py_ir.return %[[B1]] : none
 py_ir.module {
-  py_ir.func "foo" {
+  %f = py_ir.func "foo" -> !py_ir.undefined {
    ^bb0:
     %0 = py_ir.loadvar "B" : none
     py_ir.storevar "A" %0 : none
@@ -41,7 +41,7 @@ py_ir.module {
 //       CHECK:  ^bb2(%[[B2:.*]]: none):
 //       CHECK:  py_ir.return %[[B2]] : none
 py_ir.module {
-  py_ir.func "foo" {
+  %f = py_ir.func "foo" -> !py_ir.undefined {
    ^bb0:
     %0 = py_ir.loadvar "B" : none
     py_ir.storevar "A" %0 : none
@@ -64,7 +64,7 @@ py_ir.module {
 //       CHECK:  ^bb2(%[[B2:.*]]: none):
 //       CHECK:  py_ir.return %[[B2]] : none
 py_ir.module {
-  py_ir.func "foo" {
+  %f = py_ir.func "foo" -> !py_ir.undefined {
    ^bb0:
     %0 = py_ir.loadvar "B" : none
     py_ir.storevar "A" %0 : none
@@ -89,7 +89,7 @@ py_ir.module {
 //       CHECK:  ^bb2(%[[B2:.*]]: none):
 //       CHECK:  py_ir.return %[[B2]] : none
 py_ir.module {
-  py_ir.func "foo" {
+  %f = py_ir.func "foo" -> !py_ir.undefined {
    ^bb0:
     %0 = py_ir.loadvar "B" : none
     py_ir.storevar "A" %0 : none

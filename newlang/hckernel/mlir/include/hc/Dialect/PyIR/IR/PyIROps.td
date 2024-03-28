@@ -136,16 +136,19 @@ def PyIR_PyModuleEndOp : PyIR_OpBase<"module_end", [
   let assemblyFormat = "attr-dict";
 }
 
-def PyIR_PyFuncOp : PyIR_OpBase<"func"> {
+def PyIR_PyFuncOp : PyIR_OpBase<"func", [Pure]> {
 
   let arguments = (ins
       StrAttr:$name,
       Variadic<AnyType>:$decorators);
 
+  let results = (outs AnyType:$result);
+
   let regions = (region AnyRegion:$bodyRegion);
 
   let builders = [
     OpBuilder<(ins
+        "::mlir::Type":$resultType,
         "::llvm::StringRef":$name,
         "::mlir::TypeRange":$argTypes,
         "::mlir::ValueRange":$decorators)>
@@ -153,7 +156,7 @@ def PyIR_PyFuncOp : PyIR_OpBase<"func"> {
 
   let skipDefaultBuilders = 1;
 
-  let assemblyFormat = "attr-dict $name ( `decorators` $decorators^ `:` type($decorators) )? $bodyRegion";
+  let assemblyFormat = "attr-dict $name ( `decorators` $decorators^ `:` type($decorators) )? `->` type($result) $bodyRegion";
 }
 
 def PyIR_ReturnOp : PyIR_OpBase<"return", [Pure, HasParent<"PyFuncOp">,

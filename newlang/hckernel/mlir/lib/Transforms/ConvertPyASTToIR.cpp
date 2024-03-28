@@ -205,8 +205,12 @@ public:
     for (auto decor : decorators)
       decorators.emplace_back(getVar(rewriter, loc, decor));
 
-    auto newOp = rewriter.create<hc::py_ir::PyFuncOp>(loc, op.getName(),
-                                                      argTypes, decorators);
+    auto name = op.getName();
+    auto type = hc::py_ir::UndefinedType::get(rewriter.getContext());
+    auto newOp = rewriter.create<hc::py_ir::PyFuncOp>(loc, type, name, argTypes,
+                                                      decorators);
+    rewriter.create<hc::py_ir::StoreVarOp>(loc, name, newOp.getResult());
+
     mlir::Region &dstRegion = newOp.getRegion();
     rewriter.inlineRegionBefore(op.getRegion(), dstRegion, dstRegion.end());
 
