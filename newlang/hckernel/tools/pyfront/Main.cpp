@@ -17,6 +17,7 @@
 
 #include "hc/PyFront/Import.hpp"
 #include "hc/Transforms/Passes.hpp"
+#include "hc/Utils.hpp"
 
 enum class Cmd {
   Front,
@@ -110,6 +111,50 @@ splitAndProcessBuffer(std::unique_ptr<llvm::MemoryBuffer> originalBuffer,
   return failure(hadFailure);
 }
 
+static void printDiag(llvm::raw_ostream &os, const mlir::Diagnostic &diag) {
+  os << diag;
+  for (auto &note : diag.getNotes())
+    os << "\n" << note;
+
+  os << "\n";
+}
+
+static mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
+                                        mlir::ModuleOp module) {
+  bool dumpDiag = true;
+  std::string err;
+  llvm::raw_string_ostream errStream(err);
+  auto diagHandler = [&](const mlir::Diagnostic &diag) {
+    if (dumpDiag)
+      printDiag(llvm::errs(), diag);
+
+    if (diag.getSeverity() == mlir::DiagnosticSeverity::Error)
+      printDiag(errStream, diag);
+  };
+
+  auto getErr = [&]() -> const std::string & {
+    errStream << "\n";
+    module.print(errStream);
+    errStream.flush();
+    return err;
+  };
+
+  bool verify = true;
+  return hc::scopedDiagHandler(*module.getContext(), diagHandler, [&]() {
+    if (verify && mlir::failed(mlir::verify(module))) {
+      llvm::errs() << "MLIR broken module\n" << getErr();
+      return mlir::failure();
+    }
+
+    if (mlir::failed(pm.run(module))) {
+      llvm::errs() << "MLIR pipeline failed\n" << getErr();
+      return mlir::failure();
+    }
+
+    return mlir::success();
+  });
+}
+
 static void populatePasses(mlir::PassManager &pm) {
   pm.addPass(hc::createSimplifyASTPass());
   pm.addPass(hc::createConvertPyASTToIRPass());
@@ -144,7 +189,7 @@ static mlir::LogicalResult pyfrontMain(llvm::StringRef inputFilename, Cmd cmd) {
         pm.enableIRPrinting();
 
         populatePasses(pm);
-        if (mlir::failed(pm.run(mod)))
+        if (mlir::failed(runUnderDiag(pm, mod)))
           return mlir::failure();
       }
     }

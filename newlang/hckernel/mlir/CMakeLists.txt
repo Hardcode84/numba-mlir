@@ -43,6 +43,7 @@ set(HEADERS_LIST
     include/hc/InitHCDialects.hpp
     include/hc/InitHCPasses.hpp
     include/hc/Transforms/Passes.hpp
+    include/hc/Utils.hpp
     )
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES_LIST} ${HEADERS_LIST})
