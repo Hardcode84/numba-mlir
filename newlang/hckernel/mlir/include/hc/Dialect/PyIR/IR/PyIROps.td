@@ -175,6 +175,17 @@ def PyIR_StoreVarOp : PyIR_OpBase<"storevar"> {
   let assemblyFormat = "attr-dict $name $value `:` type($value)";
 }
 
+def PyIR_CallOp : PyIR_OpBase<"call"> {
+  let arguments = (ins
+    AnyType:$func,
+    Variadic<AnyType>:$args,
+    ArrayAttr:$args_names);
+
+  let results = (outs AnyType:$result);
+
+  let assemblyFormat = "attr-dict $func `:` type($func) ` ` custom<ArgList>($args, $args_names) (`:` type($args)^)? `->` type($result)";
+}
+
 def PyIR_LoadVarOp : PyIR_OpBase<"loadvar", [NoMemoryEffect]> {
   let arguments = (ins StrAttr:$name);
   let results = (outs AnyType:$result);

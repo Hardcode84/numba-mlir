@@ -54,7 +54,6 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
   }
 
   if (auto binOp = val.getDefiningOp<hc::py_ast::BinOp>()) {
-    llvm::SmallVector<mlir::Value> args;
     mlir::Value left = getVar(builder, loc, binOp.getLeft());
     mlir::Value right = getVar(builder, loc, binOp.getRight());
     ::hc::py_ir::BinOpVal bop =
@@ -62,6 +61,28 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
 
     auto type = hc::py_ir::UndefinedType::get(builder.getContext());
     return builder.create<::hc::py_ir::BinOp>(loc, type, left, bop, right);
+  }
+
+  if (auto call = val.getDefiningOp<hc::py_ast::CallOp>()) {
+    auto func = getVar(builder, loc, call.getFunc());
+
+    llvm::SmallVector<mlir::Value> args;
+    for (auto arg : call.getArgs())
+      args.emplace_back(getVar(builder, loc, arg));
+
+    llvm::SmallVector<mlir::Attribute> names(args.size(),
+                                             builder.getStringAttr(""));
+
+    for (auto arg : call.getKeywords()) {
+      auto kwarg = arg.getDefiningOp<hc::py_ast::KeywordOp>();
+      assert(kwarg);
+      args.emplace_back(getVar(builder, loc, kwarg.getValue()));
+      names.emplace_back(kwarg.getArgAttr());
+    }
+
+    auto namesAttr = builder.getArrayAttr(names);
+    auto type = hc::py_ir::UndefinedType::get(builder.getContext());
+    return builder.create<hc::py_ir::CallOp>(loc, type, func, args, namesAttr);
   }
 
   return val;

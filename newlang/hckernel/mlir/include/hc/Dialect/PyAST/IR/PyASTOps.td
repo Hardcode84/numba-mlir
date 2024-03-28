@@ -255,7 +255,7 @@ def PyAST_AssignOp : PyAST_OpBase<"assign"> {
   let assemblyFormat = "attr-dict `(` $targets `)` `=` $value";
 }
 
-def PyAST_CallOp : PyAST_OpBase<"call", [AttrSizedOperandSegments]> {
+def PyAST_CallOp : PyAST_PureOpBase<"call", [AttrSizedOperandSegments]> {
   let arguments = (ins
       PyAST_ASTNodeType:$func,
       Variadic<PyAST_ASTNodeType>:$args,
@@ -273,7 +273,7 @@ def PyAST_CallOp : PyAST_OpBase<"call", [AttrSizedOperandSegments]> {
   let assemblyFormat = "attr-dict $func `(` $args `keywords` $keywords `)`";
 }
 
-def PyAST_KeywordOp : PyAST_OpBase<"keyword"> {
+def PyAST_KeywordOp : PyAST_PureOpBase<"keyword"> {
   let arguments = (ins StrAttr:$arg, PyAST_ASTNodeType:$value);
   let results = (outs PyAST_ASTNodeType:$result);
 

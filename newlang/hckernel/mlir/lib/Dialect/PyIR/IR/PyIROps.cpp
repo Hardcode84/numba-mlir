@@ -58,6 +58,62 @@ bool hc::py_ir::CastOp::areCastCompatible(mlir::TypeRange inputs,
   return true;
 }
 
+static bool parseArgList(
+    mlir::OpAsmParser &parser,
+    llvm::SmallVectorImpl<mlir::OpAsmParser::UnresolvedOperand> &argsOperands,
+    mlir::ArrayAttr &args_namesAttr) {
+  if (parser.parseLParen())
+    return true;
+
+  auto *context = parser.getContext();
+  llvm::SmallVector<mlir::Attribute> names;
+  if (parser.parseOptionalRParen()) {
+    std::string name;
+    while (true) {
+      name.clear();
+      if (!parser.parseOptionalKeywordOrString(&name)) {
+        if (parser.parseColon())
+          return true;
+      }
+      names.push_back(mlir::StringAttr::get(context, name));
+
+      argsOperands.push_back({});
+      if (parser.parseOperand(argsOperands.back()))
+        return true;
+
+      if (!parser.parseOptionalRParen())
+        break;
+
+      if (parser.parseComma())
+        return true;
+    }
+  }
+
+  assert(names.size() == argsOperands.size());
+  args_namesAttr = mlir::ArrayAttr::get(context, names);
+  return false;
+}
+
+static void printArgList(mlir::OpAsmPrinter &printer, hc::py_ir::CallOp call,
+                         mlir::ValueRange args, mlir::ArrayAttr argsNames) {
+  assert(args.size() == argsNames.size());
+  printer << '(';
+  bool first = true;
+  for (auto &&[arg, name] : llvm::zip(args, argsNames)) {
+    if (first) {
+      first = false;
+    } else {
+      printer << ", ";
+    }
+    auto nameStr =
+        (name ? name.cast<mlir::StringAttr>().getValue() : llvm::StringRef());
+    if (!nameStr.empty())
+      printer << nameStr << ':';
+    printer.printOperand(arg);
+  }
+  printer << ')';
+}
+
 #include "hc/Dialect/PyIR/IR/PyIROpsDialect.cpp.inc"
 
 #define GET_OP_CLASSES
