@@ -286,7 +286,7 @@ def PyAST_KeywordOp : PyAST_PureOpBase<"keyword"> {
   let assemblyFormat = "attr-dict $arg `=` $value";
 }
 
-def PyAST_BoolOp : PyAST_OpBase<"bool_op"> {
+def PyAST_BoolOp : PyAST_PureOpBase<"bool_op"> {
   let arguments = (ins
       PyAST_BoolOpTypeAttr:$op,
       Variadic<PyAST_ASTNodeType>:$values);

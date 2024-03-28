@@ -18,6 +18,17 @@ static hc::py_ir::BinOpVal convertBinOpType(hc::py_ast::BinOpVal val) {
   return static_cast<hc::py_ir::BinOpVal>(val);
 }
 
+static hc::py_ir::BinOpVal convertBoolOpType(hc::py_ast::BoolOpType val) {
+  switch (val) {
+  case hc::py_ast::BoolOpType::and_:
+    return hc::py_ir::BinOpVal::bool_and;
+  case hc::py_ast::BoolOpType::or_:
+    return hc::py_ir::BinOpVal::bool_or;
+  default:
+    llvm_unreachable("Invalid BoolOpType");
+  };
+}
+
 static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
                           mlir::Value val) {
   auto getUndefined = [&]() -> mlir::Type {
@@ -65,6 +76,24 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
 
     return builder.create<::hc::py_ir::BinOp>(loc, getUndefined(), left, bop,
                                               right);
+  }
+
+  if (auto boolOp = val.getDefiningOp<hc::py_ast::BoolOp>()) {
+    mlir::ValueRange vals = boolOp.getValues();
+    assert(vals.size() >= 2);
+    hc::py_ir::BinOpVal bop = convertBoolOpType(boolOp.getOp());
+
+    mlir::Value ret = getVar(builder, loc, vals.front());
+    vals = vals.drop_front();
+    auto type = getUndefined();
+    do {
+      auto right = getVar(builder, loc, vals.front());
+      vals = vals.drop_front();
+
+      ret = builder.create<::hc::py_ir::BinOp>(loc, type, ret, bop, right);
+    } while (!vals.empty());
+
+    return ret;
   }
 
   if (auto call = val.getDefiningOp<hc::py_ast::CallOp>()) {

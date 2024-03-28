@@ -322,6 +322,39 @@ py_ast.module {
 // CHECK-LABEL: py_ir.module
 //   CHECK-DAG:  %[[A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
 //   CHECK-DAG:  %[[B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
+//       CHECK:  %[[R:.*]] = py_ir.binop %[[A]] : !py_ir.undefined bool_and %[[B]] : !py_ir.undefined -> !py_ir.undefined
+//       CHECK:  py_ir.storevar "C" %[[R]] : !py_ir.undefined
+py_ast.module {
+  %1 = py_ast.name "C"
+  %2 = py_ast.name "A"
+  %3 = py_ast.name "B"
+  %4 = py_ast.bool_op and, %2, %3
+  py_ast.assign(%1) = %4
+}
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//   CHECK-DAG:  %[[A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//   CHECK-DAG:  %[[B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
+//       CHECK:  %[[R1:.*]] = py_ir.binop %[[A]] : !py_ir.undefined bool_or %[[B]] : !py_ir.undefined -> !py_ir.undefined
+//       CHECK:  %[[C:.*]] = py_ir.loadvar "C" : !py_ir.undefined
+//       CHECK:  %[[R2:.*]] = py_ir.binop %[[R1]] : !py_ir.undefined bool_or %[[C]] : !py_ir.undefined -> !py_ir.undefined
+//       CHECK:  py_ir.storevar "D" %[[R2]] : !py_ir.undefined
+py_ast.module {
+  %2 = py_ast.name "D"
+  %3 = py_ast.name "A"
+  %4 = py_ast.name "B"
+  %5 = py_ast.name "C"
+  %6 = py_ast.bool_op or, %3, %4, %5
+  py_ast.assign(%2) = %6
+}
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//   CHECK-DAG:  %[[A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//   CHECK-DAG:  %[[B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
 //       CHECK:  %[[R:.*]] = py_ir.inplace_binop %[[A]] : !py_ir.undefined add %[[B]] : !py_ir.undefined -> !py_ir.undefined
 //       CHECK:  py_ir.storevar "A" %[[R]] : !py_ir.undefined
 py_ast.module {

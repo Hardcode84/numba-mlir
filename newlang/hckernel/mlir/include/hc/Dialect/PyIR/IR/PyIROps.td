@@ -285,6 +285,9 @@ def PyIR_BinOpAttr : I64EnumAttr<
       I64EnumAttrCase<"bit_xor", 10>,
       I64EnumAttrCase<"bit_and", 11>,
       I64EnumAttrCase<"matmul", 12>,
+
+      I64EnumAttrCase<"bool_and", 13>,
+      I64EnumAttrCase<"bool_or", 14>,
     ]> {
   let cppNamespace = "::hc::py_ir";
 }
