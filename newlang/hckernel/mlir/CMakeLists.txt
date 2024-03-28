@@ -33,6 +33,7 @@ set(SOURCES_LIST
     lib/Dialect/PyAST/IR/PyASTOps.cpp
     lib/Dialect/PyIR/IR/PyIROps.cpp
     lib/Transforms/ClenaupPySetVar.cpp
+    lib/Transforms/CompositePass.cpp
     lib/Transforms/ConvertPyASTToIR.cpp
     lib/Transforms/ReconstructPySSA.cpp
     lib/Transforms/SimplifyAST.cpp
@@ -55,6 +56,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     MLIRControlFlowDialect
     MLIRIR
     MLIRTransformUtils
+    MLIRTransforms
     )
 
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
