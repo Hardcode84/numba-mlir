@@ -61,7 +61,6 @@ py_ast.module {
   py_ast.assign(%0) = %5
 }
 
-
 // -----
 
 // CHECK-LABEL: py_ir.module
@@ -216,6 +215,46 @@ py_ast.module {
   %4 = py_ast.name "D"
   %5 = py_ast.subscript %3[%4]
   py_ast.assign(%2) = %5
+}
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK:  %[[C:.*]] = py_ir.loadvar "C" : !py_ir.undefined
+//       CHECK:  %[[D:.*]] = py_ir.loadvar "D" : !py_ir.undefined
+//       CHECK:  %[[E:.*]] = py_ir.loadvar "E" : !py_ir.undefined
+//       CHECK:  %[[S:.*]] = py_ir.slice(%[[C]] !py_ir.undefined : %[[D]] !py_ir.undefined : %[[E]] !py_ir.undefined) -> !py_ir.undefined
+//       CHECK:  %[[B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
+//       CHECK:  %[[R:.*]] = py_ir.getitem %[[B]] : !py_ir.undefined[%[[S]] : !py_ir.undefined] -> !py_ir.undefined
+//       CHECK:  py_ir.storevar "A" %[[R]] : !py_ir.undefined
+py_ast.module {
+  %0 = py_ast.name "A"
+  %1 = py_ast.name "B"
+  %2 = py_ast.name "C"
+  %3 = py_ast.name "D"
+  %4 = py_ast.name "E"
+  %5 = py_ast.slice(%2 : %3 : %4)
+  %6 = py_ast.subscript %1[%5]
+  py_ast.assign(%0) = %6
+}
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK:  %[[C:.*]] = py_ir.loadvar "C" : !py_ir.undefined
+//       CHECK:  %[[E:.*]] = py_ir.loadvar "E" : !py_ir.undefined
+//       CHECK:  %[[S:.*]] = py_ir.slice(%[[C]] !py_ir.undefined : : %[[E]] !py_ir.undefined) -> !py_ir.undefined
+//       CHECK:  %[[B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
+//       CHECK:  %[[R:.*]] = py_ir.getitem %[[B]] : !py_ir.undefined[%[[S]] : !py_ir.undefined] -> !py_ir.undefined
+//       CHECK:  py_ir.storevar "A" %[[R]] : !py_ir.undefined
+py_ast.module {
+  %0 = py_ast.name "A"
+  %1 = py_ast.name "B"
+  %2 = py_ast.name "C"
+  %4 = py_ast.name "E"
+  %5 = py_ast.slice(%2 : : %4)
+  %6 = py_ast.subscript %1[%5]
+  py_ast.assign(%0) = %6
 }
 
 // -----

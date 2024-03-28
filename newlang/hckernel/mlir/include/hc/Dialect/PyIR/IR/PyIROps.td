@@ -252,6 +252,23 @@ def PyIR_TupleUnpackOp : PyIR_OpBase<"tuple_unpack"> {
   let assemblyFormat = "attr-dict $arg `:` type($arg) `->` type($results)";
 }
 
+def PyIR_SliceOp : PyIR_OpBase<"slice", [AttrSizedOperandSegments]> {
+  let arguments = (ins
+      Optional<AnyType>:$lower,
+      Optional<AnyType>:$upper,
+      Optional<AnyType>:$step);
+
+  let results = (outs AnyType:$result);
+
+  let assemblyFormat = [{
+    attr-dict `(` $lower ` ` type($lower) `:`
+                  $upper ` ` type($upper) `:`
+                  $step  ` ` type($step)  `)`
+                  `->` type($result)
+  }];
+}
+
+
 def PyIR_BinOpAttr : I64EnumAttr<
     "BinOpVal", "",
     [

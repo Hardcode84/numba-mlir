@@ -229,7 +229,7 @@ def PyAST_ConstantOp : PyAST_PureOpBase<"constant"> {
   let assemblyFormat = "attr-dict $value";
 }
 
-def PyAST_SliceOp : PyAST_OpBase<"slice", [AttrSizedOperandSegments]> {
+def PyAST_SliceOp : PyAST_PureOpBase<"slice", [AttrSizedOperandSegments]> {
   let arguments = (ins
       Optional<PyAST_ASTNodeType>:$lower,
       Optional<PyAST_ASTNodeType>:$upper,
