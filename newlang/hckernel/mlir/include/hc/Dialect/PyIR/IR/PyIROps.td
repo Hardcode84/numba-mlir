@@ -299,4 +299,14 @@ def PyIR_BinOp : PyIR_OpBase<"binop"> {
   let assemblyFormat = "attr-dict $left`:`type($left) $op $right`:`type($right) `->` type($result)";
 }
 
+def PyIR_InplaceBinOp : PyIR_OpBase<"inplace_binop"> {
+  let arguments = (ins
+      AnyType:$left,
+      PyIR_BinOpAttr:$op,
+      AnyType:$right);
+  let results = (outs AnyType:$result);
+
+  let assemblyFormat = "attr-dict $left`:`type($left) $op $right`:`type($right) `->` type($result)";
+}
+
 #endif // PYIR_OPS

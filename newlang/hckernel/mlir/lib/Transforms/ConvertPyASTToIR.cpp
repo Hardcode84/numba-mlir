@@ -14,6 +14,10 @@ namespace hc {
 #include "hc/Transforms/Passes.h.inc"
 } // namespace hc
 
+static hc::py_ir::BinOpVal convertBinOpType(hc::py_ast::BinOpVal val) {
+  return static_cast<hc::py_ir::BinOpVal>(val);
+}
+
 static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
                           mlir::Value val) {
   auto getUndefined = [&]() -> mlir::Type {
@@ -57,8 +61,7 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
   if (auto binOp = val.getDefiningOp<hc::py_ast::BinOp>()) {
     mlir::Value left = getVar(builder, loc, binOp.getLeft());
     mlir::Value right = getVar(builder, loc, binOp.getRight());
-    ::hc::py_ir::BinOpVal bop =
-        static_cast<::hc::py_ir::BinOpVal>(binOp.getOp());
+    hc::py_ir::BinOpVal bop = convertBinOpType(binOp.getOp());
 
     return builder.create<::hc::py_ir::BinOp>(loc, getUndefined(), left, bop,
                                               right);
@@ -353,6 +356,28 @@ public:
   }
 };
 
+class ConvertAugAssign final
+    : public mlir::OpRewritePattern<hc::py_ast::AugAssignOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hc::py_ast::AugAssignOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    mlir::Location loc = op.getLoc();
+    hc::py_ir::BinOpVal bop = convertBinOpType(op.getOp());
+    mlir::Value left = getVar(rewriter, loc, op.getTarget());
+    mlir::Value right = getVar(rewriter, loc, op.getValue());
+    mlir::Type type = hc::py_ir::UndefinedType::get(rewriter.getContext());
+    mlir::Value val =
+        rewriter.create<hc::py_ir::InplaceBinOp>(loc, type, left, bop, right);
+    setVar(rewriter, loc, op.getTarget(), val);
+
+    rewriter.eraseOp(op);
+    return mlir::success();
+  }
+};
+
 class ConvertExpr final : public mlir::OpRewritePattern<hc::py_ast::ExprOp> {
 public:
   using OpRewritePattern::OpRewritePattern;
@@ -393,5 +418,6 @@ struct ConvertPyASTToIRPass final
 
 void hc::populateConvertPyASTToIRPatterns(mlir::RewritePatternSet &patterns) {
   patterns.insert<ConvertModule, ConvertFunc, ConvertReturn, ConvertIf,
-                  ConvertAssign, ConvertExpr>(patterns.getContext());
+                  ConvertAssign, ConvertAugAssign, ConvertExpr>(
+      patterns.getContext());
 }
