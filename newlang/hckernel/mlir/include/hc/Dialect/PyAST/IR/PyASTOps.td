@@ -143,11 +143,11 @@ def PyAST_PassOp : PyAST_OpBase<"pass"> {
   let assemblyFormat = "attr-dict";
 }
 
-def PyAST_ContinueOp : PyAST_OpBase<"continue"> {
+def PyAST_ContinueOp : PyAST_OpBase<"continue", [NoReturn]> {
   let assemblyFormat = "attr-dict";
 }
 
-def PyAST_BreakOp : PyAST_OpBase<"break"> {
+def PyAST_BreakOp : PyAST_OpBase<"break", [NoReturn]> {
   let assemblyFormat = "attr-dict";
 }
 
