@@ -26,6 +26,23 @@ struct CleanupPySetVarPass final
           store->erase();
       });
     });
+
+    llvm::SmallDenseMap<mlir::StringAttr, hc::py_ir::StoreVarOp> deadStores;
+    getOperation()->walk([&](mlir::Block *block) {
+      deadStores.clear();
+      for (mlir::Operation &op : llvm::make_early_inc_range(*block)) {
+        if (auto store = mlir::dyn_cast<hc::py_ir::StoreVarOp>(op)) {
+          auto name = store.getNameAttr();
+          auto it = deadStores.find(name);
+          if (it != deadStores.end())
+            it->second->erase();
+
+          deadStores[name] = store;
+        } else if (auto load = mlir::dyn_cast<hc::py_ir::LoadVarOp>(op)) {
+          deadStores.erase(load.getNameAttr());
+        }
+      }
+    });
   }
 };
 } // namespace
