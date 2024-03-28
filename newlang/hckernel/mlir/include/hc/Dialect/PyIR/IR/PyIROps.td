@@ -224,7 +224,7 @@ def PyIR_SetAttrOp : PyIR_OpBase<"setattr"> {
     StrAttr:$name,
     AnyType:$value);
 
-  let assemblyFormat = "attr-dict $target `:` type($target) `_` $name `=` $value `:` type($value)";
+  let assemblyFormat = "attr-dict $target `:` type($target) `attr` $name `=` $value `:` type($value)";
 }
 
 def PyIR_GetAttrOp : PyIR_OpBase<"getattr"> {
@@ -233,7 +233,7 @@ def PyIR_GetAttrOp : PyIR_OpBase<"getattr"> {
     StrAttr:$name);
   let results = (outs AnyType:$result);
 
-  let assemblyFormat = "attr-dict $target `:` type($target) `_` $name `->` type($result)";
+  let assemblyFormat = "attr-dict $target `:` type($target) `attr` $name `->` type($result)";
 }
 
 def PyIR_TuplePackOp : PyIR_OpBase<"tuple_pack"> {

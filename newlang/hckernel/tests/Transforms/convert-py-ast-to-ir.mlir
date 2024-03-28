@@ -272,9 +272,9 @@ py_ast.module {
 
 // CHECK-LABEL: py_ir.module
 //       CHECK:  %[[C:.*]] = py_ir.loadvar "C" : !py_ir.undefined
-//       CHECK:  %[[T:.*]] = py_ir.getattr %0 : !py_ir.undefined _ "D" -> !py_ir.undefined
+//       CHECK:  %[[T:.*]] = py_ir.getattr %0 : !py_ir.undefined attr "D" -> !py_ir.undefined
 //       CHECK:  %[[A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
-//       CHECK:  py_ir.setattr %[[A]] : !py_ir.undefined _ "B" = %[[T]] : !py_ir.undefined
+//       CHECK:  py_ir.setattr %[[A]] : !py_ir.undefined attr "B" = %[[T]] : !py_ir.undefined
 py_ast.module {
   %0 = py_ast.name "A"
   %1 = py_ast.attribute %0 attr "B"
