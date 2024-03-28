@@ -14,6 +14,7 @@
 #include <mlir/Support/FileUtilities.h>
 #include <mlir/Support/LogicalResult.h>
 #include <mlir/Tools/mlir-opt/MlirOptMain.h>
+#include <mlir/Transforms/Passes.h>
 
 #include "hc/PyFront/Import.hpp"
 #include "hc/Transforms/Passes.hpp"
@@ -155,9 +156,20 @@ static mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
   });
 }
 
+static void populatePyIROptPasses(mlir::PassManager &pm) {
+  pm.addPass(hc::createCompositePass("PyIROptPass", [](mlir::OpPassManager &p) {
+    p.addPass(mlir::createCanonicalizerPass());
+    p.addPass(mlir::createCSEPass());
+    p.addPass(hc::createCleanupPySetVarPass());
+  }));
+}
+
 static void populatePasses(mlir::PassManager &pm) {
   pm.addPass(hc::createSimplifyASTPass());
   pm.addPass(hc::createConvertPyASTToIRPass());
+  populatePyIROptPasses(pm);
+  pm.addPass(hc::createReconstuctPySSAPass());
+  populatePyIROptPasses(pm);
 }
 
 static mlir::LogicalResult pyfrontMain(llvm::StringRef inputFilename, Cmd cmd) {
