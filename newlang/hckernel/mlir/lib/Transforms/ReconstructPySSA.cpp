@@ -53,7 +53,7 @@ struct ReconstuctPySSA {
           mlir::OpBuilder builder(load->getContext());
           mlir::Value arg = block->addArgument(type, builder.getUnknownLoc());
           desc.defs[name] = arg;
-          replaceOp(load, it->second);
+          replaceOp(load, arg);
 
           for (auto pred : block->getPredecessors())
             toProcess.emplace(name, pred, block);
