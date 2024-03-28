@@ -167,14 +167,6 @@ def PyIR_ReturnOp : PyIR_OpBase<"return", [Pure, HasParent<"PyFuncOp">,
   let assemblyFormat = "attr-dict $operand `:` type($operand)";
 }
 
-def PyIR_StoreVarOp : PyIR_OpBase<"storevar"> {
-  let arguments = (ins
-    StrAttr:$name,
-    AnyType:$value);
-
-  let assemblyFormat = "attr-dict $name $value `:` type($value)";
-}
-
 def PyIR_CallOp : PyIR_OpBase<"call"> {
   let arguments = (ins
     AnyType:$func,
@@ -186,7 +178,15 @@ def PyIR_CallOp : PyIR_OpBase<"call"> {
   let assemblyFormat = "attr-dict $func `:` type($func) ` ` custom<ArgList>($args, $args_names) (`:` type($args)^)? `->` type($result)";
 }
 
-def PyIR_LoadVarOp : PyIR_OpBase<"loadvar", [NoMemoryEffect]> {
+def PyIR_StoreVarOp : PyIR_OpBase<"storevar", [MemoryEffects<[MemWrite]>]> {
+  let arguments = (ins
+    StrAttr:$name,
+    AnyType:$value);
+
+  let assemblyFormat = "attr-dict $name $value `:` type($value)";
+}
+
+def PyIR_LoadVarOp : PyIR_OpBase<"loadvar", [MemoryEffects<[MemRead]>]> {
   let arguments = (ins StrAttr:$name);
   let results = (outs AnyType:$result);
 
