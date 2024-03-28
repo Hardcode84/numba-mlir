@@ -24,5 +24,12 @@ def ConvertPyASTToIRPass : Pass<"hc-convert-py-ast-to-ir-pass"> {
   ];
 }
 
+def ReconstuctPySSAPass : Pass<"hc-reconstruct-py-ssa-pass"> {
+  let summary = "TBD";
+  let description = [{
+    TBD
+  }];
+}
+
 
 #endif // _HC_TRANSFORMS_PASSES_TD_INCLUDED_

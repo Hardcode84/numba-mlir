@@ -33,6 +33,7 @@ set(SOURCES_LIST
     lib/Dialect/PyAST/IR/PyASTOps.cpp
     lib/Dialect/PyIR/IR/PyIROps.cpp
     lib/Transforms/ConvertPyASTToIR.cpp
+    lib/Transforms/ReconstructPySSA.cpp
     lib/Transforms/SimplifyAST.cpp
     )
 set(HEADERS_LIST
