@@ -353,6 +353,19 @@ public:
   }
 };
 
+class ConvertExpr final : public mlir::OpRewritePattern<hc::py_ast::ExprOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hc::py_ast::ExprOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    (void)getVar(rewriter, op.getLoc(), op.getValue());
+    rewriter.eraseOp(op);
+    return mlir::success();
+  }
+};
+
 struct ConvertPyASTToIRPass final
     : public hc::impl::ConvertPyASTToIRPassBase<ConvertPyASTToIRPass> {
 
@@ -380,5 +393,5 @@ struct ConvertPyASTToIRPass final
 
 void hc::populateConvertPyASTToIRPatterns(mlir::RewritePatternSet &patterns) {
   patterns.insert<ConvertModule, ConvertFunc, ConvertReturn, ConvertIf,
-                  ConvertAssign>(patterns.getContext());
+                  ConvertAssign, ConvertExpr>(patterns.getContext());
 }

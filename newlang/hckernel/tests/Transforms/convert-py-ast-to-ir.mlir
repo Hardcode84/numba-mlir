@@ -64,6 +64,17 @@ py_ast.module {
 // -----
 
 // CHECK-LABEL: py_ir.module
+//       CHECK:  %[[A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:  %{{.*}} = py_ir.call %[[A]] : !py_ir.undefined () -> !py_ir.undefined
+py_ast.module {
+  %0 = py_ast.name "A"
+  %1 = py_ast.call %0( keywords )
+  py_ast.expr %1
+}
+
+// -----
+
+// CHECK-LABEL: py_ir.module
 //       CHECK:  py_ir.func "func"
 //       CHECK:  ^bb0(%[[ARG1:.*]]: !py_ir.undefined, %[[ARG2:.*]]: !py_ir.undefined, %[[ARG3:.*]]: !py_ir.undefined):
 //       CHECK:  py_ir.storevar "a" %[[ARG1]] : !py_ir.undefined
