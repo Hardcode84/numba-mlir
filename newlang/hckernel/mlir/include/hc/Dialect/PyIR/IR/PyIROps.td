@@ -238,4 +238,34 @@ def PyIR_TupleUnpackOp : PyIR_OpBase<"tuple_unpack"> {
   let assemblyFormat = "attr-dict $arg `:` type($arg) `->` type($results)";
 }
 
+def PyIR_BinOpAttr : I64EnumAttr<
+    "BinOpVal", "",
+    [
+      I64EnumAttrCase<"add", 0>,
+      I64EnumAttrCase<"sub", 1>,
+      I64EnumAttrCase<"mul", 2>,
+      I64EnumAttrCase<"div", 3>,
+      I64EnumAttrCase<"floor_div", 4>,
+      I64EnumAttrCase<"mod", 5>,
+      I64EnumAttrCase<"pow", 6>,
+      I64EnumAttrCase<"lshift", 7>,
+      I64EnumAttrCase<"rshift", 8>,
+      I64EnumAttrCase<"bit_or", 9>,
+      I64EnumAttrCase<"bit_xor", 10>,
+      I64EnumAttrCase<"bit_and", 11>,
+      I64EnumAttrCase<"matmul", 12>,
+    ]> {
+  let cppNamespace = "::hc::py_ir";
+}
+
+def PyIR_BinOp : PyIR_OpBase<"binop"> {
+  let arguments = (ins
+      AnyType:$left,
+      PyIR_BinOpAttr:$op,
+      AnyType:$right);
+  let results = (outs AnyType:$result);
+
+  let assemblyFormat = "attr-dict $left`:`type($left) $op $right`:`type($right) `->` type($result)";
+}
+
 #endif // PYIR_OPS

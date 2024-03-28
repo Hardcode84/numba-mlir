@@ -53,6 +53,17 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
     return builder.create<hc::py_ir::TuplePackOp>(loc, type, args);
   }
 
+  if (auto binOp = val.getDefiningOp<hc::py_ast::BinOp>()) {
+    llvm::SmallVector<mlir::Value> args;
+    mlir::Value left = getVar(builder, loc, binOp.getLeft());
+    mlir::Value right = getVar(builder, loc, binOp.getRight());
+    ::hc::py_ir::BinOpVal bop =
+        static_cast<::hc::py_ir::BinOpVal>(binOp.getOp());
+
+    auto type = hc::py_ir::UndefinedType::get(builder.getContext());
+    return builder.create<::hc::py_ir::BinOp>(loc, type, left, bop, right);
+  }
+
   return val;
 }
 

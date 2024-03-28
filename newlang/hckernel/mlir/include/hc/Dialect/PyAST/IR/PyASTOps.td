@@ -371,7 +371,7 @@ def PyAST_CompareOp : PyAST_OpBase<"compare"> {
   let assemblyFormat = "attr-dict $left $ops $comparators";
 }
 
-def PyAST_BinOp : PyAST_OpBase<"binop"> {
+def PyAST_BinOp : PyAST_PureOpBase<"binop"> {
   let arguments = (ins
       PyAST_ASTNodeType:$left,
       PyAST_BinOpAttr:$op,
