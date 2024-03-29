@@ -66,7 +66,7 @@ struct ReconstuctPySSA {
 
   void processBlockRecursively(mlir::StringAttr name, mlir::Block *current,
                                mlir::Block *successor) {
-    processBlock(successor);
+    processBlock(current);
     mlir::Type type = successor->getArguments().back().getType();
     mlir::Value val;
     auto &desc = blocksMap[current];
