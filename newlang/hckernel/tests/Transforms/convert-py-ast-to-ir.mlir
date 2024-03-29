@@ -425,3 +425,240 @@ py_ast.module {
   %1 = py_ast.call %0( keywords )
   py_ast.expr %1
 }
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK:  py_ir.func
+//       CHECK:    %[[A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:    %[[Iter:.*]] = py_ir.iter %[[A]] : !py_ir.undefined -> !py_ir.undefined
+//       CHECK:    cf.br ^[[CondBr:.*]](%[[Iter]] : !py_ir.undefined)
+//       CHECK:  ^[[CondBr]](%[[CIter:.*]]: !py_ir.undefined):
+//       CHECK:    %[[Value:.*]], %[[Valid:.*]], %[[NIter:.*]] = py_ir.next %[[CIter]] : !py_ir.undefined -> !py_ir.undefined, i1, !py_ir.undefined
+//       CHECK:    cf.cond_br %[[Valid]], ^[[BodyBr:.*]](%[[Value]], %[[NIter]] : !py_ir.undefined, !py_ir.undefined), ^bb3
+//       CHECK:  ^[[BodyBr]](%[[IValue:.*]]: !py_ir.undefined, %[[BIter:.*]]: !py_ir.undefined):
+//       CHECK:    py_ir.storevar "i" %[[IValue]] : !py_ir.undefined
+//       CHECK:    %[[B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
+//       CHECK:    %[[BCond:.*]] = py_ir.cast %[[B]] : !py_ir.undefined to i1
+//       CHECK:    cf.cond_br %[[BCond]], ^[[RestBr:.*]], ^[[CondBr]](%[[BIter:.*]] : !py_ir.undefined)
+//       CHECK:  ^[[RestBr]]:
+py_ast.module {
+  py_ast.func "func"() {
+    %2 = py_ast.name "A"
+    %3 = py_ast.name "i"
+    py_ast.for %3 in %2 {
+      %5 = py_ast.name "B"
+      py_ast.if %5 {
+        py_ast.break
+      } {
+      }
+    }
+    %4 = py_ast.constant #py_ast.none
+    py_ast.return %4
+  }
+  %0 = py_ast.name "func"
+  %1 = py_ast.call %0( keywords )
+  py_ast.expr %1
+}
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK: py_ir.func
+//       CHECK:   %[[A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:   %[[ITER:.*]] = py_ir.iter %[[A]] : !py_ir.undefined -> !py_ir.undefined
+//       CHECK:   cf.br ^[[BB1:.*]](%[[ITER]] : !py_ir.undefined)
+//       CHECK: ^[[BB1]](%[[ITER_ARG:.*]]: !py_ir.undefined):  // 3 preds: ^[[BB0:.*]], ^[[BB2:.*]], ^[[BB3:.*]]
+//       CHECK:   %[[VALUE:.*]], %[[VALID:.*]], %[[NEXTITER:.*]] = py_ir.next %[[ITER_ARG]] : !py_ir.undefined -> !py_ir.undefined, i1, !py_ir.undefined
+//       CHECK:   cf.cond_br %[[VALID]], ^[[BB2]](%[[VALUE]], %[[NEXTITER]] : !py_ir.undefined, !py_ir.undefined), ^[[BB4:.*]]
+//       CHECK: ^[[BB2]](%[[STORE_ARG:.*]]: !py_ir.undefined, %[[CAST_ARG:.*]]: !py_ir.undefined):  // pred: ^[[BB1]]
+//       CHECK:   py_ir.storevar "i" %[[STORE_ARG]] : !py_ir.undefined
+//       CHECK:   %[[B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
+//       CHECK:   %[[CAST_RESULT:.*]] = py_ir.cast %[[B]] : !py_ir.undefined to i1
+//       CHECK:   cf.cond_br %[[CAST_RESULT]], ^[[BB3]], ^[[BB1]](%[[CAST_ARG]] : !py_ir.undefined)
+//       CHECK: ^[[BB3]]:  // pred: ^[[BB2]]
+//       CHECK:   %[[C:.*]] = py_ir.loadvar "C" : !py_ir.undefined
+//       CHECK:   %[[CAST_C:.*]] = py_ir.cast %[[C]] : !py_ir.undefined to i1
+//       CHECK:   cf.cond_br %[[CAST_C]], ^[[BB4]], ^[[BB1]](%[[CAST_ARG]] : !py_ir.undefined)
+//       CHECK: ^[[BB4]]:  // 2 preds: ^[[BB1]], ^[[BB3]]
+py_ast.module {
+  py_ast.func "func"() {
+    %2 = py_ast.name "A"
+    %3 = py_ast.name "i"
+    py_ast.for %3 in %2 {
+      %5 = py_ast.name "B"
+      py_ast.if %5 {
+        %6 = py_ast.name "C"
+        py_ast.if %6 {
+          py_ast.break
+        } {
+        }
+      } {
+      }
+    }
+    %4 = py_ast.constant #py_ast.none
+    py_ast.return %4
+  }
+  %0 = py_ast.name "foo"
+  %1 = py_ast.call %0( keywords )
+  py_ast.expr %1
+}
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK: py_ir.func
+//       CHECK:   cf.br ^[[BB1:.*]]
+//       CHECK: ^[[BB1]]:  // 2 preds: ^[[BB0:.*]], ^[[BB2:.*]]
+//       CHECK:   %[[LOAD_A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:   %[[CAST_A:.*]] = py_ir.cast %[[LOAD_A]] : !py_ir.undefined to i1
+//       CHECK:   cf.cond_br %[[CAST_A]], ^[[BB2]], ^[[BB3:.*]]
+//       CHECK: ^[[BB2]]:  // pred: ^[[BB1]]
+//       CHECK:   %[[LOAD_B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
+//       CHECK:   %[[CAST_B:.*]] = py_ir.cast %[[LOAD_B]] : !py_ir.undefined to i1
+//       CHECK:   cf.cond_br %[[CAST_B]], ^[[BB3]], ^[[BB1]]
+//       CHECK: ^[[BB3]]:  // 2 preds: ^[[BB1]], ^[[BB2]]
+py_ast.module {
+  py_ast.func "func"() {
+    %2 = py_ast.name "A"
+    py_ast.while %2 {
+      %4 = py_ast.name "B"
+      py_ast.if %4 {
+        py_ast.break
+      } {
+      }
+    }
+    %3 = py_ast.constant #py_ast.none
+    py_ast.return %3
+  }
+  %0 = py_ast.name "func"
+  %1 = py_ast.call %0( keywords )
+  py_ast.expr %1
+}
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK: %[[FUNC:.*]] = py_ir.func "func" -> !py_ir.undefined
+//       CHECK:   cf.br ^[[BB1:.*]]
+//       CHECK: ^[[BB1]]:  // 3 preds: ^[[BB0:.*]], ^[[BB2:.*]], ^[[BB3:.*]]
+//       CHECK:   %[[LOAD_A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:   %[[CAST_A:.*]] = py_ir.cast %[[LOAD_A]] : !py_ir.undefined to i1
+//       CHECK:   cf.cond_br %[[CAST_A]], ^[[BB2]], ^[[BB4:.*]]
+//       CHECK: ^[[BB2]]:  // pred: ^[[BB1]]
+//       CHECK:   %[[LOAD_B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
+//       CHECK:   %[[CAST_B:.*]] = py_ir.cast %[[LOAD_B]] : !py_ir.undefined to i1
+//       CHECK:   cf.cond_br %[[CAST_B]], ^[[BB3]], ^[[BB1]]
+//       CHECK: ^[[BB3]]:  // pred: ^[[BB2]]
+//       CHECK:   %[[LOAD_C:.*]] = py_ir.loadvar "C" : !py_ir.undefined
+//       CHECK:   %[[CAST_C:.*]] = py_ir.cast %[[LOAD_C]] : !py_ir.undefined to i1
+//       CHECK:   cf.cond_br %[[CAST_C]], ^[[BB4]], ^[[BB1]]
+//       CHECK: ^[[BB4]]:  // 2 preds: ^[[BB1]], ^[[BB3]]
+py_ast.module {
+  py_ast.func "func"() {
+    %2 = py_ast.name "A"
+    py_ast.while %2 {
+      %4 = py_ast.name "B"
+      py_ast.if %4 {
+        %5 = py_ast.name "C"
+        py_ast.if %5 {
+          py_ast.break
+        } {
+        }
+      } {
+      }
+    }
+    %3 = py_ast.constant #py_ast.none
+    py_ast.return %3
+  }
+  %0 = py_ast.name "func"
+  %1 = py_ast.call %0( keywords )
+  py_ast.expr %1
+}
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK: %[[CONST:.*]] = py_ir.constant 1 : i64
+//       CHECK: %[[FUNC:.*]] = py_ir.func "func" -> !py_ir.undefined
+//       CHECK:   cf.br ^[[BB1:.*]]
+//       CHECK: ^[[BB1]]:  // 3 preds: ^[[BB0:.*]], ^[[BB2:.*]], ^[[BB3:.*]]
+//       CHECK:   %[[LOAD_A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:   %[[CAST_A:.*]] = py_ir.cast %[[LOAD_A]] : !py_ir.undefined to i1
+//       CHECK:   cf.cond_br %[[CAST_A]], ^[[BB2]], ^[[BB4:.*]]
+//       CHECK: ^[[BB2]]:  // pred: ^[[BB1]]
+//       CHECK:   %[[LOAD_B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
+//       CHECK:   %[[CAST_B:.*]] = py_ir.cast %[[LOAD_B]] : !py_ir.undefined to i1
+//       CHECK:   cf.cond_br %[[CAST_B]], ^[[BB1]], ^[[BB3]]
+//       CHECK: ^[[BB3]]:  // pred: ^[[BB2]]
+//       CHECK:   %[[LOAD_A2:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:   %[[BINOP:.*]] = py_ir.binop %[[LOAD_A2]] : !py_ir.undefined sub %[[CONST]] : i64 -> !py_ir.undefined
+//       CHECK:   py_ir.storevar "A" %[[BINOP]] : !py_ir.undefined
+//       CHECK:   cf.br ^[[BB1]]
+//       CHECK: ^[[BB4]]:  // pred: ^[[BB1]]
+py_ast.module {
+  py_ast.func "func"() {
+    %2 = py_ast.name "A"
+    py_ast.while %2 {
+      %4 = py_ast.name "B"
+      py_ast.if %4 {
+        py_ast.continue
+      } {
+      }
+      %5 = py_ast.name "A"
+      %6 = py_ast.name "A"
+      %7 = py_ast.constant 1 : i64
+      %8 = py_ast.binop %6 sub %7
+      py_ast.assign(%5) = %8
+    }
+    %3 = py_ast.constant #py_ast.none
+    py_ast.return %3
+  }
+  %0 = py_ast.name "func"
+  %1 = py_ast.call %0( keywords )
+  py_ast.expr %1
+}
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK: %[[CONST:.*]] = py_ir.constant 1 : i64
+//       CHECK: %[[FUNC:.*]] = py_ir.func "func" -> !py_ir.undefined
+//       CHECK:   %[[LOAD_A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:   %[[ITER:.*]] = py_ir.iter %[[LOAD_A]] : !py_ir.undefined -> !py_ir.undefined
+//       CHECK:   cf.br ^[[BB1:.*]](%[[ITER]] : !py_ir.undefined)
+//       CHECK: ^[[BB1]](%[[ITER_ARG:.*]]: !py_ir.undefined):  // 3 preds: ^[[BB0:.*]], ^[[BB2:.*]], ^[[BB3:.*]]
+//       CHECK:   %[[VALUE:.*]], %[[VALID:.*]], %[[NEXTITER:.*]] = py_ir.next %[[ITER_ARG]] : !py_ir.undefined -> !py_ir.undefined, i1, !py_ir.undefined
+//       CHECK:   cf.cond_br %[[VALID]], ^[[BB2]](%[[VALUE]], %[[NEXTITER]] : !py_ir.undefined, !py_ir.undefined), ^[[BB4:.*]]
+//       CHECK: ^[[BB2]](%[[STORE_ARG:.*]]: !py_ir.undefined, %[[CAST_ARG:.*]]: !py_ir.undefined):  // pred: ^[[BB1]]
+//       CHECK:   py_ir.storevar "i" %[[STORE_ARG]] : !py_ir.undefined
+//       CHECK:   %[[LOAD_B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
+//       CHECK:   %[[CAST_B:.*]] = py_ir.cast %[[LOAD_B]] : !py_ir.undefined to i1
+//       CHECK:   cf.cond_br %[[CAST_B]], ^[[BB1]](%[[CAST_ARG]] : !py_ir.undefined), ^[[BB3]]
+//       CHECK: ^[[BB3]]:  // pred: ^[[BB2]]
+//       CHECK:   %[[LOAD_C:.*]] = py_ir.loadvar "C" : !py_ir.undefined
+//       CHECK:   %[[BINOP:.*]] = py_ir.binop %[[LOAD_C]] : !py_ir.undefined add %[[CONST]] : i64 -> !py_ir.undefined
+//       CHECK:   cf.br ^[[BB1]](%[[CAST_ARG]] : !py_ir.undefined)
+//       CHECK: ^[[BB4]]:  // pred: ^[[BB1]]
+py_ast.module {
+  py_ast.func "func"() {
+    %2 = py_ast.name "A"
+    %3 = py_ast.name "i"
+    py_ast.for %3 in %2 {
+      %5 = py_ast.name "B"
+      py_ast.if %5 {
+        py_ast.continue
+      } {
+      }
+      %6 = py_ast.name "C"
+      %7 = py_ast.constant 1 : i64
+      %8 = py_ast.binop %6 add %7
+      py_ast.expr %8
+    }
+    %4 = py_ast.constant #py_ast.none
+    py_ast.return %4
+  }
+  %0 = py_ast.name "func"
+  %1 = py_ast.call %0( keywords )
+  py_ast.expr %1
+}
