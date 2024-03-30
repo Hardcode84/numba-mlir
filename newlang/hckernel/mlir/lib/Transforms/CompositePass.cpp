@@ -14,12 +14,12 @@ struct CompositePass final
                 std::function<void(mlir::OpPassManager &)> func,
                 unsigned maxIterations)
       : name(std::move(name_)), populateFunc(std::move(func)),
+        dynamicPM(std::make_shared<mlir::OpPassManager>()),
         maxIters(maxIterations) {}
 
   void getDependentDialects(mlir::DialectRegistry &registry) const override {
-    mlir::OpPassManager pm;
-    populateFunc(pm);
-    pm.getDependentDialects(registry);
+    populateFunc(*dynamicPM);
+    dynamicPM->getDependentDialects(registry);
   }
 
   void runOnOperation() override {
@@ -28,10 +28,9 @@ struct CompositePass final
     mlir::OperationFingerPrint fp(op);
 
     unsigned currentIter = 0;
-    mlir::OpPassManager dynamicPM(op->getName());
-    populateFunc(dynamicPM);
+    populateFunc(*dynamicPM);
     while (true) {
-      if (mlir::failed(runPipeline(dynamicPM, op)))
+      if (mlir::failed(runPipeline(*dynamicPM, op)))
         return signalPassFailure();
 
       if (currentIter++ >= maxIters) {
@@ -58,6 +57,7 @@ protected:
 private:
   std::string name;
   std::function<void(mlir::OpPassManager &)> populateFunc;
+  std::shared_ptr<mlir::OpPassManager> dynamicPM;
   unsigned maxIters;
 };
 } // namespace
