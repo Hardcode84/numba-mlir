@@ -11,24 +11,23 @@ struct CompositePass final
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CompositePass)
 
   CompositePass(std::string name_,
-                std::function<void(mlir::OpPassManager &)> func,
+                llvm::function_ref<void(mlir::OpPassManager &)> populateFunc,
                 unsigned maxIterations)
-      : name(std::move(name_)), populateFunc(std::move(func)),
+      : name(std::move(name_)),
         dynamicPM(std::make_shared<mlir::OpPassManager>()),
-        maxIters(maxIterations) {}
+        maxIters(maxIterations) {
+    populateFunc(*dynamicPM);
+  }
 
   void getDependentDialects(mlir::DialectRegistry &registry) const override {
-    populateFunc(*dynamicPM);
     dynamicPM->getDependentDialects(registry);
   }
 
   void runOnOperation() override {
-    assert(populateFunc);
     auto op = getOperation();
     mlir::OperationFingerPrint fp(op);
 
     unsigned currentIter = 0;
-    populateFunc(*dynamicPM);
     while (true) {
       if (mlir::failed(runPipeline(*dynamicPM, op)))
         return signalPassFailure();
@@ -56,18 +55,17 @@ protected:
 
 private:
   std::string name;
-  std::function<void(mlir::OpPassManager &)> populateFunc;
   std::shared_ptr<mlir::OpPassManager> dynamicPM;
   unsigned maxIters;
 };
 } // namespace
 
-std::unique_ptr<mlir::Pass>
-hc::createCompositePass(std::string name,
-                        std::function<void(mlir::OpPassManager &)> populateFunc,
-                        unsigned maxIterations) {
+std::unique_ptr<mlir::Pass> hc::createCompositePass(
+    std::string name,
+    llvm::function_ref<void(mlir::OpPassManager &)> populateFunc,
+    unsigned maxIterations) {
   assert(!name.empty());
   assert(populateFunc);
-  return std::make_unique<CompositePass>(
-      std::move(name), std::move(populateFunc), maxIterations);
+  return std::make_unique<CompositePass>(std::move(name), populateFunc,
+                                         maxIterations);
 }
