@@ -397,3 +397,31 @@ py_ast.module {
   %1 = py_ast.call %0( keywords )
   py_ast.expr %1
 }
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK:  py_ir.func
+//       CHECK:    %[[A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:    %[[Iter:.*]] = py_ir.iter %[[A]] : !py_ir.undefined -> !py_ir.undefined
+//       CHECK:    cf.br ^[[CondBr:.*]](%[[Iter]] : !py_ir.undefined)
+//       CHECK:  ^[[CondBr]](%[[CondIter:.*]]: !py_ir.undefined)
+//       CHECK:    %[[Value:.*]], %[[Valid:.*]], %[[NIter:.*]] = py_ir.next %[[CondIter]] : !py_ir.undefined -> !py_ir.undefined, i1, !py_ir.undefined
+//       CHECK:    cf.cond_br %[[Valid]], ^[[BodyBr:.*]](%[[Value]], %[[NIter]] : !py_ir.undefined, !py_ir.undefined), ^[[RestBr:.*]]
+//       CHECK:  ^[[BodyBr]](%[[BValue:.*]]: !py_ir.undefined, %[[BIter:.*]]: !py_ir.undefined)
+//       CHECK:    py_ir.storevar "i" %[[BValue:.*]] : !py_ir.undefined
+//       CHECK:    cf.br ^[[CondBr]](%[[BIter]] : !py_ir.undefined)
+//       CHECK:  ^[[RestBr]]
+py_ast.module {
+  py_ast.func "func"() {
+    %2 = py_ast.name "A"
+    %3 = py_ast.name "i"
+    py_ast.for %3 in %2 {
+    }
+    %4 = py_ast.constant #py_ast.none
+    py_ast.return %4
+  }
+  %0 = py_ast.name "func"
+  %1 = py_ast.call %0( keywords )
+  py_ast.expr %1
+}
