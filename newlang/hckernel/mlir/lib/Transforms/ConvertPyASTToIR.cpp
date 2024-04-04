@@ -407,6 +407,66 @@ public:
   }
 };
 
+class ConvertFor final : public mlir::OpRewritePattern<hc::py_ast::ForOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hc::py_ast::ForOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    if (!isTopLevel(op))
+      return mlir::failure();
+
+    auto getUndefined = [&]() -> mlir::Type {
+      return hc::py_ir::UndefinedType::get(rewriter.getContext());
+    };
+
+    mlir::OpBuilder::InsertionGuard g(rewriter);
+
+    mlir::Location loc = op.getLoc();
+
+    mlir::Block *beforeBlock = rewriter.getInsertionBlock();
+
+    auto opPosition = rewriter.getInsertionPoint();
+    auto *remainingOpsBlock = rewriter.splitBlock(beforeBlock, opPosition);
+
+    mlir::Block *condBlock =
+        rewriter.createBlock(remainingOpsBlock, getUndefined(), loc);
+    rewriter.setInsertionPointToEnd(beforeBlock);
+    mlir::Value container = getVar(rewriter, loc, op.getIter());
+    mlir::Value iter =
+        rewriter.create<hc::py_ir::IterOp>(loc, getUndefined(), container);
+    rewriter.create<mlir::cf::BranchOp>(loc, condBlock, iter);
+
+    mlir::Block *thenBlock = &op.getBodyRegion().front();
+    mlir::Value thenValue =
+        thenBlock->addArgument(getUndefined(), rewriter.getUnknownLoc());
+    mlir::Value thenIter =
+        thenBlock->addArgument(getUndefined(), rewriter.getUnknownLoc());
+    rewriter.setInsertionPointToStart(thenBlock);
+    setVar(rewriter, loc, op.getTarget(), thenValue);
+    rewriter.setInsertionPointToEnd(thenBlock);
+    rewriter.replaceOpWithNewOp<mlir::cf::BranchOp>(thenBlock->getTerminator(),
+                                                    condBlock, thenIter);
+    rewriter.inlineRegionBefore(op.getBodyRegion(), remainingOpsBlock);
+
+    rewriter.setInsertionPointToEnd(condBlock);
+    mlir::Value condIter = condBlock->getArgument(0);
+    auto next = rewriter.create<hc::py_ir::NextOp>(loc, getUndefined(),
+                                                   rewriter.getIntegerType(1),
+                                                   getUndefined(), condIter);
+    mlir::Value cond = getVar(rewriter, loc, op.getTarget());
+
+    rewriter.create<mlir::cf::CondBranchOp>(
+        loc, next.getValid(), thenBlock,
+        mlir::ValueRange{next.getValue(), next.getNextiter()},
+        remainingOpsBlock, mlir::ValueRange{});
+    rewriter.eraseOp(op);
+
+    return mlir::success();
+  }
+};
+
 class ConvertAssign final
     : public mlir::OpRewritePattern<hc::py_ast::AssignOp> {
 public:
@@ -488,6 +548,6 @@ struct ConvertPyASTToIRPass final
 
 void hc::populateConvertPyASTToIRPatterns(mlir::RewritePatternSet &patterns) {
   patterns.insert<ConvertModule, ConvertFunc, ConvertReturn, ConvertIf,
-                  ConvertWhile, ConvertAssign, ConvertAugAssign, ConvertExpr>(
-      patterns.getContext());
+                  ConvertWhile, ConvertFor, ConvertAssign, ConvertAugAssign,
+                  ConvertExpr>(patterns.getContext());
 }
