@@ -343,9 +343,12 @@ public:
 
     mlir::OpBuilder::InsertionGuard g(rewriter);
     mlir::Block *thenBlock = &op.getBodyRegion().front();
-    rewriter.setInsertionPointToEnd(thenBlock);
-    rewriter.replaceOpWithNewOp<mlir::cf::BranchOp>(thenBlock->getTerminator(),
-                                                    remainingOpsBlock);
+
+    mlir::Operation *term = thenBlock->getTerminator();
+    if (mlir::isa<hc::py_ast::BlockEndOp>(term)) {
+      rewriter.setInsertionPointToEnd(thenBlock);
+      rewriter.replaceOpWithNewOp<mlir::cf::BranchOp>(term, remainingOpsBlock);
+    }
     rewriter.inlineRegionBefore(op.getBodyRegion(), remainingOpsBlock);
 
     mlir::Block *elseBlock;
@@ -353,9 +356,12 @@ public:
       elseBlock = remainingOpsBlock;
     } else {
       elseBlock = &op.getOrelseRegion().front();
-      rewriter.setInsertionPointToEnd(elseBlock);
-      rewriter.replaceOpWithNewOp<mlir::cf::BranchOp>(
-          elseBlock->getTerminator(), remainingOpsBlock);
+      term = elseBlock->getTerminator();
+      if (mlir::isa<hc::py_ast::BlockEndOp>(term)) {
+        rewriter.setInsertionPointToEnd(elseBlock);
+        rewriter.replaceOpWithNewOp<mlir::cf::BranchOp>(
+            elseBlock->getTerminator(), remainingOpsBlock);
+      }
       rewriter.inlineRegionBefore(op.getOrelseRegion(), remainingOpsBlock);
     }
 
@@ -365,6 +371,46 @@ public:
     return mlir::success();
   }
 };
+
+static void replaceBreakAndContinue(mlir::PatternRewriter &rewriter,
+                                    mlir::Block *thenBlock,
+                                    mlir::Block *condBlock,
+                                    const mlir::ValueRange &condBlockArgs,
+                                    mlir::Block *remainingBlock) {
+  mlir::OpBuilder::InsertionGuard g(rewriter);
+
+  llvm::SmallVector<mlir::Operation *> continues;
+  llvm::SmallVector<mlir::Operation *> breaks;
+
+  thenBlock->walk([&](mlir::Operation *op) {
+    if (mlir::isa<hc::py_ast::ForOp>(*op) ||
+        mlir::isa<hc::py_ast::WhileOp>(*op)) {
+      return mlir::WalkResult::skip();
+    } else if (mlir::isa<hc::py_ast::ContinueOp>(*op)) {
+      continues.push_back(op);
+    } else if (mlir::isa<hc::py_ast::BreakOp>(*op)) {
+      breaks.push_back(op);
+    }
+
+    return mlir::WalkResult::advance();
+  });
+
+  for (auto &&cont : continues) {
+    mlir::Block *opBlock = cont->getBlock();
+    rewriter.setInsertionPointToEnd(opBlock);
+    rewriter.replaceOpWithNewOp<mlir::cf::BranchOp>(opBlock->getTerminator(),
+                                                    condBlock, condBlockArgs);
+    rewriter.eraseOp(cont);
+  }
+
+  for (auto &&brk : breaks) {
+    mlir::Block *opBlock = brk->getBlock();
+    rewriter.setInsertionPointToEnd(opBlock);
+    rewriter.replaceOpWithNewOp<mlir::cf::BranchOp>(opBlock->getTerminator(),
+                                                    remainingBlock);
+    rewriter.eraseOp(brk);
+  }
+}
 
 class ConvertWhile final : public mlir::OpRewritePattern<hc::py_ast::WhileOp> {
 public:
@@ -393,6 +439,9 @@ public:
     rewriter.replaceOpWithNewOp<mlir::cf::BranchOp>(thenBlock->getTerminator(),
                                                     condBlock);
     rewriter.inlineRegionBefore(op.getBodyRegion(), remainingOpsBlock);
+
+    replaceBreakAndContinue(rewriter, thenBlock, condBlock, mlir::ValueRange{},
+                            remainingOpsBlock);
 
     rewriter.setInsertionPointToEnd(condBlock);
 
@@ -449,6 +498,9 @@ public:
     rewriter.replaceOpWithNewOp<mlir::cf::BranchOp>(thenBlock->getTerminator(),
                                                     condBlock, thenIter);
     rewriter.inlineRegionBefore(op.getBodyRegion(), remainingOpsBlock);
+
+    replaceBreakAndContinue(rewriter, thenBlock, condBlock,
+                            mlir::ValueRange{thenIter}, remainingOpsBlock);
 
     rewriter.setInsertionPointToEnd(condBlock);
     mlir::Value condIter = condBlock->getArgument(0);
