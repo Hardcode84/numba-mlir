@@ -72,8 +72,14 @@ struct ReconstuctPySSA {
     auto &desc = blocksMap[current];
     auto it = desc.defs.find(name);
     mlir::OpBuilder builder(name.getContext());
+    mlir::Operation *term = current->getTerminator();
+    builder.setInsertionPoint(term);
+
     if (it != desc.defs.end()) {
       val = it->second;
+    } else if (current->hasNoPredecessors()) {
+      val = builder.create<hc::py_ir::LoadVarOp>(term->getLoc(), type, name);
+      desc.defs[name] = val;
     } else {
       val = current->addArgument(type, builder.getUnknownLoc());
       desc.defs[name] = val;
@@ -82,8 +88,6 @@ struct ReconstuctPySSA {
         toProcess.emplace(name, pred, current);
     }
 
-    mlir::Operation *term = current->getTerminator();
-    builder.setInsertionPoint(term);
     if (type != val.getType())
       val = builder.create<hc::py_ir::CastOp>(term->getLoc(), type, val);
 
