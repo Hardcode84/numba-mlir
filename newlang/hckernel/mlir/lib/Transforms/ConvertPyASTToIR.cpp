@@ -18,6 +18,10 @@ static hc::py_ir::BinOpVal convertBinOpType(hc::py_ast::BinOpVal val) {
   return static_cast<hc::py_ir::BinOpVal>(val);
 }
 
+static hc::py_ir::UnaryOpVal convertUnaryOpType(hc::py_ast::UnaryOpVal val) {
+  return static_cast<hc::py_ir::UnaryOpVal>(val);
+}
+
 static hc::py_ir::BinOpVal convertBoolOpType(hc::py_ast::BoolOpType val) {
   switch (val) {
   case hc::py_ast::BoolOpType::and_:
@@ -76,6 +80,14 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
 
     return builder.create<::hc::py_ir::BinOp>(loc, getUndefined(), left, bop,
                                               right);
+  }
+
+  if (auto unaryOp = val.getDefiningOp<hc::py_ast::UnaryOp>()) {
+    mlir::Value operand = getVar(builder, loc, unaryOp.getOperand());
+    hc::py_ir::UnaryOpVal uop = convertUnaryOpType(unaryOp.getOp());
+
+    return builder.create<::hc::py_ir::UnaryOp>(loc, getUndefined(), uop,
+                                                operand);
   }
 
   if (auto boolOp = val.getDefiningOp<hc::py_ast::BoolOp>()) {

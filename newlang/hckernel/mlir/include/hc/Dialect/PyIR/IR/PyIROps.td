@@ -292,6 +292,17 @@ def PyIR_BinOpAttr : I64EnumAttr<
   let cppNamespace = "::hc::py_ir";
 }
 
+def PyIR_UnaryOpAttr : I64EnumAttr<
+    "UnaryOpVal", "",
+    [
+      I64EnumAttrCase<"invert", 0>,
+      I64EnumAttrCase<"unot", 1>,
+      I64EnumAttrCase<"uadd", 2>,
+      I64EnumAttrCase<"usub", 3>,
+    ]> {
+  let cppNamespace = "::hc::py_ir";
+}
+
 def PyIR_BinOp : PyIR_OpBase<"binop"> {
   let arguments = (ins
       AnyType:$left,
@@ -310,6 +321,15 @@ def PyIR_InplaceBinOp : PyIR_OpBase<"inplace_binop"> {
   let results = (outs AnyType:$result);
 
   let assemblyFormat = "attr-dict $left`:`type($left) $op $right`:`type($right) `->` type($result)";
+}
+
+def PyIR_UnaryOp : PyIR_OpBase<"unaryop"> {
+  let arguments = (ins
+      PyIR_UnaryOpAttr:$op,
+      AnyType:$operand);
+  let results = (outs AnyType:$result);
+
+  let assemblyFormat = "attr-dict $op $operand`:`type($operand) `->` type($result)";
 }
 
 def PyIR_IterOp : PyIR_OpBase<"iter"> {
