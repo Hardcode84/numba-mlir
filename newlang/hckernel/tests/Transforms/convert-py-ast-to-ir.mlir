@@ -366,6 +366,17 @@ py_ast.module {
 // -----
 
 // CHECK-LABEL: py_ir.module
+//       CHECK: %[[A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK: %[[R:.*]] = py_ir.unaryop usub %[[A]] : !py_ir.undefined -> !py_ir.undefined
+py_ast.module {
+  %0 = py_ast.name "A"
+  %1 = py_ast.unaryop usub %0
+  py_ast.expr %1
+}
+
+// -----
+
+// CHECK-LABEL: py_ir.module
 //       CHECK:  %[[C1:.*]] = py_ir.constant 1 : [[C1T:.*]]
 //       CHECK:  py_ir.func "func"
 //       CHECK:  cf.br ^[[CONDBR:.*]]

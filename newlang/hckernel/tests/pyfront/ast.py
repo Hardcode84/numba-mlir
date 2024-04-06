@@ -441,3 +441,15 @@ def func():
 def func():
     while A:
         pass
+
+
+# -----
+
+
+# CHECK-LABEL: py_ast.module
+#       CHECK: py_ast.func
+#       CHECK: %[[A:.*]] = py_ast.name "A"
+#       CHECK: %[[OpR:.*]] = py_ast.unaryop unot %[[A]]
+#       CHECK: py_ast.return %[[OpR]]
+def func():
+    return not A

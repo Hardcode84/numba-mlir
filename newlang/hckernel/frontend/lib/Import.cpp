@@ -744,6 +744,46 @@ struct AugAssignHandler {
   }
 };
 
+struct UnaryOpHandler {
+  static py::object getClass(py::handle astMod) {
+    return astMod.attr("UnaryOp");
+  }
+
+  static hc::py_ast::UnaryOpVal getUnaryOpVal(ParserState &state,
+                                              py::handle obj) {
+    using UnaryOpVal = hc::py_ast::UnaryOpVal;
+    py::handle astMod = state.astModule;
+    std::pair<py::handle, UnaryOpVal> handlers[] = {
+        {astMod.attr("Invert"), UnaryOpVal::invert},
+        {astMod.attr("Not"), UnaryOpVal::unot},
+        {astMod.attr("UAdd"), UnaryOpVal::uadd},
+        {astMod.attr("USub"), UnaryOpVal::usub},
+    };
+
+    for (auto &&[t, op] : handlers)
+      if (py::isinstance(obj, t))
+        return op;
+
+    reportError(llvm::Twine("unhandled UnaryOp type \"") +
+                py::str(obj.get_type()).cast<std::string>() + "\"");
+  }
+
+  static void parse(ParserState &state, py::handle node) {
+    state.pushHandler(node, &processArgs);
+    state.pushHandler(node.attr("operand"));
+  }
+
+  static void processArgs(ParserState &state, py::handle node) {
+    auto operand = state.argsStack.pop_back_val();
+
+    auto &builder = state.builder;
+    mlir::Value res = builder.create<hc::py_ast::UnaryOp>(
+        state.getLoc(node), getUnaryOpVal(state, node.attr("op")), operand);
+
+    state.argsStack.push_back(res);
+  }
+};
+
 struct ReturnHandler {
   static py::object getClass(py::handle astMod) {
     return astMod.attr("Return");
@@ -798,6 +838,7 @@ void fillHandlers(
   handlers.emplace_back(getHandler<CompareHandler>(astMod));
   handlers.emplace_back(getHandler<BinOpHandler>(astMod));
   handlers.emplace_back(getHandler<AugAssignHandler>(astMod));
+  handlers.emplace_back(getHandler<UnaryOpHandler>(astMod));
   handlers.emplace_back(getHandler<ReturnHandler>(astMod));
 }
 } // namespace
