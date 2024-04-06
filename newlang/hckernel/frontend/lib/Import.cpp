@@ -784,6 +784,29 @@ struct UnaryOpHandler {
   }
 };
 
+struct IfExpOpHandler {
+  static py::object getClass(py::handle astMod) { return astMod.attr("IfExp"); }
+
+  static void parse(ParserState &state, py::handle node) {
+    state.pushHandler(node, &processArgs);
+    state.pushHandler(node.attr("test"));
+    state.pushHandler(node.attr("body"));
+    state.pushHandler(node.attr("orelse"));
+  }
+
+  static void processArgs(ParserState &state, py::handle node) {
+    auto test = state.argsStack.pop_back_val();
+    auto body = state.argsStack.pop_back_val();
+    auto orelse = state.argsStack.pop_back_val();
+
+    auto &builder = state.builder;
+    mlir::Value res = builder.create<hc::py_ast::IfExpOp>(state.getLoc(node),
+                                                          test, body, orelse);
+
+    state.argsStack.push_back(res);
+  }
+};
+
 struct ReturnHandler {
   static py::object getClass(py::handle astMod) {
     return astMod.attr("Return");
@@ -839,6 +862,7 @@ void fillHandlers(
   handlers.emplace_back(getHandler<BinOpHandler>(astMod));
   handlers.emplace_back(getHandler<AugAssignHandler>(astMod));
   handlers.emplace_back(getHandler<UnaryOpHandler>(astMod));
+  handlers.emplace_back(getHandler<IfExpOpHandler>(astMod));
   handlers.emplace_back(getHandler<ReturnHandler>(astMod));
 }
 } // namespace

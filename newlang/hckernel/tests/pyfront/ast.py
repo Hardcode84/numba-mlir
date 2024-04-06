@@ -453,3 +453,17 @@ def func():
 #       CHECK: py_ast.return %[[OpR]]
 def func():
     return not A
+
+
+# -----
+
+
+# CHECK-LABEL: py_ast.module
+#       CHECK: py_ast.func
+#       CHECK-DAG: %[[A:.*]] = py_ast.name "A"
+#       CHECK-DAG: %[[B:.*]] = py_ast.name "B"
+#       CHECK-DAG: %[[C:.*]] = py_ast.name "C"
+#       CHECK: %[[OpR:.*]] = py_ast.ifexp %[[A]] if %[[B]] else %[[C]]
+#       CHECK: py_ast.return %[[OpR]]
+def func():
+    return A if B else C

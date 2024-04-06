@@ -348,4 +348,14 @@ def PyIR_NextOp : PyIR_OpBase<"next"> {
   let assemblyFormat = "attr-dict $iter`:`type($iter) `->` type($value)`,` type($valid)`,` type($nextiter)";
 }
 
+def PyIR_IfExpOp : PyIR_OpBase<"ifexp"> {
+  let arguments = (ins
+      AnyType:$test,
+      AnyType:$body,
+      AnyType:$orelse);
+  let results = (outs AnyType:$result);
+
+  let assemblyFormat = "attr-dict $body`:`type($body) `if` $test`:`type($test) `else` $orelse`:`type($orelse) `->` type($result)";
+}
+
 #endif // PYIR_OPS
