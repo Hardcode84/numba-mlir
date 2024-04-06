@@ -90,6 +90,15 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
                                                 operand);
   }
 
+  if (auto ifExp = val.getDefiningOp<hc::py_ast::IfExpOp>()) {
+    mlir::Value test = getVar(builder, loc, ifExp.getTest());
+    mlir::Value body = getVar(builder, loc, ifExp.getBody());
+    mlir::Value orelse = getVar(builder, loc, ifExp.getOrelse());
+
+    return builder.create<::hc::py_ir::IfExpOp>(loc, getUndefined(), test, body,
+                                                orelse);
+  }
+
   if (auto boolOp = val.getDefiningOp<hc::py_ast::BoolOp>()) {
     mlir::ValueRange vals = boolOp.getValues();
     assert(vals.size() >= 2);

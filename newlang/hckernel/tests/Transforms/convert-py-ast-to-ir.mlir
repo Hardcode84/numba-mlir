@@ -377,6 +377,21 @@ py_ast.module {
 // -----
 
 // CHECK-LABEL: py_ir.module
+//       CHECK-DAG: %[[A:.*]] = py_ir.loadvar "A"
+//       CHECK-DAG: %[[B:.*]] = py_ir.loadvar "B"
+//       CHECK-DAG: %[[C:.*]] = py_ir.loadvar "C"
+//       CHECK: %[[OpR:.*]] = py_ir.ifexp %[[A]] : !py_ir.undefined if %[[B]] : !py_ir.undefined else %[[C]] : !py_ir.undefined -> !py_ir.undefined
+py_ast.module {
+  %0 = py_ast.name "C"
+  %1 = py_ast.name "A"
+  %2 = py_ast.name "B"
+  %3 = py_ast.ifexp %1 if %2 else %0
+  py_ast.expr %3
+}
+
+// -----
+
+// CHECK-LABEL: py_ir.module
 //       CHECK:  %[[C1:.*]] = py_ir.constant 1 : [[C1T:.*]]
 //       CHECK:  py_ir.func "func"
 //       CHECK:  cf.br ^[[CONDBR:.*]]

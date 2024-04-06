@@ -423,6 +423,22 @@ def PyAST_UnaryOp : PyAST_PureOpBase<"unaryop"> {
   let assemblyFormat = "attr-dict $op $operand";
 }
 
+def PyAST_IfExpOp : PyAST_PureOpBase<"ifexp"> {
+  let arguments = (ins
+      PyAST_ASTNodeType:$test,
+      PyAST_ASTNodeType:$body,
+      PyAST_ASTNodeType:$orelse);
+  let results = (outs PyAST_ASTNodeType:$result);
+
+  let builders = [
+    OpBuilder<(ins
+        "::mlir::Value":$test,
+        "::mlir::Value":$body,
+        "::mlir::Value":$orelse)>
+  ];
+
+  let assemblyFormat = "attr-dict $body `if` $test `else` $orelse";
+}
 
 def PyAST_ReturnOp : PyAST_OpBase<"return", [NoReturn]> {
   let arguments = (ins Optional<PyAST_ASTNodeType>:$value);
