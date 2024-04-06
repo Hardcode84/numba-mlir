@@ -86,6 +86,17 @@ def PyAST_BinOpAttr : I64EnumAttr<
   let cppNamespace = "::hc::py_ast";
 }
 
+def PyAST_UnaryOpAttr : I64EnumAttr<
+    "UnaryOpVal", "",
+    [
+      I64EnumAttrCase<"invert", 0>,
+      I64EnumAttrCase<"unot", 1>,
+      I64EnumAttrCase<"uadd", 2>,
+      I64EnumAttrCase<"usub", 3>,
+    ]> {
+  let cppNamespace = "::hc::py_ast";
+}
+
 def PyAST_NoneAttr : PyAST_Attr<"None", "none">;
 
 def PyAST_ASTNodeType : PyAST_Type<"Node", "node", [], "::mlir::Type">;
@@ -396,6 +407,22 @@ def PyAST_AugAssignOp : PyAST_OpBase<"aug_assign"> {
 
   let assemblyFormat = "attr-dict $target $op $value";
 }
+
+def PyAST_UnaryOp : PyAST_PureOpBase<"unaryop"> {
+  let arguments = (ins
+      PyAST_UnaryOpAttr:$op,
+      PyAST_ASTNodeType:$operand);
+  let results = (outs PyAST_ASTNodeType:$result);
+
+  let builders = [
+    OpBuilder<(ins
+        "UnaryOpVal":$op,
+        "::mlir::Value":$operand)>
+  ];
+
+  let assemblyFormat = "attr-dict $op $operand";
+}
+
 
 def PyAST_ReturnOp : PyAST_OpBase<"return", [NoReturn]> {
   let arguments = (ins Optional<PyAST_ASTNodeType>:$value);

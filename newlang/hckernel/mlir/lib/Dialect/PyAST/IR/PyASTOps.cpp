@@ -171,6 +171,13 @@ void hc::py_ast::BinOp::build(::mlir::OpBuilder &odsBuilder,
   build(odsBuilder, odsState, type, left, op, right);
 }
 
+void hc::py_ast::UnaryOp::build(::mlir::OpBuilder &odsBuilder,
+                                ::mlir::OperationState &odsState, UnaryOpVal op,
+                                mlir::Value operand) {
+  auto type = NodeType::get(odsBuilder.getContext());
+  build(odsBuilder, odsState, type, op, operand);
+}
+
 #include "hc/Dialect/PyAST/IR/PyASTOpsDialect.cpp.inc"
 
 #define GET_OP_CLASSES
