@@ -131,7 +131,7 @@ def PyIR_PyModuleOp : PyIR_OpBase<"module", [
 }
 
 def PyIR_PyModuleEndOp : PyIR_OpBase<"module_end", [
-  Terminator, HasParent<"PyModuleOp">
+  Terminator, HasParent<"PyModuleOp">, Pure
 ]> {
   let assemblyFormat = "attr-dict";
 }
