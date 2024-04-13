@@ -25,13 +25,13 @@ include(HandleLLVMOptions)
 #    message(FATAL_ERROR "Invalid llvm version")
 #endif()
 
-add_subdirectory(include/hc/Dialect/PyAST/IR)
-add_subdirectory(include/hc/Dialect/PyIR/IR)
+add_subdirectory(include/hc/Dialect)
 add_subdirectory(include/hc/Transforms)
 
 set(SOURCES_LIST
     lib/Dialect/PyAST/IR/PyASTOps.cpp
     lib/Dialect/PyIR/IR/PyIROps.cpp
+    lib/Dialect/Typing/IR/TypingOps.cpp
     lib/Transforms/ClenaupPySetVar.cpp
     lib/Transforms/CompositePass.cpp
     lib/Transforms/ConvertPyASTToIR.cpp
@@ -41,6 +41,7 @@ set(SOURCES_LIST
 set(HEADERS_LIST
     include/hc/Dialect/PyAST/IR/PyASTOps.hpp
     include/hc/Dialect/PyIR/IR/PyIROps.hpp
+    include/hc/Dialect/Typing/IR/TypingOps.hpp
     include/hc/InitHCDialects.hpp
     include/hc/InitHCPasses.hpp
     include/hc/Transforms/Passes.hpp
@@ -55,8 +56,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     MLIRComplexDialect
     MLIRControlFlowDialect
     MLIRIR
-    MLIRTransformUtils
     MLIRTransforms
+    MLIRTransformUtils
     )
 
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
@@ -71,6 +72,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     )
 
 add_dependencies(${PROJECT_NAME}
+    HCTransformsPassIncGen
     MLIRPyASTOpsIncGen
     MLIRPyIROpsIncGen
-    HCTransformsPassIncGen)
+    MLIRTypingOpsIncGen
+    )
