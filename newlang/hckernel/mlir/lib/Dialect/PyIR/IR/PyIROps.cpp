@@ -33,20 +33,29 @@ mlir::OpFoldResult hc::py_ir::ConstantOp::fold(FoldAdaptor /*adaptor*/) {
 void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
                                 ::mlir::OperationState &odsState,
                                 mlir::Type resultType, llvm::StringRef name,
-                                mlir::TypeRange argTypes,
+                                mlir::ValueRange annotations,
                                 mlir::ValueRange decorators) {
   odsState.addAttribute(getNameAttrName(odsState.name),
                         odsBuilder.getStringAttr(name));
+  odsState.addOperands(annotations);
   odsState.addOperands(decorators);
   odsState.addTypes(resultType);
+
+  int32_t segmentSizes[2] = {};
+  segmentSizes[0] = static_cast<int32_t>(annotations.size());
+  segmentSizes[1] = static_cast<int32_t>(decorators.size());
+  odsState.addAttribute(getOperandSegmentSizeAttr(),
+                        odsBuilder.getDenseI32ArrayAttr(segmentSizes));
 
   mlir::Region *region = odsState.addRegion();
 
   mlir::OpBuilder::InsertionGuard g(odsBuilder);
 
-  llvm::SmallVector<mlir::Location> locs(argTypes.size(),
+  llvm::SmallVector<mlir::Type> types(
+      annotations.size(), UndefinedType::get(odsBuilder.getContext()));
+  llvm::SmallVector<mlir::Location> locs(annotations.size(),
                                          odsBuilder.getUnknownLoc());
-  odsBuilder.createBlock(region, {}, argTypes, locs);
+  odsBuilder.createBlock(region, {}, types, locs);
 }
 
 bool hc::py_ir::CastOp::areCastCompatible(mlir::TypeRange inputs,

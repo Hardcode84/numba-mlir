@@ -136,10 +136,23 @@ def PyIR_PyModuleEndOp : PyIR_OpBase<"module_end", [
   let assemblyFormat = "attr-dict";
 }
 
-def PyIR_PyFuncOp : PyIR_OpBase<"func", [Pure]> {
+def PyIR_EmptyAnnotationOp : PyIR_OpBase<"empty_annotation", [Pure]> {
+  let results = (outs PyIR_UndefinedType:$result);
+
+  let builders = [
+    OpBuilder<(ins), [{
+      build($_builder, $_state, ::hc::py_ir::UndefinedType::get($_builder.getContext()));
+    }]>
+  ];
+
+  let assemblyFormat = "attr-dict";
+}
+
+def PyIR_PyFuncOp : PyIR_OpBase<"func", [Pure, AttrSizedOperandSegments]> {
 
   let arguments = (ins
       StrAttr:$name,
+      Variadic<AnyType>:$annotations,
       Variadic<AnyType>:$decorators);
 
   let results = (outs AnyType:$result);
@@ -150,13 +163,18 @@ def PyIR_PyFuncOp : PyIR_OpBase<"func", [Pure]> {
     OpBuilder<(ins
         "::mlir::Type":$resultType,
         "::llvm::StringRef":$name,
-        "::mlir::TypeRange":$argTypes,
+        "::mlir::ValueRange":$annotations,
         "::mlir::ValueRange":$decorators)>
   ];
 
   let skipDefaultBuilders = 1;
 
-  let assemblyFormat = "attr-dict $name ( `decorators` $decorators^ `:` type($decorators) )? `->` type($result) $bodyRegion";
+  let assemblyFormat = [{
+    attr-dict $name
+    ( `annotations` $annotations^ `:` type($annotations) )?
+    ( `decorators` $decorators^ `:` type($decorators) )?
+    `->` type($result) $bodyRegion
+  }];
 }
 
 def PyIR_ReturnOp : PyIR_OpBase<"return", [Pure, HasParent<"PyFuncOp">,

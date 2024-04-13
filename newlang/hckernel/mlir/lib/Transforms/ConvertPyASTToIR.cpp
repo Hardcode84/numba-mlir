@@ -193,32 +193,17 @@ static void setVar(mlir::OpBuilder &builder, mlir::Location loc,
   llvm_unreachable("Unknown setvar node");
 }
 
-static mlir::Type getType(mlir::Value astNode) {
-  auto ctx = astNode.getContext();
-  if (auto name = astNode.getDefiningOp<hc::py_ast::NameOp>())
-    return hc::py_ir::IdentType::get(ctx, name.getId());
-
-  if (auto subscript = astNode.getDefiningOp<hc::py_ast::SubscriptOp>()) {
-    auto value = getType(subscript.getValue());
-    auto slice = getType(subscript.getSlice());
-    return hc::py_ir::SubscriptType::get(ctx, value, slice);
-  }
-
-  if (auto const_ = astNode.getDefiningOp<hc::py_ast::ConstantOp>())
-    return hc::py_ir::ConstType::get(const_.getValue());
-
-  return hc::py_ir::UndefinedType::get(ctx);
-}
-
-static std::optional<std::pair<mlir::StringRef, mlir::Type>>
-getArg(mlir::Value astNode) {
+static std::pair<mlir::StringRef, mlir::Value>
+getArg(mlir::OpBuilder &builder, mlir::Location loc, mlir::Value astNode) {
   auto argOp = astNode.getDefiningOp<hc::py_ast::ArgOp>();
   mlir::Value annotation = argOp.getAnnotation();
-  if (!annotation)
-    return std::pair(argOp.getName(),
-                     hc::py_ir::UndefinedType::get(astNode.getContext()));
+  if (!annotation) {
+    annotation = builder.create<hc::py_ir::EmptyAnnotationOp>(loc);
+  } else {
+    annotation = getVar(builder, loc, annotation);
+  }
 
-  return std::pair(argOp.getName(), getType(annotation));
+  return {argOp.getName(), annotation};
 }
 
 static bool isTopLevel(mlir::Operation *op) {
@@ -277,27 +262,23 @@ public:
     if (!checkFuncReturn(op.getBody()))
       return mlir::failure();
 
+    mlir::Location loc = op.getLoc();
     llvm::SmallVector<mlir::StringRef> argNames;
-    llvm::SmallVector<mlir::Type> argTypes;
+    llvm::SmallVector<mlir::Value> args;
     for (auto arg : op.getArgs()) {
-      auto argsDesc = getArg(arg);
-      if (!argsDesc)
-        return mlir::failure();
-
-      auto [name, type] = *argsDesc;
+      auto [name, type] = getArg(rewriter, loc, arg);
       argNames.emplace_back(name);
-      argTypes.emplace_back(type);
+      args.emplace_back(type);
     }
 
-    mlir::Location loc = op.getLoc();
     llvm::SmallVector<mlir::Value> decorators;
     for (auto decor : decorators)
       decorators.emplace_back(getVar(rewriter, loc, decor));
 
     auto name = op.getName();
     auto type = hc::py_ir::UndefinedType::get(rewriter.getContext());
-    auto newOp = rewriter.create<hc::py_ir::PyFuncOp>(loc, type, name, argTypes,
-                                                      decorators);
+    auto newOp =
+        rewriter.create<hc::py_ir::PyFuncOp>(loc, type, name, args, decorators);
     rewriter.create<hc::py_ir::StoreVarOp>(loc, name, newOp.getResult());
 
     mlir::Region &dstRegion = newOp.getRegion();
