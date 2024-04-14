@@ -44,8 +44,9 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
     if (mlir::isa<hc::py_ast::NoneAttr>(attr))
       return builder.create<hc::py_ir::NoneOp>(loc);
 
-    return builder.create<hc::py_ir::ConstantOp>(
+    mlir::Value val = builder.create<hc::py_ir::ConstantOp>(
         loc, mlir::cast<mlir::TypedAttr>(attr));
+    return builder.create<hc::py_ir::CastOp>(loc, getUndefined(), val);
   }
 
   if (auto name = val.getDefiningOp<hc::py_ast::NameOp>())
