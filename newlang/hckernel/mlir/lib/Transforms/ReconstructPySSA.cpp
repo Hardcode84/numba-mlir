@@ -26,6 +26,14 @@ struct ReconstuctPySSA {
     if (desc.filled)
       return;
 
+    if (auto func = mlir::dyn_cast_if_present<hc::py_ir::PyFuncOp>(
+            block->getParentOp())) {
+      if (block == func.getEntryBlock()) {
+        for (auto &&[name, arg] : func.getCaptureNamesAndArgs())
+          desc.defs[name] = arg;
+      }
+    }
+
     auto replaceOp = [&](auto op, mlir::Value val) {
       auto res = op.getResult();
       auto resType = res.getType();
@@ -138,6 +146,31 @@ struct ReconstuctPySSA {
   void processOp(mlir::Operation *op) {
     for (mlir::Region &reg : op->getRegions())
       processRegion(reg);
+
+    if (auto func = mlir::dyn_cast<hc::py_ir::PyFuncOp>(op)) {
+      llvm::SmallVector<mlir::StringRef> names;
+      for (auto attr : func.getCaptureNames().getAsRange<mlir::StringAttr>())
+        names.emplace_back(attr.getValue());
+
+      mlir::Block &block = func.getBodyRegion().front();
+
+      for (mlir::Operation &innerOp :
+           llvm::make_early_inc_range(block.without_terminator())) {
+        auto load = mlir::dyn_cast<hc::py_ir::LoadVarOp>(innerOp);
+        if (!load)
+          continue;
+
+        names.emplace_back(load.getName());
+        mlir::Value newArg = block.addArgument(load.getType(), load.getLoc());
+        load.replaceAllUsesWith(newArg);
+        load->erase();
+      }
+
+      if (names.size() != func.getCaptureNames().size()) {
+        auto newAttr = mlir::OpBuilder(op->getContext()).getStrArrayAttr(names);
+        func.setCaptureNamesAttr(newAttr);
+      }
+    }
   }
 
   std::queue<std::tuple<mlir::StringAttr, mlir::Block *, mlir::Block *>>

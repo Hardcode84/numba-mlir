@@ -1,7 +1,8 @@
 // RUN: hc-opt -allow-unregistered-dialect -split-input-file %s --hc-reconstruct-py-ssa-pass | FileCheck %s
 
 // CHECK-LABEL: py_ir.module
-//       CHECK:  %[[B:.*]] = py_ir.loadvar "B" : none
+//       CHECK:  py_ir.func "foo" () capture ["B"] -> !py_ir.undefined
+//       CHECK:  ^bb0(%[[B:.*]]: none):
 //       CHECK:  py_ir.return %[[B]] : none
 py_ir.module {
   %f = py_ir.func "foo" () capture [] -> !py_ir.undefined {
@@ -15,7 +16,8 @@ py_ir.module {
 // -----
 
 // CHECK-LABEL: py_ir.module
-//       CHECK:  %[[B:.*]] = py_ir.loadvar "B" : none
+//       CHECK:  py_ir.func "foo" () capture ["B"] -> !py_ir.undefined
+//       CHECK:  ^bb0(%[[B:.*]]: none):
 //       CHECK:  cf.br ^bb1(%[[B]] : none)
 //       CHECK:  ^bb1(%[[B1:.*]]: none):
 //       CHECK:  py_ir.return %[[B1]] : none
@@ -34,7 +36,8 @@ py_ir.module {
 // -----
 
 // CHECK-LABEL: py_ir.module
-//       CHECK:  %[[B:.*]] = py_ir.loadvar "B" : none
+//       CHECK:  py_ir.func "foo" () capture ["B"] -> !py_ir.undefined
+//       CHECK:  ^bb0(%[[B:.*]]: none):
 //       CHECK:  cf.br ^bb1(%[[B]] : none)
 //       CHECK:  ^bb1(%[[B1:.*]]: none):
 //       CHECK:  cf.br ^bb2(%[[B1]] : none)
@@ -57,7 +60,8 @@ py_ir.module {
 // -----
 
 // CHECK-LABEL: py_ir.module
-//       CHECK:  %[[B:.*]] = py_ir.loadvar "B" : none
+//       CHECK:  py_ir.func "foo" () capture ["B"] -> !py_ir.undefined
+//       CHECK:  ^bb0(%[[B:.*]]: none):
 //       CHECK:  cf.br ^bb1(%[[B]] : none)
 //       CHECK:  ^bb1(%[[B1:.*]]: none):
 //       CHECK:  cf.cond_br %{{.*}}, ^bb1(%[[B1]] : none), ^bb2(%[[B1]] : none)
@@ -82,7 +86,8 @@ py_ir.module {
 // -----
 
 // CHECK-LABEL: py_ir.module
-//       CHECK:  %[[B:.*]] = py_ir.loadvar "B" : none
+//       CHECK:  py_ir.func "foo" () capture ["B"] -> !py_ir.undefined
+//       CHECK:  ^bb0(%[[B:.*]]: none):
 //       CHECK:  cf.br ^bb1(%[[B]] : none)
 //       CHECK:  ^bb1(%[[B1:.*]]: none):
 //       CHECK:  cf.cond_br %{{.*}}, ^bb2(%[[B1]] : none), ^bb2(%[[B1]] : none)
@@ -143,9 +148,8 @@ py_ir.module {
 // -----
 
 // CHECK-LABEL: py_ir.module
-//       CHECK:  py_ir.func
-//   CHECK-DAG: py_ir.loadvar "A"
-//   CHECK-DAG: py_ir.loadvar "B"
+//       CHECK:  py_ir.func "func" () capture ["A", "B"] -> !py_ir.undefined {
+//  CHECK-NEXT:  ^bb0(%{{.*}}: !py_ir.undefined, %{{.*}}: !py_ir.undefined):
 py_ir.module {
   %0 = py_ir.func "func" () capture [] -> !py_ir.undefined {
     cf.br ^bb1

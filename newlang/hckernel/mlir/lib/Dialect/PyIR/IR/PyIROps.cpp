@@ -37,6 +37,7 @@ void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
                                 llvm::ArrayRef<llvm::StringRef> captureNames,
                                 mlir::ValueRange annotations,
                                 mlir::ValueRange decorators) {
+  assert(argNames.size() == annotations.size());
   odsState.addAttribute(getNameAttrName(odsState.name),
                         odsBuilder.getStringAttr(name));
   odsState.addAttribute(getArgNamesAttrName(odsState.name),
@@ -58,7 +59,8 @@ void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
   mlir::OpBuilder::InsertionGuard g(odsBuilder);
 
   llvm::SmallVector<mlir::Type> types(
-      annotations.size(), UndefinedType::get(odsBuilder.getContext()));
+      argNames.size() + captureNames.size(),
+      UndefinedType::get(odsBuilder.getContext()));
   llvm::SmallVector<mlir::Location> locs(annotations.size(),
                                          odsBuilder.getUnknownLoc());
   odsBuilder.createBlock(region, {}, types, locs);

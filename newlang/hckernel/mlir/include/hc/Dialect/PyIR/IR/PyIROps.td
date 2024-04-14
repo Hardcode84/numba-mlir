@@ -171,6 +171,22 @@ def PyIR_PyFuncOp : PyIR_OpBase<"func", [Pure, AttrSizedOperandSegments]> {
         "::mlir::ValueRange":$decorators)>
   ];
 
+  let extraClassDeclaration = [{
+    ::mlir::Block *getEntryBlock() { return &getBodyRegion().front(); }
+
+    ::mlir::ValueRange getArgs() {
+      return getEntryBlock()->getArguments().take_front(getArgNames().size());
+    }
+
+    ::mlir::ValueRange getCaptureArgs() {
+      return getEntryBlock()->getArguments().take_back(getCaptureNames().size());
+    }
+
+    auto getCaptureNamesAndArgs() {
+      return llvm::zip_equal(getCaptureNames().getAsRange<mlir::StringAttr>(), getCaptureArgs());
+    }
+  }];
+
   let skipDefaultBuilders = 1;
 
   let assemblyFormat = [{
