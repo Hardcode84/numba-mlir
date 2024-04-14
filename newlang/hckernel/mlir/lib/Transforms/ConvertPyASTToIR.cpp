@@ -262,7 +262,7 @@ public:
     }
 
     llvm::SmallVector<mlir::Value> decorators;
-    for (auto decor : decorators)
+    for (auto decor : op.getDecorators())
       decorators.emplace_back(getVar(rewriter, loc, decor));
 
     auto name = op.getName();
