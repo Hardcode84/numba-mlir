@@ -470,9 +470,7 @@ public:
     if (!isTopLevel(op))
       return mlir::failure();
 
-    auto getUndefined = [&]() -> mlir::Type {
-      return hc::py_ir::UndefinedType::get(rewriter.getContext());
-    };
+    mlir::Type undefType = hc::py_ir::UndefinedType::get(rewriter.getContext());
 
     mlir::OpBuilder::InsertionGuard g(rewriter);
 
@@ -484,18 +482,18 @@ public:
     auto *remainingOpsBlock = rewriter.splitBlock(beforeBlock, opPosition);
 
     mlir::Block *condBlock =
-        rewriter.createBlock(remainingOpsBlock, getUndefined(), loc);
+        rewriter.createBlock(remainingOpsBlock, undefType, loc);
     rewriter.setInsertionPointToEnd(beforeBlock);
     mlir::Value container = getVar(rewriter, loc, op.getIter());
     mlir::Value iter =
-        rewriter.create<hc::py_ir::IterOp>(loc, getUndefined(), container);
+        rewriter.create<hc::py_ir::IterOp>(loc, undefType, container);
     rewriter.create<mlir::cf::BranchOp>(loc, condBlock, iter);
 
     mlir::Block *thenBlock = &op.getBodyRegion().front();
     mlir::Value thenValue =
-        thenBlock->addArgument(getUndefined(), rewriter.getUnknownLoc());
+        thenBlock->addArgument(undefType, rewriter.getUnknownLoc());
     mlir::Value thenIter =
-        thenBlock->addArgument(getUndefined(), rewriter.getUnknownLoc());
+        thenBlock->addArgument(undefType, rewriter.getUnknownLoc());
     rewriter.setInsertionPointToStart(thenBlock);
     setVar(rewriter, loc, op.getTarget(), thenValue);
     rewriter.setInsertionPointToEnd(thenBlock);
@@ -508,9 +506,8 @@ public:
 
     rewriter.setInsertionPointToEnd(condBlock);
     mlir::Value condIter = condBlock->getArgument(0);
-    auto next = rewriter.create<hc::py_ir::NextOp>(loc, getUndefined(),
-                                                   rewriter.getIntegerType(1),
-                                                   getUndefined(), condIter);
+    auto next = rewriter.create<hc::py_ir::NextOp>(
+        loc, undefType, rewriter.getIntegerType(1), undefType, condIter);
     mlir::Value cond = getVar(rewriter, loc, op.getTarget());
 
     rewriter.create<mlir::cf::CondBranchOp>(
