@@ -153,8 +153,9 @@ def PyIR_PyFuncOp : PyIR_OpBase<"func", [Pure, AttrSizedOperandSegments]> {
   let arguments = (ins
       StrAttr:$name,
       ArrayAttr:$arg_names,
-      ArrayAttr:$capture_names,
       Variadic<AnyType>:$annotations,
+      ArrayAttr:$capture_names,
+      Variadic<AnyType>:$capture_args,
       Variadic<AnyType>:$decorators);
 
   let results = (outs AnyType:$result);
@@ -166,24 +167,27 @@ def PyIR_PyFuncOp : PyIR_OpBase<"func", [Pure, AttrSizedOperandSegments]> {
         "::mlir::Type":$resultType,
         "::llvm::StringRef":$name,
         "::llvm::ArrayRef<::llvm::StringRef>":$argNames,
-        "::llvm::ArrayRef<::llvm::StringRef>":$captureNames,
         "::mlir::ValueRange":$annotations,
+        "::llvm::ArrayRef<::llvm::StringRef>":$captureNames,
+        "::mlir::ValueRange":$captureArgs,
         "::mlir::ValueRange":$decorators)>
   ];
 
   let extraClassDeclaration = [{
     ::mlir::Block *getEntryBlock() { return &getBodyRegion().front(); }
 
-    ::mlir::ValueRange getArgs() {
+    ::mlir::ValueRange getBlockArgs() {
       return getEntryBlock()->getArguments().take_front(getArgNames().size());
     }
 
-    ::mlir::ValueRange getCaptureArgs() {
+    ::mlir::ValueRange getCaptureBlockArgs() {
       return getEntryBlock()->getArguments().take_back(getCaptureNames().size());
     }
 
     auto getCaptureNamesAndArgs() {
-      return llvm::zip_equal(getCaptureNames().getAsRange<mlir::StringAttr>(), getCaptureArgs());
+      return llvm::zip_equal(
+        getCaptureNames().getAsRange<mlir::StringAttr>(),
+        getCaptureArgs(), getCaptureBlockArgs());
     }
   }];
 
@@ -192,7 +196,7 @@ def PyIR_PyFuncOp : PyIR_OpBase<"func", [Pure, AttrSizedOperandSegments]> {
   let assemblyFormat = [{
     attr-dict $name
     custom<ArgList>($annotations, $arg_names) (`:` type($annotations)^)?
-    `capture` $capture_names
+    `capture` custom<ArgList>($capture_args, $capture_names) (`:` type($capture_args)^)?
     ( `decorators` $decorators^ `:` type($decorators) )?
     `->` type($result) $bodyRegion
   }];

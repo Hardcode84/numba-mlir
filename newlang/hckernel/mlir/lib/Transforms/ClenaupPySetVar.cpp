@@ -17,14 +17,8 @@ struct CleanupPySetVarPass final
     llvm::SmallDenseSet<mlir::StringAttr> liveNames;
     getOperation()->walk([&](hc::py_ir::PyModuleOp mod) {
       liveNames.clear();
-      mod.walk([&](mlir::Operation *op) {
-        if (auto load = mlir::dyn_cast<hc::py_ir::LoadVarOp>(op)) {
-          liveNames.insert(load.getNameAttr());
-        } else if (auto func = mlir::dyn_cast<hc::py_ir::PyFuncOp>(op)) {
-          for (auto name :
-               func.getCaptureNames().getAsRange<mlir::StringAttr>())
-            liveNames.insert(name);
-        }
+      mod.walk([&](hc::py_ir::LoadVarOp load) {
+        liveNames.insert(load.getNameAttr());
       });
 
       mod.walk([&](hc::py_ir::StoreVarOp store) {

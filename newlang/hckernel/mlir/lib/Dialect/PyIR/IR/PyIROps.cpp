@@ -34,10 +34,12 @@ void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
                                 ::mlir::OperationState &odsState,
                                 mlir::Type resultType, llvm::StringRef name,
                                 llvm::ArrayRef<llvm::StringRef> argNames,
-                                llvm::ArrayRef<llvm::StringRef> captureNames,
                                 mlir::ValueRange annotations,
+                                llvm::ArrayRef<llvm::StringRef> captureNames,
+                                mlir::ValueRange captureArgs,
                                 mlir::ValueRange decorators) {
   assert(argNames.size() == annotations.size());
+  assert(captureNames.size() == captureArgs.size());
   odsState.addAttribute(getNameAttrName(odsState.name),
                         odsBuilder.getStringAttr(name));
   odsState.addAttribute(getArgNamesAttrName(odsState.name),
@@ -45,12 +47,14 @@ void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
   odsState.addAttribute(getCaptureNamesAttrName(odsState.name),
                         odsBuilder.getStrArrayAttr(captureNames));
   odsState.addOperands(annotations);
+  odsState.addOperands(captureArgs);
   odsState.addOperands(decorators);
   odsState.addTypes(resultType);
 
-  int32_t segmentSizes[2] = {};
+  int32_t segmentSizes[3] = {};
   segmentSizes[0] = static_cast<int32_t>(annotations.size());
-  segmentSizes[1] = static_cast<int32_t>(decorators.size());
+  segmentSizes[1] = static_cast<int32_t>(captureArgs.size());
+  segmentSizes[2] = static_cast<int32_t>(decorators.size());
   odsState.addAttribute(getOperandSegmentSizeAttr(),
                         odsBuilder.getDenseI32ArrayAttr(segmentSizes));
 

@@ -278,7 +278,8 @@ public:
     auto name = op.getName();
     auto type = hc::py_ir::UndefinedType::get(rewriter.getContext());
     auto newOp = rewriter.create<hc::py_ir::PyFuncOp>(
-        loc, type, name, argNames, std::nullopt, annotations, decorators);
+        loc, type, name, argNames, annotations, /*captureNames*/ std::nullopt,
+        /*captureArgs*/ std::nullopt, decorators);
     rewriter.create<hc::py_ir::StoreVarOp>(loc, name, newOp.getResult());
 
     mlir::Region &dstRegion = newOp.getRegion();
