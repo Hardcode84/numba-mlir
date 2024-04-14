@@ -8,6 +8,7 @@
 
 #include <mlir/Dialect/ControlFlow/IR/ControlFlowOps.h>
 #include <mlir/IR/Builders.h>
+#include <mlir/IR/PatternMatch.h>
 
 namespace hc {
 #define GEN_PASS_DEF_RECONSTUCTPYSSAPASS
@@ -15,6 +16,11 @@ namespace hc {
 } // namespace hc
 
 namespace {
+class MyPatternRewriter : public mlir::PatternRewriter {
+public:
+  MyPatternRewriter(mlir::MLIRContext *ctx) : PatternRewriter(ctx) {}
+};
+
 struct ReconstuctPySSA {
   struct BlockState {
     llvm::SmallDenseMap<mlir::StringAttr, mlir::Value> defs;
@@ -149,31 +155,55 @@ struct ReconstuctPySSA {
     for (mlir::Region &reg : op->getRegions())
       processRegion(reg);
 
-    //    if (auto func = mlir::dyn_cast<hc::py_ir::PyFuncOp>(op)) {
-    //      llvm::SmallVector<mlir::StringRef> names;
-    //      for (auto attr :
-    //      func.getCaptureNames().getAsRange<mlir::StringAttr>())
-    //        names.emplace_back(attr.getValue());
+    if (auto func = mlir::dyn_cast<hc::py_ir::PyFuncOp>(op)) {
+      MyPatternRewriter builder(op->getContext());
+      builder.setInsertionPoint(func);
+      mlir::Location loc = func.getLoc();
 
-    //      mlir::Block &block = func.getBodyRegion().front();
+      llvm::SmallVector<mlir::StringRef> captureNames;
+      llvm::SmallVector<mlir::Value> captureArgs;
+      for (auto &&[name, arg, blockArg] : func.getCaptureNamesAndArgs()) {
+        (void)blockArg;
+        captureNames.emplace_back(name.getValue());
+        captureArgs.emplace_back(arg);
+      }
 
-    //      for (mlir::Operation &innerOp :
-    //           llvm::make_early_inc_range(block.without_terminator())) {
-    //        auto load = mlir::dyn_cast<hc::py_ir::LoadVarOp>(innerOp);
-    //        if (!load)
-    //          continue;
+      mlir::Block &block = func.getBodyRegion().front();
 
-    //        names.emplace_back(load.getName());
-    //        mlir::Value newArg = block.addArgument(load.getType(),
-    //        load.getLoc()); load.replaceAllUsesWith(newArg); load->erase();
-    //      }
+      for (mlir::Operation &innerOp :
+           llvm::make_early_inc_range(block.without_terminator())) {
+        auto load = mlir::dyn_cast<hc::py_ir::LoadVarOp>(innerOp);
+        if (!load)
+          continue;
 
-    //      if (names.size() != func.getCaptureNames().size()) {
-    //        auto newAttr =
-    //        mlir::OpBuilder(op->getContext()).getStrArrayAttr(names);
-    //        func.setCaptureNamesAttr(newAttr);
-    //      }
-    //    }
+        llvm::StringRef name = load.getName();
+        mlir::Value newArg =
+            builder.create<hc::py_ir::LoadVarOp>(loc, load.getType(), name);
+
+        captureNames.emplace_back(name);
+        captureArgs.emplace_back(newArg);
+
+        load.replaceAllUsesWith(
+            block.addArgument(load.getType(), load.getLoc()));
+        load->erase();
+      }
+
+      if (captureNames.size() != func.getCaptureNames().size()) {
+        auto argNames = func.getArgsNamesArray();
+        auto annotations = func.getAnnotations();
+        auto decorators = func.getDecorators();
+
+        auto newFunc = builder.create<hc::py_ir::PyFuncOp>(
+            loc, func.getType(), func.getName(), argNames, annotations,
+            captureNames, captureArgs, decorators);
+        mlir::Region &reg = newFunc.getBodyRegion();
+        reg.front().erase();
+
+        builder.inlineRegionBefore(func.getBodyRegion(), reg, reg.begin());
+        func.replaceAllUsesWith(newFunc.getResult());
+        func->erase();
+      }
+    }
   }
 
   std::queue<std::tuple<mlir::StringAttr, mlir::Block *, mlir::Block *>>
@@ -186,7 +216,8 @@ struct ReconstuctPySSAPass final
 
   void runOnOperation() override {
     ReconstuctPySSA state;
-    getOperation()->walk([&](mlir::Operation *op) { state.processOp(op); });
+    getOperation()->walk<mlir::WalkOrder::PreOrder>(
+        [&](mlir::Operation *op) { state.processOp(op); });
   }
 };
 } // namespace

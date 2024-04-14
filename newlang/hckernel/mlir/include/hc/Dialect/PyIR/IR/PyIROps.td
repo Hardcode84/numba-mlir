@@ -189,6 +189,14 @@ def PyIR_PyFuncOp : PyIR_OpBase<"func", [Pure, AttrSizedOperandSegments]> {
         getCaptureNames().getAsRange<mlir::StringAttr>(),
         getCaptureArgs(), getCaptureBlockArgs());
     }
+
+    auto getArgsNamesArray() {
+      return ::llvm::to_vector(getArgNames().getAsValueRange<mlir::StringAttr>());
+    }
+
+    auto getCaptureNamesArray() {
+      return ::llvm::to_vector(getCaptureNames().getAsValueRange<mlir::StringAttr>());
+    }
   }];
 
   let skipDefaultBuilders = 1;

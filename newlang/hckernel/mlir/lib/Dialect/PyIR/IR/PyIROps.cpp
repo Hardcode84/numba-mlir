@@ -62,11 +62,10 @@ void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
 
   mlir::OpBuilder::InsertionGuard g(odsBuilder);
 
+  auto numArgs = argNames.size() + captureNames.size();
   llvm::SmallVector<mlir::Type> types(
-      argNames.size() + captureNames.size(),
-      UndefinedType::get(odsBuilder.getContext()));
-  llvm::SmallVector<mlir::Location> locs(annotations.size(),
-                                         odsBuilder.getUnknownLoc());
+      numArgs, UndefinedType::get(odsBuilder.getContext()));
+  llvm::SmallVector<mlir::Location> locs(numArgs, odsBuilder.getUnknownLoc());
   odsBuilder.createBlock(region, {}, types, locs);
 }
 
