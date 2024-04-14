@@ -193,7 +193,10 @@ def PyIR_CallOp : PyIR_OpBase<"call"> {
 
   let results = (outs AnyType:$result);
 
-  let assemblyFormat = "attr-dict $func `:` type($func) ` ` custom<ArgList>($args, $args_names) (`:` type($args)^)? `->` type($result)";
+  let assemblyFormat = [{
+    attr-dict $func `:` type($func) ` ` custom<ArgList>($args, $args_names)
+    (`:` type($args)^)? `->` type($result)
+  }];
 }
 
 def PyIR_StoreVarOp : PyIR_OpBase<"storevar", [MemoryEffects<[MemWrite]>]> {
@@ -363,7 +366,10 @@ def PyIR_NextOp : PyIR_OpBase<"next"> {
       AnyType:$iter);
   let results = (outs AnyType:$value, AnyI1:$valid, AnyType:$nextiter);
 
-  let assemblyFormat = "attr-dict $iter`:`type($iter) `->` type($value)`,` type($valid)`,` type($nextiter)";
+  let assemblyFormat = [{
+    attr-dict $iter`:`type($iter)
+    `->` type($value)`,` type($valid)`,` type($nextiter)
+  }];
 }
 
 def PyIR_IfExpOp : PyIR_OpBase<"ifexp"> {
@@ -373,7 +379,11 @@ def PyIR_IfExpOp : PyIR_OpBase<"ifexp"> {
       AnyType:$orelse);
   let results = (outs AnyType:$result);
 
-  let assemblyFormat = "attr-dict $body`:`type($body) `if` $test`:`type($test) `else` $orelse`:`type($orelse) `->` type($result)";
+  let assemblyFormat = [{
+    attr-dict
+    $body`:`type($body) `if` $test`:`type($test) `else` $orelse`:`type($orelse)
+    `->` type($result)
+  }];
 }
 
 #endif // PYIR_OPS
