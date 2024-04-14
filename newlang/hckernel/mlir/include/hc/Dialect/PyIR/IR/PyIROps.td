@@ -153,6 +153,7 @@ def PyIR_PyFuncOp : PyIR_OpBase<"func", [Pure, AttrSizedOperandSegments]> {
   let arguments = (ins
       StrAttr:$name,
       ArrayAttr:$arg_names,
+      ArrayAttr:$capture_names,
       Variadic<AnyType>:$annotations,
       Variadic<AnyType>:$decorators);
 
@@ -165,6 +166,7 @@ def PyIR_PyFuncOp : PyIR_OpBase<"func", [Pure, AttrSizedOperandSegments]> {
         "::mlir::Type":$resultType,
         "::llvm::StringRef":$name,
         "::llvm::ArrayRef<::llvm::StringRef>":$argNames,
+        "::llvm::ArrayRef<::llvm::StringRef>":$captureNames,
         "::mlir::ValueRange":$annotations,
         "::mlir::ValueRange":$decorators)>
   ];
@@ -174,6 +176,7 @@ def PyIR_PyFuncOp : PyIR_OpBase<"func", [Pure, AttrSizedOperandSegments]> {
   let assemblyFormat = [{
     attr-dict $name
     custom<ArgList>($annotations, $arg_names) (`:` type($annotations)^)?
+    `capture` $capture_names
     ( `decorators` $decorators^ `:` type($decorators) )?
     `->` type($result) $bodyRegion
   }];

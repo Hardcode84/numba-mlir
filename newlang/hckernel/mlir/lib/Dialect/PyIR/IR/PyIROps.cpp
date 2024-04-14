@@ -34,12 +34,15 @@ void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
                                 ::mlir::OperationState &odsState,
                                 mlir::Type resultType, llvm::StringRef name,
                                 llvm::ArrayRef<llvm::StringRef> argNames,
+                                llvm::ArrayRef<llvm::StringRef> captureNames,
                                 mlir::ValueRange annotations,
                                 mlir::ValueRange decorators) {
   odsState.addAttribute(getNameAttrName(odsState.name),
                         odsBuilder.getStringAttr(name));
   odsState.addAttribute(getArgNamesAttrName(odsState.name),
                         odsBuilder.getStrArrayAttr(argNames));
+  odsState.addAttribute(getCaptureNamesAttrName(odsState.name),
+                        odsBuilder.getStrArrayAttr(captureNames));
   odsState.addOperands(annotations);
   odsState.addOperands(decorators);
   odsState.addTypes(resultType);

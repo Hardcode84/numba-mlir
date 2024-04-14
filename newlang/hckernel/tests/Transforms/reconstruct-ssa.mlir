@@ -4,7 +4,7 @@
 //       CHECK:  %[[B:.*]] = py_ir.loadvar "B" : none
 //       CHECK:  py_ir.return %[[B]] : none
 py_ir.module {
-  %f = py_ir.func "foo" () -> !py_ir.undefined {
+  %f = py_ir.func "foo" () capture [] -> !py_ir.undefined {
     %0 = py_ir.loadvar "B" : none
     py_ir.storevar "A" %0 : none
     %1 = py_ir.loadvar "A" : none
@@ -20,7 +20,7 @@ py_ir.module {
 //       CHECK:  ^bb1(%[[B1:.*]]: none):
 //       CHECK:  py_ir.return %[[B1]] : none
 py_ir.module {
-  %f = py_ir.func "foo" () -> !py_ir.undefined {
+  %f = py_ir.func "foo" () capture [] -> !py_ir.undefined {
    ^bb0:
     %0 = py_ir.loadvar "B" : none
     py_ir.storevar "A" %0 : none
@@ -41,7 +41,7 @@ py_ir.module {
 //       CHECK:  ^bb2(%[[B2:.*]]: none):
 //       CHECK:  py_ir.return %[[B2]] : none
 py_ir.module {
-  %f = py_ir.func "foo" () -> !py_ir.undefined {
+  %f = py_ir.func "foo" () capture [] -> !py_ir.undefined {
    ^bb0:
     %0 = py_ir.loadvar "B" : none
     py_ir.storevar "A" %0 : none
@@ -64,7 +64,7 @@ py_ir.module {
 //       CHECK:  ^bb2(%[[B2:.*]]: none):
 //       CHECK:  py_ir.return %[[B2]] : none
 py_ir.module {
-  %f = py_ir.func "foo" () -> !py_ir.undefined {
+  %f = py_ir.func "foo" () capture [] -> !py_ir.undefined {
    ^bb0:
     %0 = py_ir.loadvar "B" : none
     py_ir.storevar "A" %0 : none
@@ -89,7 +89,7 @@ py_ir.module {
 //       CHECK:  ^bb2(%[[B2:.*]]: none):
 //       CHECK:  py_ir.return %[[B2]] : none
 py_ir.module {
-  %f = py_ir.func "foo" () -> !py_ir.undefined {
+  %f = py_ir.func "foo" () capture [] -> !py_ir.undefined {
    ^bb0:
     %0 = py_ir.loadvar "B" : none
     py_ir.storevar "A" %0 : none
@@ -120,7 +120,7 @@ py_ir.module {
 //       CHECK:    py_ir.return
 py_ir.module {
   %0 = py_ir.constant 1 : i64
-  %1 = py_ir.func "func" () -> !py_ir.undefined {
+  %1 = py_ir.func "func" () capture [] -> !py_ir.undefined {
     cf.br ^bb1
   ^bb1:  // 2 preds: ^bb0, ^bb2
     %4 = py_ir.loadvar "A" : !py_ir.undefined
@@ -147,7 +147,7 @@ py_ir.module {
 //   CHECK-DAG: py_ir.loadvar "A"
 //   CHECK-DAG: py_ir.loadvar "B"
 py_ir.module {
-  %0 = py_ir.func "func" () -> !py_ir.undefined {
+  %0 = py_ir.func "func" () capture [] -> !py_ir.undefined {
     cf.br ^bb1
   ^bb1:  // 2 preds: ^bb0, ^bb2
     %3 = py_ir.loadvar "A" : !py_ir.undefined
