@@ -96,7 +96,7 @@ py_ast.module {
 
 // CHECK-LABEL: py_ir.module
 //       CHECK:  %[[A:.*]] = py_ir.empty_annotation
-//       CHECK:  py_ir.func "func" annotations %[[A]] : !py_ir.undefined
+//       CHECK:  py_ir.func "func" (a:%[[A]]) : !py_ir.undefined -> !py_ir.undefined
 //       CHECK:  ^bb0(%[[ARG1:.*]]: !py_ir.undefined):
 //       CHECK:  py_ir.storevar "a" %[[ARG1]] : !py_ir.undefined
 //       CHECK:  %[[R:.*]] = py_ir.none
@@ -113,7 +113,7 @@ py_ast.module {
 
 // CHECK-LABEL: py_ir.module
 //       CHECK:  %[[A:.*]] = py_ir.loadvar "Foo" : !py_ir.undefined
-//       CHECK:  py_ir.func "func" annotations %[[A]] : !py_ir.undefined
+//       CHECK:  py_ir.func "func" (a:%[[A]]) : !py_ir.undefined -> !py_ir.undefined
 //       CHECK:  ^bb0(%[[ARG1:.*]]: !py_ir.undefined):
 //       CHECK:  py_ir.storevar "a" %[[ARG1]] : !py_ir.undefined
 //       CHECK:  %[[R:.*]] = py_ir.none
@@ -133,7 +133,7 @@ py_ast.module {
 //   CHECK-DAG:  %[[A:.*]] = py_ir.loadvar "Foo" : !py_ir.undefined
 //   CHECK-DAG:  %[[B:.*]] = py_ir.loadvar "Bar" : !py_ir.undefined
 //       CHECK:  %[[C:.*]] = py_ir.getitem %[[A]] : !py_ir.undefined[%[[B]] : !py_ir.undefined] -> !py_ir.undefined
-//       CHECK:  py_ir.func "func" annotations %[[C]] : !py_ir.undefined
+//       CHECK:  py_ir.func "func" (a:%[[C]]) : !py_ir.undefined -> !py_ir.undefined
 //       CHECK:  ^bb0(%[[ARG1:.*]]: !py_ir.undefined):
 //       CHECK:  py_ir.storevar "a" %[[ARG1]] : !py_ir.undefined
 //       CHECK:  %[[R:.*]] = py_ir.none
@@ -153,7 +153,7 @@ py_ast.module {
 
 // CHECK-LABEL: py_ir.module
 //       CHECK:  %[[C:.*]] = py_ir.constant 42 : i64
-//       CHECK:  py_ir.func "func" annotations %[[C]] : i64
+//       CHECK:  py_ir.func "func" (a:%[[C]]) : i64 -> !py_ir.undefined
 //       CHECK:  ^bb0(%[[ARG1:.*]]: !py_ir.undefined):
 //       CHECK:  py_ir.storevar "a" %[[ARG1]] : !py_ir.undefined
 //       CHECK:  %[[R:.*]] = py_ir.none
@@ -587,7 +587,7 @@ py_ast.module {
 // -----
 
 // CHECK-LABEL: py_ir.module
-//       CHECK: %[[FUNC:.*]] = py_ir.func "func" -> !py_ir.undefined
+//       CHECK: %[[FUNC:.*]] = py_ir.func "func"
 //       CHECK:   cf.br ^[[BB1:.*]]
 //       CHECK: ^[[BB1]]:  // 3 preds: ^[[BB0:.*]], ^[[BB2:.*]], ^[[BB3:.*]]
 //       CHECK:   %[[LOAD_A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
@@ -628,7 +628,7 @@ py_ast.module {
 
 // CHECK-LABEL: py_ir.module
 //       CHECK: %[[CONST:.*]] = py_ir.constant 1 : i64
-//       CHECK: %[[FUNC:.*]] = py_ir.func "func" -> !py_ir.undefined
+//       CHECK: %[[FUNC:.*]] = py_ir.func "func"
 //       CHECK:   cf.br ^[[BB1:.*]]
 //       CHECK: ^[[BB1]]:  // 3 preds: ^[[BB0:.*]], ^[[BB2:.*]], ^[[BB3:.*]]
 //       CHECK:   %[[LOAD_A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
@@ -671,7 +671,7 @@ py_ast.module {
 
 // CHECK-LABEL: py_ir.module
 //       CHECK: %[[CONST:.*]] = py_ir.constant 1 : i64
-//       CHECK: %[[FUNC:.*]] = py_ir.func "func" -> !py_ir.undefined
+//       CHECK: %[[FUNC:.*]] = py_ir.func "func"
 //       CHECK:   %[[LOAD_A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
 //       CHECK:   %[[ITER:.*]] = py_ir.iter %[[LOAD_A]] : !py_ir.undefined -> !py_ir.undefined
 //       CHECK:   cf.br ^[[BB1:.*]](%[[ITER]] : !py_ir.undefined)

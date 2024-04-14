@@ -264,11 +264,11 @@ public:
 
     mlir::Location loc = op.getLoc();
     llvm::SmallVector<mlir::StringRef> argNames;
-    llvm::SmallVector<mlir::Value> args;
+    llvm::SmallVector<mlir::Value> annotations;
     for (auto arg : op.getArgs()) {
       auto [name, type] = getArg(rewriter, loc, arg);
       argNames.emplace_back(name);
-      args.emplace_back(type);
+      annotations.emplace_back(type);
     }
 
     llvm::SmallVector<mlir::Value> decorators;
@@ -277,8 +277,8 @@ public:
 
     auto name = op.getName();
     auto type = hc::py_ir::UndefinedType::get(rewriter.getContext());
-    auto newOp =
-        rewriter.create<hc::py_ir::PyFuncOp>(loc, type, name, args, decorators);
+    auto newOp = rewriter.create<hc::py_ir::PyFuncOp>(loc, type, name, argNames,
+                                                      annotations, decorators);
     rewriter.create<hc::py_ir::StoreVarOp>(loc, name, newOp.getResult());
 
     mlir::Region &dstRegion = newOp.getRegion();

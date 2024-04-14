@@ -33,10 +33,13 @@ mlir::OpFoldResult hc::py_ir::ConstantOp::fold(FoldAdaptor /*adaptor*/) {
 void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
                                 ::mlir::OperationState &odsState,
                                 mlir::Type resultType, llvm::StringRef name,
+                                llvm::ArrayRef<llvm::StringRef> argNames,
                                 mlir::ValueRange annotations,
                                 mlir::ValueRange decorators) {
   odsState.addAttribute(getNameAttrName(odsState.name),
                         odsBuilder.getStringAttr(name));
+  odsState.addAttribute(getArgNamesAttrName(odsState.name),
+                        odsBuilder.getStrArrayAttr(argNames));
   odsState.addOperands(annotations);
   odsState.addOperands(decorators);
   odsState.addTypes(resultType);
@@ -103,7 +106,8 @@ static bool parseArgList(
   return false;
 }
 
-static void printArgList(mlir::OpAsmPrinter &printer, hc::py_ir::CallOp call,
+template <typename Op>
+static void printArgList(mlir::OpAsmPrinter &printer, Op /*op*/,
                          mlir::ValueRange args, mlir::ArrayAttr argsNames) {
   assert(args.size() == argsNames.size());
   printer << '(';
