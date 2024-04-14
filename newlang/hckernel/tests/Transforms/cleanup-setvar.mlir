@@ -33,3 +33,16 @@ py_ir.module {
     py_ir.return %1 : none
   }
 }
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK:  %[[B:.*]] = py_ir.loadvar "B" : none
+//       CHECK:  py_ir.storevar "A" %[[B]] : none
+py_ir.module {
+  %f = py_ir.func "foo" () capture ["A"] -> !py_ir.undefined {
+    %0 = py_ir.loadvar "B" : none
+    py_ir.storevar "A" %0 : none
+    py_ir.return %0 : none
+  }
+}
