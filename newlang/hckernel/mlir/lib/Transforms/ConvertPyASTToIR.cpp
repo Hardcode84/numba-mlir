@@ -35,10 +35,7 @@ static hc::py_ir::BinOpVal convertBoolOpType(hc::py_ast::BoolOpType val) {
 
 static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
                           mlir::Value val) {
-  auto getUndefined = [&]() -> mlir::Type {
-    return hc::py_ir::UndefinedType::get(builder.getContext());
-  };
-
+  mlir::Type type = hc::py_ir::UndefinedType::get(builder.getContext());
   if (auto const_ = val.getDefiningOp<hc::py_ast::ConstantOp>()) {
     auto attr = const_.getValue();
     if (mlir::isa<hc::py_ast::NoneAttr>(attr))
@@ -46,24 +43,22 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
 
     mlir::Value val = builder.create<hc::py_ir::ConstantOp>(
         loc, mlir::cast<mlir::TypedAttr>(attr));
-    return builder.create<hc::py_ir::CastOp>(loc, getUndefined(), val);
+    return builder.create<hc::py_ir::CastOp>(loc, type, val);
   }
 
   if (auto name = val.getDefiningOp<hc::py_ast::NameOp>())
-    return builder.create<hc::py_ir::LoadVarOp>(loc, getUndefined(),
-                                                name.getId());
+    return builder.create<hc::py_ir::LoadVarOp>(loc, type, name.getId());
 
   if (auto subscript = val.getDefiningOp<hc::py_ast::SubscriptOp>()) {
     mlir::Value slice = getVar(builder, loc, subscript.getSlice());
     mlir::Value tgt = getVar(builder, loc, subscript.getValue());
-    return builder.create<hc::py_ir::GetItemOp>(loc, getUndefined(), tgt,
-                                                slice);
+    return builder.create<hc::py_ir::GetItemOp>(loc, type, tgt, slice);
   }
 
   if (auto attr = val.getDefiningOp<hc::py_ast::AttributeOp>()) {
     mlir::Value tgt = getVar(builder, loc, attr.getValue());
     auto name = attr.getAttr();
-    return builder.create<hc::py_ir::GetAttrOp>(loc, getUndefined(), tgt, name);
+    return builder.create<hc::py_ir::GetAttrOp>(loc, type, tgt, name);
   }
 
   if (auto tuple = val.getDefiningOp<hc::py_ast::TupleOp>()) {
@@ -71,7 +66,7 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
     for (auto el : tuple.getElts())
       args.emplace_back(getVar(builder, loc, el));
 
-    return builder.create<hc::py_ir::TuplePackOp>(loc, getUndefined(), args);
+    return builder.create<hc::py_ir::TuplePackOp>(loc, type, args);
   }
 
   if (auto binOp = val.getDefiningOp<hc::py_ast::BinOp>()) {
@@ -79,16 +74,14 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
     mlir::Value right = getVar(builder, loc, binOp.getRight());
     hc::py_ir::BinOpVal bop = convertBinOpType(binOp.getOp());
 
-    return builder.create<::hc::py_ir::BinOp>(loc, getUndefined(), left, bop,
-                                              right);
+    return builder.create<::hc::py_ir::BinOp>(loc, type, left, bop, right);
   }
 
   if (auto unaryOp = val.getDefiningOp<hc::py_ast::UnaryOp>()) {
     mlir::Value operand = getVar(builder, loc, unaryOp.getOperand());
     hc::py_ir::UnaryOpVal uop = convertUnaryOpType(unaryOp.getOp());
 
-    return builder.create<::hc::py_ir::UnaryOp>(loc, getUndefined(), uop,
-                                                operand);
+    return builder.create<::hc::py_ir::UnaryOp>(loc, type, uop, operand);
   }
 
   if (auto ifExp = val.getDefiningOp<hc::py_ast::IfExpOp>()) {
@@ -96,8 +89,7 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
     mlir::Value body = getVar(builder, loc, ifExp.getBody());
     mlir::Value orelse = getVar(builder, loc, ifExp.getOrelse());
 
-    return builder.create<::hc::py_ir::IfExpOp>(loc, getUndefined(), test, body,
-                                                orelse);
+    return builder.create<::hc::py_ir::IfExpOp>(loc, type, test, body, orelse);
   }
 
   if (auto boolOp = val.getDefiningOp<hc::py_ast::BoolOp>()) {
@@ -107,7 +99,6 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
 
     mlir::Value ret = getVar(builder, loc, vals.front());
     vals = vals.drop_front();
-    auto type = getUndefined();
     do {
       auto right = getVar(builder, loc, vals.front());
       vals = vals.drop_front();
@@ -136,8 +127,7 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
     }
 
     auto namesAttr = builder.getArrayAttr(names);
-    return builder.create<hc::py_ir::CallOp>(loc, getUndefined(), func, args,
-                                             namesAttr);
+    return builder.create<hc::py_ir::CallOp>(loc, type, func, args, namesAttr);
   }
 
   if (auto slice = val.getDefiningOp<hc::py_ast::SliceOp>()) {
@@ -150,8 +140,7 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
     auto upper = getVarOpt(slice.getUpper());
     auto step = getVarOpt(slice.getStep());
 
-    return builder.create<hc::py_ir::SliceOp>(loc, getUndefined(), lower, upper,
-                                              step);
+    return builder.create<hc::py_ir::SliceOp>(loc, type, lower, upper, step);
   }
 
   return val;
