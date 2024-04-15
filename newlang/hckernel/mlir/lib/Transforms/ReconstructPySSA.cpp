@@ -16,11 +16,6 @@ namespace hc {
 } // namespace hc
 
 namespace {
-class MyPatternRewriter : public mlir::PatternRewriter {
-public:
-  MyPatternRewriter(mlir::MLIRContext *ctx) : PatternRewriter(ctx) {}
-};
-
 struct ReconstuctPySSA {
   struct BlockState {
     llvm::SmallDenseMap<mlir::StringAttr, mlir::Value> defs;
@@ -156,7 +151,7 @@ struct ReconstuctPySSA {
       processRegion(reg);
 
     if (auto func = mlir::dyn_cast<hc::py_ir::PyFuncOp>(op)) {
-      MyPatternRewriter builder(op->getContext());
+      mlir::IRRewriter builder(op->getContext());
       builder.setInsertionPoint(func);
       mlir::Location loc = func.getLoc();
 
