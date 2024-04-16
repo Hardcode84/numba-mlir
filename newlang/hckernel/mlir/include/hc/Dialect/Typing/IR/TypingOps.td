@@ -38,9 +38,23 @@ def Typing_ResolveOp : Typing_OpBase<"resolve", [
     ]> {
 
   let arguments = (ins Variadic<AnyType>:$args);
+  let results = (outs Variadic<AnyType>:$results);
   let regions = (region SizedRegion<1>:$bodyRegion);
 
-  let assemblyFormat = "attr-dict-with-keyword ($args^ `:` type($args))? $bodyRegion";
+  let builders = [
+    OpBuilder<(ins
+        "::mlir::TypeRange":$resultTypes,
+        "::mlir::ValueRange":$args
+      )>
+  ];
+
+  let skipDefaultBuilders = 1;
+
+  let assemblyFormat = [{
+    attr-dict-with-keyword ($args^ `:` type($args))?
+    (`->` type($results)^)?
+    $bodyRegion
+  }];
 }
 
 def Typing_ResolveYieldOp : Typing_OpBase<"resolve_yield", [

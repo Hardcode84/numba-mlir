@@ -35,6 +35,7 @@ set(SOURCES_LIST
     lib/Transforms/ClenaupPySetVar.cpp
     lib/Transforms/CompositePass.cpp
     lib/Transforms/ConvertPyASTToIR.cpp
+    lib/Transforms/PyTypeInference.cpp
     lib/Transforms/ReconstructPySSA.cpp
     lib/Transforms/SimplifyAST.cpp
     )

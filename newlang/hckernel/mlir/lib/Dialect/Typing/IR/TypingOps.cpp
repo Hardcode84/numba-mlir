@@ -26,6 +26,22 @@ void hc::typing::TypingDialect::initialize() {
       >();
 }
 
+void hc::typing::ResolveOp::build(::mlir::OpBuilder &odsBuilder,
+                                  ::mlir::OperationState &odsState,
+                                  mlir::TypeRange resultTypes,
+                                  mlir::ValueRange args) {
+  odsState.addOperands(args);
+  odsState.addTypes(resultTypes);
+
+  mlir::Region *region = odsState.addRegion();
+
+  mlir::OpBuilder::InsertionGuard g(odsBuilder);
+
+  llvm::SmallVector<mlir::Location> locs(resultTypes.size(),
+                                         odsBuilder.getUnknownLoc());
+  odsBuilder.createBlock(region, {}, resultTypes, locs);
+}
+
 #include "hc/Dialect/Typing/IR/TypingOpsDialect.cpp.inc"
 
 #define GET_OP_CLASSES

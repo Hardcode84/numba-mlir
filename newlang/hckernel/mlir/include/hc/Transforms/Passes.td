@@ -38,5 +38,16 @@ def CleanupPySetVarPass : Pass<"hc-cleanup-py-setvar-pass"> {
   }];
 }
 
+def PyTypeInferencePass : Pass<"hc-py-type-inference-pass"> {
+  let summary = "TBD";
+  let description = [{
+    TBD
+  }];
+
+  let dependentDialects = [
+    "::hc::typing::TypingDialect"
+  ];
+}
+
 
 #endif // _HC_TRANSFORMS_PASSES_TD_INCLUDED_
