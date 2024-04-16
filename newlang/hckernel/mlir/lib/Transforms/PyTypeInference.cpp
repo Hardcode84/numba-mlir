@@ -16,6 +16,18 @@ namespace hc {
 #include "hc/Transforms/Passes.h.inc"
 } // namespace hc
 
+// TODO: unhardcode
+static std::optional<mlir::Type> parseAnnotation(mlir::Value val) {
+  auto ctx = val.getContext();
+  if (auto load = val.getDefiningOp<hc::py_ir::LoadVarOp>()) {
+    return hc::typing::IdentType::get(ctx, load.getName(),
+                                      /*paramNames*/ std::nullopt,
+                                      /*params*/ std::nullopt);
+  }
+
+  return std::nullopt;
+}
+
 static mlir::Value makeCast(mlir::OpBuilder &builder, mlir::Location loc,
                             mlir::Value val, mlir::Type newType) {
   if (val.getType() == newType)
@@ -106,9 +118,22 @@ struct PyTypeInferencePass final
     : public hc::impl::PyTypeInferencePassBase<PyTypeInferencePass> {
 
   void runOnOperation() override {
-    auto rootOp = getOperation();
-
     llvm::SmallDenseMap<mlir::Value, mlir::Type> typemap;
+
+    auto rootOp = getOperation();
+    rootOp->walk([&](mlir::Operation *op) {
+      if (auto func = mlir::dyn_cast<hc::py_ir::PyFuncOp>(op)) {
+        mlir::Block &body = func.getBodyRegion().front();
+        for (auto &&[arg, annotation] :
+             llvm::zip_equal(body.getArguments(), func.getAnnotations())) {
+          auto type = parseAnnotation(annotation);
+          if (!type)
+            continue;
+
+          typemap[arg] = *type;
+        }
+      }
+    });
 
     auto getType = [&](mlir::Value val) -> mlir::Type {
       auto it = typemap.find(val);

@@ -16,11 +16,44 @@ def Typing_Dialect : Dialect {
   }];
 
 //  let useDefaultAttributePrinterParser = 1;
-//  let useDefaultTypePrinterParser = 1;
+  let useDefaultTypePrinterParser = 1;
+}
+
+class Typing_Type<string name, string typeMnemonic, list<Trait> traits = [],
+                   string baseCppClass = "::mlir::Type">
+    : TypeDef<Typing_Dialect, name, traits, baseCppClass> {
+  let mnemonic = typeMnemonic;
 }
 
 class Typing_OpBase<string mnemonic, list<Trait> traits = []>
     : Op<Typing_Dialect, mnemonic, traits>;
+
+
+def Typing_IdentType : Typing_Type<"Ident", "ident", [], "::mlir::Type"> {
+  let parameters = (ins
+    "::mlir::StringAttr":$name,
+    ArrayRefParameter<"::mlir::StringAttr">:$paramNames,
+    ArrayRefParameter<"::mlir::Type">:$params
+  );
+
+  let builders = [
+    TypeBuilderWithInferredContext<(ins
+      "::mlir::MLIRContext*":$ctx,
+      "::llvm::StringRef":$name,
+      "::llvm::ArrayRef<::llvm::StringRef>":$paramNames,
+      "::llvm::ArrayRef<::mlir::Type>":$params
+    ), [{
+      ::llvm::SmallVector<::mlir::StringAttr> arr;
+      for (auto str : paramNames)
+        arr.emplace_back(::mlir::StringAttr::get(ctx, str));
+      return $_get(ctx, ::mlir::StringAttr::get(ctx, name), arr, params);
+    }]>
+  ];
+
+  let assemblyFormat = "$name $paramNames `:` $params";
+}
+
+
 
 def Typing_ResolveOp : Typing_OpBase<"resolve", [
       SingleBlockImplicitTerminator<"ResolveYieldOp">, RecursiveMemoryEffects
