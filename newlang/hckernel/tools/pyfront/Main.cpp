@@ -170,6 +170,8 @@ static void populatePasses(mlir::PassManager &pm) {
   populatePyIROptPasses(pm);
   pm.addPass(hc::createReconstuctPySSAPass());
   populatePyIROptPasses(pm);
+  pm.addPass(hc::createPyTypeInferencePass());
+  pm.addPass(mlir::createCanonicalizerPass());
 }
 
 static mlir::LogicalResult pyfrontMain(llvm::StringRef inputFilename, Cmd cmd) {
