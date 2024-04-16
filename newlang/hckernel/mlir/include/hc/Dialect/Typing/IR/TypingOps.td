@@ -22,17 +22,6 @@ def Typing_Dialect : Dialect {
 class Typing_OpBase<string mnemonic, list<Trait> traits = []>
     : Op<Typing_Dialect, mnemonic, traits>;
 
-def Typing_ResolveAnnotationOp : Typing_OpBase<"resolve_annotation", [Pure]> {
-  let arguments = (ins AnyType:$value, AnyType:$annotation);
-  let results = (outs AnyType:$result);
-
-  let assemblyFormat = [{
-    attr-dict $value `:` type($value)
-    `annotation` $annotation `:` type($annotation)
-    `->` type($result)
-  }];
-}
-
 def Typing_ResolveOp : Typing_OpBase<"resolve", [
       SingleBlockImplicitTerminator<"ResolveYieldOp">, RecursiveMemoryEffects
     ]> {
