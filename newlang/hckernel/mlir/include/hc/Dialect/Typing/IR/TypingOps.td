@@ -32,8 +32,8 @@ class Typing_OpBase<string mnemonic, list<Trait> traits = []>
 def Typing_IdentType : Typing_Type<"Ident", "ident", [], "::mlir::Type"> {
   let parameters = (ins
     "::mlir::StringAttr":$name,
-    ArrayRefParameter<"::mlir::StringAttr">:$paramNames,
-    ArrayRefParameter<"::mlir::Type">:$params
+    OptionalArrayRefParameter<"::mlir::StringAttr">:$paramNames,
+    OptionalArrayRefParameter<"::mlir::Type">:$params
   );
 
   let builders = [
@@ -50,7 +50,7 @@ def Typing_IdentType : Typing_Type<"Ident", "ident", [], "::mlir::Type"> {
     }]>
   ];
 
-  let assemblyFormat = "$name $paramNames `:` $params";
+  let assemblyFormat = "$name $paramNames (`:` $params^)?";
 }
 
 def Typing_SequenceType : Typing_Type<"Sequence", "sequence", [], "::mlir::Type"> {
