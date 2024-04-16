@@ -29,11 +29,8 @@ static std::optional<mlir::Type> matchSymbolOrLiteral(mlir::Value val) {
   if (auto c = val.getDefiningOp<hc::py_ir::ConstantOp>())
     return hc::typing::LiteralType::get(c.getValue());
 
-  if (auto load = val.getDefiningOp<hc::py_ir::LoadVarOp>()) {
-    return hc::typing::IdentType::get(val.getContext(), load.getName(),
-                                      /*paramNames*/ std::nullopt,
-                                      /*params*/ std::nullopt);
-  }
+  if (auto load = val.getDefiningOp<hc::py_ir::LoadVarOp>())
+    return hc::typing::SymbolType::get(val.getContext(), load.getName());
 
   return std::nullopt;
 }
