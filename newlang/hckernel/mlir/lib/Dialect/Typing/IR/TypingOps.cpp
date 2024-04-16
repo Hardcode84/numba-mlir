@@ -65,9 +65,9 @@ void hc::typing::ResolveOp::build(::mlir::OpBuilder &odsBuilder,
 
   mlir::OpBuilder::InsertionGuard g(odsBuilder);
 
-  llvm::SmallVector<mlir::Location> locs(resultTypes.size(),
+  llvm::SmallVector<mlir::Location> locs(args.size(),
                                          odsBuilder.getUnknownLoc());
-  odsBuilder.createBlock(region, {}, resultTypes, locs);
+  odsBuilder.createBlock(region, {}, mlir::TypeRange(args), locs);
 }
 
 #include "hc/Dialect/Typing/IR/TypingOpsDialect.cpp.inc"

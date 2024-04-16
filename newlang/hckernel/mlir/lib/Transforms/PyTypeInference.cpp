@@ -171,9 +171,8 @@ struct PyTypeInferencePass final
     auto rootOp = getOperation();
     rootOp->walk([&](mlir::Operation *op) {
       if (auto func = mlir::dyn_cast<hc::py_ir::PyFuncOp>(op)) {
-        mlir::Block &body = func.getBodyRegion().front();
         for (auto &&[arg, annotation] :
-             llvm::zip_equal(body.getArguments(), func.getAnnotations())) {
+             llvm::zip_equal(func.getBlockArgs(), func.getAnnotations())) {
           auto type = parseAnnotation(annotation);
           if (!type)
             continue;
