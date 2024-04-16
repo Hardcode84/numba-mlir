@@ -9,6 +9,32 @@
 
 #include <llvm/ADT/TypeSwitch.h>
 
+namespace {
+struct TypingAsmDialectInterface : public mlir::OpAsmDialectInterface {
+  using OpAsmDialectInterface::OpAsmDialectInterface;
+
+  AliasResult getAlias(mlir::Type type, llvm::raw_ostream &os) const final {
+    if (auto ident = llvm::dyn_cast<hc::typing::IdentType>(type)) {
+      os << "ident";
+      return AliasResult::OverridableAlias;
+    }
+    if (auto seq = llvm::dyn_cast<hc::typing::SequenceType>(type)) {
+      os << "seq";
+      return AliasResult::OverridableAlias;
+    }
+    if (auto sym = llvm::dyn_cast<hc::typing::SymbolType>(type)) {
+      os << "sym";
+      return AliasResult::OverridableAlias;
+    }
+    if (auto lit = llvm::dyn_cast<hc::typing::LiteralType>(type)) {
+      os << "literal";
+      return AliasResult::OverridableAlias;
+    }
+    return AliasResult::NoAlias;
+  }
+};
+} // namespace
+
 void hc::typing::TypingDialect::initialize() {
   addOperations<
 #define GET_OP_LIST
@@ -24,6 +50,8 @@ void hc::typing::TypingDialect::initialize() {
 #define GET_ATTRDEF_LIST
 #include "hc/Dialect/Typing/IR/TypingOpsAttributes.cpp.inc"
       >();
+
+  addInterface<TypingAsmDialectInterface>();
 }
 
 void hc::typing::ResolveOp::build(::mlir::OpBuilder &odsBuilder,
