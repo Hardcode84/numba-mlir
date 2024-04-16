@@ -50,7 +50,7 @@ def Typing_IdentType : Typing_Type<"Ident", "ident", [], "::mlir::Type"> {
     }]>
   ];
 
-  let assemblyFormat = "$name $paramNames (`:` $params^)?";
+  let assemblyFormat = "$name (`:` $paramNames^)? (`->` $params^)?";
 }
 
 def Typing_SequenceType : Typing_Type<"Sequence", "sequence", [], "::mlir::Type"> {
