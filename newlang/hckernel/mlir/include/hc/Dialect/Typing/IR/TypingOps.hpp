@@ -8,6 +8,8 @@
 #include <mlir/IR/OpDefinition.h>
 #include <mlir/IR/OpImplementation.h>
 
+#include <mlir/Bytecode/BytecodeOpInterface.h>
+#include <mlir/Interfaces/ControlFlowInterfaces.h>
 #include <mlir/Interfaces/SideEffectInterfaces.h>
 
 #include "hc/Dialect/Typing/IR/TypingOpsDialect.h.inc"

@@ -3,6 +3,7 @@
 #ifndef TYPING_OPS
 #define TYPING_OPS
 
+include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/IR/OpBase.td"
 
@@ -28,6 +29,8 @@ class Typing_Type<string name, string typeMnemonic, list<Trait> traits = [],
 class Typing_OpBase<string mnemonic, list<Trait> traits = []>
     : Op<Typing_Dialect, mnemonic, traits>;
 
+
+def Typing_ResolverValueType : Typing_Type<"ResVal", "res_val", [], "::mlir::Type">;
 
 def Typing_IdentType : Typing_Type<"Ident", "ident", [], "::mlir::Type"> {
   let parameters = (ins
@@ -122,6 +125,22 @@ def Typing_ResolveYieldOp : Typing_OpBase<"resolve_yield", [
   let builders = [OpBuilder<(ins), [{ /* nothing to do */ }]>];
 
   let assemblyFormat = "attr-dict ($args^ `:` type($args))?";
+}
+
+def Typing_TypeResolverOp : Typing_OpBase<"type_resolver"> {
+  let arguments = (ins
+    AnyAttr:$key
+  );
+
+  let regions = (region AnyRegion:$bodyRegion);
+
+  let assemblyFormat = "attr-dict $key $bodyRegion";
+}
+
+def Typing_TypeResolverEndOp : Typing_OpBase<"type_resolver_end",
+  [Pure, HasParent<"TypeResolverOp">, ReturnLike, Terminator]> {
+
+  let assemblyFormat = "attr-dict";
 }
 
 
