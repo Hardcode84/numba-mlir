@@ -157,11 +157,12 @@ static mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
 }
 
 static void populatePyIROptPasses(mlir::PassManager &pm) {
-  pm.addPass(hc::createCompositePass("PyIROptPass", [](mlir::OpPassManager &p) {
-    p.addPass(mlir::createCanonicalizerPass());
-    p.addPass(mlir::createCSEPass());
-    p.addPass(hc::createCleanupPySetVarPass());
-  }));
+  pm.addPass(mlir::createCompositeFixedPointPass(
+      "PyIROptPass", [](mlir::OpPassManager &p) {
+        p.addPass(mlir::createCanonicalizerPass());
+        p.addPass(mlir::createCSEPass());
+        p.addPass(hc::createCleanupPySetVarPass());
+      }));
 }
 
 static void populatePasses(mlir::PassManager &pm) {

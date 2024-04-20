@@ -33,7 +33,6 @@ set(SOURCES_LIST
     lib/Dialect/PyIR/IR/PyIROps.cpp
     lib/Dialect/Typing/IR/TypingOps.cpp
     lib/Transforms/ClenaupPySetVar.cpp
-    lib/Transforms/CompositePass.cpp
     lib/Transforms/ConvertPyASTToIR.cpp
     lib/Transforms/PyTypeInference.cpp
     lib/Transforms/ReconstructPySSA.cpp
