@@ -143,10 +143,12 @@ def Typing_TypeResolverOp : Typing_OpBase<"type_resolver",
   let assemblyFormat = "attr-dict $key $bodyRegion";
 }
 
-def Typing_TypeResolverEndOp : Typing_OpBase<"type_resolver_end",
+def Typing_TypeResolverReturnOp : Typing_OpBase<"type_resolver_return",
   [Pure, HasParent<"TypeResolverOp">, ReturnLike, Terminator]> {
 
-  let assemblyFormat = "attr-dict";
+  let arguments = (ins Variadic<Typing_ResolverValueType>:$args);
+
+  let assemblyFormat = "attr-dict ($args^)?";
 }
 
 
