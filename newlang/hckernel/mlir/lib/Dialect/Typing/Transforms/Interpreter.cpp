@@ -4,24 +4,8 @@
 
 #include "hc/Dialect/Typing/IR/TypingOpsInterfaces.hpp"
 
-using State = llvm::DenseMap<mlir::Value, mlir::Type>;
-
-static mlir::Type getType(const State &state, mlir::Value val) {
-  auto it = state.find(val);
-  assert(it != state.end());
-  return it->second;
-}
-
-static llvm::SmallVector<mlir::Type> getTypes(const State &state,
-                                              mlir::ValueRange vals) {
-  llvm::SmallVector<mlir::Type> ret(vals.size());
-  for (auto &&[i, val] : llvm::enumerate(vals))
-    ret[i] = getType(state, val);
-
-  return ret;
-}
-
-static mlir::LogicalResult handleOp(State &state, mlir::Operation &op) {
+static mlir::LogicalResult handleOp(hc::typing::InterpreterState &state,
+                                    mlir::Operation &op) {
   if (auto iface = mlir::dyn_cast<hc::typing::TypingInterpreterInterface>(op))
     return iface.interpret(state);
 

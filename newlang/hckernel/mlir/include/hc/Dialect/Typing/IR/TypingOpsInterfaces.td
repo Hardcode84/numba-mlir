@@ -40,7 +40,7 @@ def TypingInterpreterInterface : OpInterface<"TypingInterpreterInterface"> {
       "",
       "::mlir::LogicalResult",
       "interpret",
-      (ins "::llvm::DenseMap<::mlir::Value, ::mlir::Type>&":$state)>
+      (ins "::hc::typing::InterpreterState&":$state)>
   ];
 
 }
