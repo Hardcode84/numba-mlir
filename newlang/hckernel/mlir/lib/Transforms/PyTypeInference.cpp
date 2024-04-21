@@ -221,7 +221,8 @@ struct PyTypeInferencePass final
     };
 
     llvm::SmallVector<mlir::Type> argTypes;
-    rootOp->walk([&](hc::py_ir::PyModuleOp op) -> mlir::WalkResult {
+
+    auto typingVisitor = [&](hc::py_ir::PyModuleOp op) -> mlir::WalkResult {
       // TODO: Proper dataflow analysis
       op->walk<mlir::WalkOrder::PreOrder>([&](mlir::Operation *innerOp) {
         if (auto func = mlir::dyn_cast<hc::py_ir::PyFuncOp>(innerOp)) {
@@ -252,7 +253,9 @@ struct PyTypeInferencePass final
           typemap[res] = type;
       });
       return mlir::WalkResult::skip();
-    });
+    };
+
+    rootOp->walk<mlir::WalkOrder::PreOrder>(typingVisitor);
 
     updateTypes(rootOp, getType);
   }
