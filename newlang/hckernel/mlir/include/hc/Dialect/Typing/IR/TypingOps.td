@@ -151,5 +151,15 @@ def Typing_TypeResolverReturnOp : Typing_OpBase<"type_resolver_return",
   let assemblyFormat = "attr-dict ($args^)?";
 }
 
+def Typing_MakeIdent : Typing_OpBase<"make_ident", [Pure]> {
+  let arguments = (ins
+    StrAttr:$name,
+    ArrayAttr:$paramNames,
+    Variadic<Typing_ResolverValueType>:$params
+  );
+  let results = (outs Typing_ResolverValueType:$result);
+
+  let assemblyFormat = "attr-dict $name $paramNames ($params^)?";
+}
 
 #endif // TYPING_OPS
