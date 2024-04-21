@@ -4,6 +4,7 @@
 
 #include "hc/Dialect/PyIR/IR/PyIROps.hpp"
 #include "hc/Dialect/Typing/IR/TypingOps.hpp"
+#include "hc/Dialect/Typing/Transforms/Interpreter.hpp"
 
 #include <queue>
 
@@ -162,13 +163,52 @@ static void updateTypes(mlir::Operation *rootOp,
 }
 
 namespace {
+struct TypingInterpreter {
+
+  void populate(mlir::Operation *rootOp) {
+    rootOp->walk([&](hc::typing::TypeResolverOp op) {
+      resolversMap[op.getKey()].emplace_back(op);
+    });
+  }
+
+  mlir::FailureOr<llvm::SmallVector<mlir::Type>> run(mlir::Operation *op,
+                                                     mlir::TypeRange types) {
+    auto it = resolversMap.find(op->getName().getIdentifier());
+    if (it == resolversMap.end())
+      return mlir::failure();
+
+    for (auto resolverOp : it->second) {
+      auto res = interp.run(resolverOp, types);
+      if (mlir::succeeded(res))
+        return res;
+    }
+    return mlir::failure();
+  }
+
+private:
+  hc::typing::Interpreter interp;
+  llvm::DenseMap<mlir::Attribute, llvm::SmallVector<hc::typing::TypeResolverOp>>
+      resolversMap;
+};
+
 struct PyTypeInferencePass final
     : public hc::impl::PyTypeInferencePassBase<PyTypeInferencePass> {
 
   void runOnOperation() override {
-    llvm::SmallDenseMap<mlir::Value, mlir::Type> typemap;
-
     auto rootOp = getOperation();
+    TypingInterpreter interp;
+    interp.populate(rootOp);
+
+    llvm::SmallDenseMap<mlir::Value, mlir::Type> typemap;
+    auto getType = [&](mlir::Value val) -> mlir::Type {
+      auto it = typemap.find(val);
+      if (it == typemap.end())
+        return {};
+
+      return it->second;
+    };
+
+    llvm::SmallVector<mlir::Type> argTypes;
     rootOp->walk([&](mlir::Operation *op) {
       if (auto func = mlir::dyn_cast<hc::py_ir::PyFuncOp>(op)) {
         for (auto &&[arg, annotation] :
@@ -179,16 +219,28 @@ struct PyTypeInferencePass final
 
           typemap[arg] = *type;
         }
+
+        // TODO: Proper dataflow analysis
+        func->walk([&](mlir::Operation *innerOp) {
+          argTypes.clear();
+          for (mlir::Value arg : innerOp->getOperands()) {
+            mlir::Type type = getType(arg);
+            if (!type)
+              return;
+
+            argTypes.emplace_back(type);
+          }
+
+          auto resTypes = interp.run(innerOp, argTypes);
+          if (mlir::failed(resTypes))
+            return;
+
+          for (auto &&[type, res] :
+               llvm::zip_equal(*resTypes, innerOp->getResults()))
+            typemap[res] = type;
+        });
       }
     });
-
-    auto getType = [&](mlir::Value val) -> mlir::Type {
-      auto it = typemap.find(val);
-      if (it == typemap.end())
-        return {};
-
-      return it->second;
-    };
 
     updateTypes(rootOp, getType);
   }
