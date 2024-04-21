@@ -9,5 +9,8 @@ class Interpreter final {
 public:
   mlir::FailureOr<llvm::SmallVector<mlir::Type>> run(TypeResolverOp resolver,
                                                      mlir::TypeRange types);
+
+private:
+  llvm::DenseMap<mlir::Value, mlir::Type> state;
 };
 } // namespace hc::typing

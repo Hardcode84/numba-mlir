@@ -18,66 +18,6 @@ namespace hc {
 #include "hc/Transforms/Passes.h.inc"
 } // namespace hc
 
-static mlir::Value skipCasts(mlir::Value val) {
-  while (auto cast = val.getDefiningOp<hc::py_ir::CastOp>())
-    val = cast.getValue();
-
-  return val;
-}
-
-// TODO: unhardcode
-static std::optional<mlir::Type> matchSymbolOrLiteral(mlir::Value val) {
-  val = skipCasts(val);
-  if (auto c = val.getDefiningOp<hc::py_ir::ConstantOp>())
-    return hc::typing::LiteralType::get(c.getValue());
-
-  if (auto load = val.getDefiningOp<hc::py_ir::LoadVarOp>())
-    return hc::typing::SymbolType::get(val.getContext(), load.getName());
-
-  return std::nullopt;
-}
-
-static std::optional<mlir::Type> matchBuffer(mlir::Value val) {
-  auto getitem = val.getDefiningOp<hc::py_ir::GetItemOp>();
-  if (!getitem)
-    return std::nullopt;
-
-  auto buff = getitem.getTarget().getDefiningOp<hc::py_ir::LoadVarOp>();
-  if (!buff || buff.getName() != "Buffer")
-    return std::nullopt;
-
-  auto shape = getitem.getIndex().getDefiningOp<hc::py_ir::TuplePackOp>();
-  if (!shape)
-    return std::nullopt;
-
-  llvm::SmallVector<mlir::Type> shapeTypes;
-  for (auto arg : shape.getArgs()) {
-    auto type = matchSymbolOrLiteral(arg);
-    if (!type)
-      return std::nullopt;
-
-    shapeTypes.emplace_back(*type);
-  }
-  auto ctx = val.getContext();
-  mlir::Type seq = hc::typing::SequenceType::get(ctx, shapeTypes);
-  return hc::typing::IdentType::get(ctx, "Buffer", mlir::StringRef("Shape"),
-                                    seq);
-}
-
-static std::optional<mlir::Type> parseAnnotation(mlir::Value val) {
-  if (auto buffer = matchBuffer(val))
-    return buffer;
-
-  auto ctx = val.getContext();
-  if (auto load = val.getDefiningOp<hc::py_ir::LoadVarOp>()) {
-    return hc::typing::IdentType::get(ctx, load.getName(),
-                                      /*paramNames*/ std::nullopt,
-                                      /*params*/ std::nullopt);
-  }
-
-  return std::nullopt;
-}
-
 static mlir::Value makeCast(mlir::OpBuilder &builder, mlir::Location loc,
                             mlir::Value val, mlir::Type newType) {
   if (val.getType() == newType)
@@ -90,6 +30,9 @@ static void updateTypes(mlir::Operation *rootOp,
                         llvm::function_ref<mlir::Type(mlir::Value)> getType) {
   llvm::SetVector<mlir::Operation *> opsToUpdate;
   rootOp->walk([&](mlir::Operation *op) {
+    if (op->mightHaveTrait<mlir::OpTrait::IsTerminator>())
+      return;
+
     auto typeChanged = [&](mlir::Value val) -> bool {
       auto type = getType(val);
       return type && type != val.getType();
@@ -229,11 +172,11 @@ struct PyTypeInferencePass final
         if (auto func = mlir::dyn_cast<hc::py_ir::PyFuncOp>(innerOp)) {
           for (auto &&[arg, annotation] :
                llvm::zip_equal(func.getBlockArgs(), func.getAnnotations())) {
-            auto type = parseAnnotation(annotation);
+            auto type = getType(annotation);
             if (!type)
               continue;
 
-            typemap[arg] = *type;
+            typemap[arg] = type;
           }
         }
         argTypes.clear();
