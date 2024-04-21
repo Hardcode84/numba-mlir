@@ -25,6 +25,9 @@ include(HandleLLVMOptions)
 #    message(FATAL_ERROR "Invalid llvm version")
 #endif()
 
+file(REAL_PATH "./include" HC_INCLUDE_DIR)
+set(HC_TABLEGEN_INCLUDE_DIRS ${MLIR_INCLUDE_DIRS} ${HC_INCLUDE_DIR})
+
 add_subdirectory(include/hc/Dialect)
 add_subdirectory(include/hc/Transforms)
 

@@ -13,6 +13,8 @@
 #include <mlir/Interfaces/ControlFlowInterfaces.h>
 #include <mlir/Interfaces/SideEffectInterfaces.h>
 
+#include "hc/Dialect/Typing/IR/TypingOpsInterfaces.hpp"
+
 #include "hc/Dialect/PyIR/IR/PyIROpsDialect.h.inc"
 #include "hc/Dialect/PyIR/IR/PyIROpsEnums.h.inc"
 

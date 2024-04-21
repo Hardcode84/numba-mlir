@@ -78,6 +78,11 @@ bool hc::py_ir::CastOp::areCastCompatible(mlir::TypeRange inputs,
   return true;
 }
 
+void hc::py_ir::LoadVarOp::getTypingKeyArgs(
+    llvm::SmallVectorImpl<mlir::Attribute> &args) {
+  args.emplace_back(getNameAttr());
+}
+
 static bool parseArgList(
     mlir::OpAsmParser &parser,
     llvm::SmallVectorImpl<mlir::OpAsmParser::UnresolvedOperand> &argsOperands,

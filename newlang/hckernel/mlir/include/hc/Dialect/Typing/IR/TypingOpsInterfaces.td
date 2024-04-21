@@ -19,8 +19,8 @@ def TypingKeyInterface : OpInterface<"TypingKeyInterface"> {
         ::llvm::SmallVector<::mlir::Attribute> attrs;
         ConcreteOp op = ::mlir::cast<ConcreteOp>(this->getOperation());
         attrs.emplace_back(op->getName().getIdentifier());
-        this->getTypingKeyArgs(attrs);
-        return ::mlir::ArrayAttr::get(this->getContext(), attrs);
+        op.getTypingKeyArgs(attrs);
+        return ::mlir::ArrayAttr::get(op->getContext(), attrs);
       }]
       >,
     InterfaceMethod<

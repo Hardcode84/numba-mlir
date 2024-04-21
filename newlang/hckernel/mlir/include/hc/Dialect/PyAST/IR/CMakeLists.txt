@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-include_directories(${MLIR_INCLUDE_DIRS})
+include_directories(${HC_TABLEGEN_INCLUDE_DIRS})
 set(dialect PyASTOps)
 set(dialect_namespace py_ast)
 set(LLVM_TARGET_DEFINITIONS ${dialect}.td)

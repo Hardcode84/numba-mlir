@@ -13,6 +13,8 @@ include "mlir/IR/EnumAttr.td"
 include "mlir/IR/OpAsmInterface.td"
 include "mlir/IR/OpBase.td"
 
+include "hc/Dialect/Typing/IR/TypingOpsInterfaces.td"
+
 def PyIR_Dialect : Dialect {
   let name = "py_ir";
   let cppNamespace = "::hc::py_ir";
@@ -240,7 +242,10 @@ def PyIR_StoreVarOp : PyIR_OpBase<"storevar", [MemoryEffects<[MemWrite]>]> {
   let assemblyFormat = "attr-dict $name $value `:` type($value)";
 }
 
-def PyIR_LoadVarOp : PyIR_OpBase<"loadvar", [MemoryEffects<[MemRead]>]> {
+def PyIR_LoadVarOp : PyIR_OpBase<"loadvar", [
+      MemoryEffects<[MemRead]>,
+      DeclareOpInterfaceMethods<TypingKeyInterface>
+    ]> {
   let arguments = (ins StrAttr:$name);
   let results = (outs AnyType:$result);
 
