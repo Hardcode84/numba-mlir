@@ -32,6 +32,7 @@ set(SOURCES_LIST
     lib/Dialect/PyAST/IR/PyASTOps.cpp
     lib/Dialect/PyIR/IR/PyIROps.cpp
     lib/Dialect/Typing/IR/TypingOps.cpp
+    lib/Dialect/Typing/Transforms/Interpreter.cpp
     lib/Transforms/ClenaupPySetVar.cpp
     lib/Transforms/ConvertPyASTToIR.cpp
     lib/Transforms/PyTypeInference.cpp
@@ -42,6 +43,7 @@ set(HEADERS_LIST
     include/hc/Dialect/PyAST/IR/PyASTOps.hpp
     include/hc/Dialect/PyIR/IR/PyIROps.hpp
     include/hc/Dialect/Typing/IR/TypingOps.hpp
+    include/hc/Dialect/Typing/Transforms/Interpreter.hpp
     include/hc/InitHCDialects.hpp
     include/hc/InitHCPasses.hpp
     include/hc/Transforms/Passes.hpp
