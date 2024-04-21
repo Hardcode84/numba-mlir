@@ -7,10 +7,12 @@
 
 #include <hc/Dialect/PyAST/IR/PyASTOps.hpp>
 #include <hc/Dialect/PyIR/IR/PyIROps.hpp>
+#include <hc/Dialect/Typing/IR/TypingOps.hpp>
 
 namespace hc {
 inline void registerAllDialects(mlir::DialectRegistry &registry) {
-  registry.insert<hc::py_ast::PyASTDialect, hc::py_ir::PyIRDialect>();
+  registry.insert<hc::py_ast::PyASTDialect, hc::py_ir::PyIRDialect,
+                  hc::typing::TypingDialect>();
 }
 
 inline void registerAllDialects(mlir::MLIRContext &context) {
