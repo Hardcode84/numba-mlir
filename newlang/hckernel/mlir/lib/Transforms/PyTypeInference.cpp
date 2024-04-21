@@ -221,37 +221,37 @@ struct PyTypeInferencePass final
     };
 
     llvm::SmallVector<mlir::Type> argTypes;
-    rootOp->walk([&](mlir::Operation *op) {
-      if (auto func = mlir::dyn_cast<hc::py_ir::PyFuncOp>(op)) {
-        for (auto &&[arg, annotation] :
-             llvm::zip_equal(func.getBlockArgs(), func.getAnnotations())) {
-          auto type = parseAnnotation(annotation);
-          if (!type)
-            continue;
-
-          typemap[arg] = *type;
-        }
-
-        // TODO: Proper dataflow analysis
-        func->walk([&](mlir::Operation *innerOp) {
-          argTypes.clear();
-          for (mlir::Value arg : innerOp->getOperands()) {
-            mlir::Type type = getType(arg);
+    rootOp->walk([&](hc::py_ir::PyModuleOp op) -> mlir::WalkResult {
+      // TODO: Proper dataflow analysis
+      op->walk<mlir::WalkOrder::PreOrder>([&](mlir::Operation *innerOp) {
+        if (auto func = mlir::dyn_cast<hc::py_ir::PyFuncOp>(innerOp)) {
+          for (auto &&[arg, annotation] :
+               llvm::zip_equal(func.getBlockArgs(), func.getAnnotations())) {
+            auto type = parseAnnotation(annotation);
             if (!type)
-              return;
+              continue;
 
-            argTypes.emplace_back(type);
+            typemap[arg] = *type;
           }
-
-          auto resTypes = interp.run(innerOp, argTypes);
-          if (mlir::failed(resTypes))
+        }
+        argTypes.clear();
+        for (mlir::Value arg : innerOp->getOperands()) {
+          mlir::Type type = getType(arg);
+          if (!type)
             return;
 
-          for (auto &&[type, res] :
-               llvm::zip_equal(*resTypes, innerOp->getResults()))
-            typemap[res] = type;
-        });
-      }
+          argTypes.emplace_back(type);
+        }
+
+        auto resTypes = interp.run(innerOp, argTypes);
+        if (mlir::failed(resTypes))
+          return;
+
+        for (auto &&[type, res] :
+             llvm::zip_equal(*resTypes, innerOp->getResults()))
+          typemap[res] = type;
+      });
+      return mlir::WalkResult::skip();
     });
 
     updateTypes(rootOp, getType);
