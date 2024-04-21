@@ -26,6 +26,11 @@ class Typing_Type<string name, string typeMnemonic, list<Trait> traits = [],
   let mnemonic = typeMnemonic;
 }
 
+class Typing_Attr<string name, string attrMnemonic, list<Trait> traits = []>
+    : AttrDef<Typing_Dialect, name, traits> {
+  let mnemonic = attrMnemonic;
+}
+
 class Typing_OpBase<string mnemonic, list<Trait> traits = []>
     : Op<Typing_Dialect, mnemonic, traits>;
 
