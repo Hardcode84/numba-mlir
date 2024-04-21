@@ -6,7 +6,8 @@ typing.type_resolver ["py_ir.loadvar", "CurrentGroup"] {
   typing.type_resolver_return %0
 }
 
-//       CHECK:  ![[ID:.*]] = !typing<ident "CurrentGroup">
+//       CHECK: ![[ID:.*]] = !typing<ident "CurrentGroup">
+// CHECK-LABEL: py_ir.module
 //       CHECK:  py_ir.func "func"
 //       CHECK:  ^bb0(%[[ARG:.*]]: !py_ir.undefined):
 //       CHECK:  %[[CASTED:.*]] = py_ir.cast %[[ARG]] : !py_ir.undefined to !ident
