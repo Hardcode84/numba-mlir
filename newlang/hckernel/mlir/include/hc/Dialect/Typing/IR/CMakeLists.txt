@@ -14,5 +14,6 @@ mlir_tablegen(${dialect}Dialect.h.inc -gen-dialect-decls -dialect=${dialect_name
 mlir_tablegen(${dialect}Dialect.cpp.inc -gen-dialect-defs -dialect=${dialect_namespace})
 mlir_tablegen(${dialect}Types.h.inc -gen-typedef-decls)
 mlir_tablegen(${dialect}Types.cpp.inc -gen-typedef-defs)
+add_mlir_interface(${dialect}Interfaces)
 add_public_tablegen_target(MLIR${dialect}IncGen)
 add_dependencies(mlir-headers MLIR${dialect}IncGen)

@@ -4,6 +4,7 @@
 
 #include "hc/Dialect/PyIR/IR/PyIROps.hpp"
 #include "hc/Dialect/Typing/IR/TypingOps.hpp"
+#include "hc/Dialect/Typing/IR/TypingOpsInterfaces.hpp"
 #include "hc/Dialect/Typing/Transforms/Interpreter.hpp"
 
 #include <queue>
@@ -162,6 +163,13 @@ static void updateTypes(mlir::Operation *rootOp,
   });
 }
 
+static mlir::Attribute getTypingKey(mlir::Operation *op) {
+  if (auto iface = mlir::dyn_cast<hc::typing::TypingKeyInterface>(op))
+    return iface.getTypingKey();
+
+  return nullptr;
+}
+
 namespace {
 struct TypingInterpreter {
 
@@ -173,7 +181,11 @@ struct TypingInterpreter {
 
   mlir::FailureOr<llvm::SmallVector<mlir::Type>> run(mlir::Operation *op,
                                                      mlir::TypeRange types) {
-    auto it = resolversMap.find(op->getName().getIdentifier());
+    mlir::Attribute key = getTypingKey(op);
+    if (!key)
+      return mlir::failure();
+
+    auto it = resolversMap.find(key);
     if (it == resolversMap.end())
       return mlir::failure();
 

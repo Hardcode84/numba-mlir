@@ -43,6 +43,7 @@ set(HEADERS_LIST
     include/hc/Dialect/PyAST/IR/PyASTOps.hpp
     include/hc/Dialect/PyIR/IR/PyIROps.hpp
     include/hc/Dialect/Typing/IR/TypingOps.hpp
+    include/hc/Dialect/Typing/IR/TypingOpsInterfaces.hpp
     include/hc/Dialect/Typing/Transforms/Interpreter.hpp
     include/hc/InitHCDialects.hpp
     include/hc/InitHCPasses.hpp
@@ -78,4 +79,5 @@ add_dependencies(${PROJECT_NAME}
     MLIRPyASTOpsIncGen
     MLIRPyIROpsIncGen
     MLIRTypingOpsIncGen
+    MLIRTypingOpsInterfacesIncGen
     )

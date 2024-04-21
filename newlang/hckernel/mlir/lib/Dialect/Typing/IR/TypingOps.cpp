@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "hc/Dialect/Typing/IR/TypingOps.hpp"
+#include "hc/Dialect/Typing/IR/TypingOpsInterfaces.hpp"
 
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/DialectImplementation.h>
@@ -74,6 +75,8 @@ void hc::typing::ResolveOp::build(::mlir::OpBuilder &odsBuilder,
 
 #define GET_OP_CLASSES
 #include "hc/Dialect/Typing/IR/TypingOps.cpp.inc"
+
+#include "hc/Dialect/Typing/IR/TypingOpsInterfaces.cpp.inc"
 
 #define GET_ATTRDEF_CLASSES
 #include "hc/Dialect/Typing/IR/TypingOpsAttributes.cpp.inc"
