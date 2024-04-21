@@ -9,7 +9,25 @@ def TypingKeyInterface : OpInterface<"TypingKeyInterface"> {
   let cppNamespace = "::hc::typing";
 
   let methods = [
-    InterfaceMethod<"", "::mlir::Attribute", "getTypingKey", (ins)>,
+    InterfaceMethod<
+      "",
+      "::mlir::Attribute",
+      "getTypingKey",
+      (ins),
+      [{}],
+      [{
+        ::llvm::SmallVector<::mlir::Attribute> attrs;
+        ConcreteOp op = ::mlir::cast<ConcreteOp>(this->getOperation());
+        attrs.emplace_back(op->getName().getIdentifier());
+        this->getTypingKeyArgs(attrs);
+        return ::mlir::ArrayAttr::get(this->getContext(), attrs);
+      }]
+      >,
+    InterfaceMethod<
+      "",
+      "void",
+      "getTypingKeyArgs",
+      (ins "::llvm::SmallVectorImpl<::mlir::Attribute>&":$args)>
   ];
 
 }
