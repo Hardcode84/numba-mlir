@@ -7,6 +7,8 @@ include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/IR/OpBase.td"
 
+include "hc/Dialect/Typing/IR/TypingOpsInterfaces.td"
+
 def Typing_Dialect : Dialect {
   let name = "typing";
   let cppNamespace = "::hc::typing";
@@ -151,7 +153,9 @@ def Typing_TypeResolverReturnOp : Typing_OpBase<"type_resolver_return",
   let assemblyFormat = "attr-dict ($args^)?";
 }
 
-def Typing_MakeIdent : Typing_OpBase<"make_ident", [Pure]> {
+def Typing_MakeIdent : Typing_OpBase<"make_ident",
+    [Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>]>
+  {
   let arguments = (ins
     StrAttr:$name,
     ArrayAttr:$paramNames,

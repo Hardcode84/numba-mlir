@@ -2,12 +2,9 @@
 
 #include "hc/Dialect/Typing/Transforms/Interpreter.hpp"
 
-using State = llvm::DenseMap<mlir::Value, mlir::Type>;
+#include "hc/Dialect/Typing/IR/TypingOpsInterfaces.hpp"
 
-template <typename Dst, typename Src>
-static auto castArrayRef(mlir::ArrayRef<Src> src) {
-  return mlir::ArrayRef<Dst>(static_cast<const Dst *>(src.data()), src.size());
-}
+using State = llvm::DenseMap<mlir::Value, mlir::Type>;
 
 static mlir::Type getType(const State &state, mlir::Value val) {
   auto it = state.find(val);
@@ -24,20 +21,10 @@ static llvm::SmallVector<mlir::Type> getTypes(const State &state,
   return ret;
 }
 
-static bool handleMakeIdent(State &state, hc::typing::MakeIdent op) {
-  auto name = op.getNameAttr();
-  auto paramNames =
-      castArrayRef<mlir::StringAttr>(op.getParamNames().getValue());
-  auto paramTypes = getTypes(state, op.getParams());
-  state[op.getResult()] =
-      hc::typing::IdentType::get(op.getContext(), name, paramNames, paramTypes);
-  return true;
-}
-
 static bool handleOp(State &state, mlir::Operation &op) {
-  if (auto makeIdent = mlir::dyn_cast<hc::typing::MakeIdent>(op)) {
-    return handleMakeIdent(state, makeIdent);
-  }
+  if (auto iface = mlir::dyn_cast<hc::typing::TypingInterpreterInterface>(op))
+    return mlir::succeeded(iface.interpret(state));
+
   return false;
 }
 

@@ -32,4 +32,18 @@ def TypingKeyInterface : OpInterface<"TypingKeyInterface"> {
 
 }
 
+def TypingInterpreterInterface : OpInterface<"TypingInterpreterInterface"> {
+  let cppNamespace = "::hc::typing";
+
+  let methods = [
+    InterfaceMethod<
+      "",
+      "::mlir::LogicalResult",
+      "interpret",
+      (ins "::llvm::DenseMap<::mlir::Value, ::mlir::Type>&":$state)>
+  ];
+
+}
+
+
 #endif // TYPING_OPS_INTERFACES

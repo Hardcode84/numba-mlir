@@ -12,6 +12,8 @@
 #include <mlir/Interfaces/ControlFlowInterfaces.h>
 #include <mlir/Interfaces/SideEffectInterfaces.h>
 
+#include "hc/Dialect/Typing/IR/TypingOpsInterfaces.hpp"
+
 #include "hc/Dialect/Typing/IR/TypingOpsDialect.h.inc"
 #include "hc/Dialect/Typing/IR/TypingOpsEnums.h.inc"
 

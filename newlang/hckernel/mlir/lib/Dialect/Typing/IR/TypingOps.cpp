@@ -71,6 +71,38 @@ void hc::typing::ResolveOp::build(::mlir::OpBuilder &odsBuilder,
   odsBuilder.createBlock(region, {}, mlir::TypeRange(args), locs);
 }
 
+using InterpreterState = llvm::DenseMap<mlir::Value, mlir::Type>;
+
+template <typename Dst, typename Src>
+static auto castArrayRef(mlir::ArrayRef<Src> src) {
+  return mlir::ArrayRef<Dst>(static_cast<const Dst *>(src.data()), src.size());
+}
+
+static mlir::Type getType(const InterpreterState &state, mlir::Value val) {
+  auto it = state.find(val);
+  assert(it != state.end());
+  return it->second;
+}
+
+static llvm::SmallVector<mlir::Type> getTypes(const InterpreterState &state,
+                                              mlir::ValueRange vals) {
+  llvm::SmallVector<mlir::Type> ret(vals.size());
+  for (auto &&[i, val] : llvm::enumerate(vals))
+    ret[i] = getType(state, val);
+
+  return ret;
+}
+
+mlir::LogicalResult hc::typing::MakeIdent::interpret(InterpreterState &state) {
+  auto name = this->getNameAttr();
+  auto paramNames =
+      castArrayRef<mlir::StringAttr>(this->getParamNames().getValue());
+  auto paramTypes = getTypes(state, this->getParams());
+  state[getResult()] = hc::typing::IdentType::get(this->getContext(), name,
+                                                  paramNames, paramTypes);
+  return mlir::success();
+}
+
 #include "hc/Dialect/Typing/IR/TypingOpsDialect.cpp.inc"
 
 #define GET_OP_CLASSES
