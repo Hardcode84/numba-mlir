@@ -21,11 +21,11 @@ static llvm::SmallVector<mlir::Type> getTypes(const State &state,
   return ret;
 }
 
-static bool handleOp(State &state, mlir::Operation &op) {
+static mlir::LogicalResult handleOp(State &state, mlir::Operation &op) {
   if (auto iface = mlir::dyn_cast<hc::typing::TypingInterpreterInterface>(op))
-    return mlir::succeeded(iface.interpret(state));
+    return iface.interpret(state);
 
-  return false;
+  return op.emitError("Type interpreter: unsupported op");
 }
 
 mlir::FailureOr<llvm::SmallVector<mlir::Type>>
@@ -35,8 +35,8 @@ hc::typing::Interpreter::run(TypeResolverOp resolver, mlir::TypeRange types) {
   mlir::Block *block = &resolver.getBodyRegion().front();
   while (true) {
     for (mlir::Operation &op : block->without_terminator()) {
-      if (!handleOp(state, op))
-        return op.emitError("Type interpreter: unsupported op");
+      if (mlir::failed(handleOp(state, op)))
+        return mlir::failure();
 
       auto term = block->getTerminator();
       if (auto ret = mlir::dyn_cast<TypeResolverReturnOp>(term)) {
