@@ -132,7 +132,8 @@ def Typing_ResolveYieldOp : Typing_OpBase<"resolve_yield", [
   let assemblyFormat = "attr-dict ($args^ `:` type($args))?";
 }
 
-def Typing_TypeResolverOp : Typing_OpBase<"type_resolver"> {
+def Typing_TypeResolverOp : Typing_OpBase<"type_resolver",
+    [IsolatedFromAbove]> {
   let arguments = (ins
     AnyAttr:$key
   );
