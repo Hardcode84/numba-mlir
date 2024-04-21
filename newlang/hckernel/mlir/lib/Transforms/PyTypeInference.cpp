@@ -199,7 +199,8 @@ struct TypingInterpreter {
 
 private:
   hc::typing::Interpreter interp;
-  llvm::DenseMap<mlir::Attribute, llvm::SmallVector<hc::typing::TypeResolverOp>>
+  llvm::DenseMap<mlir::Attribute,
+                 llvm::SmallVector<hc::typing::TypeResolverOp, 1>>
       resolversMap;
 };
 
