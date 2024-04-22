@@ -12,6 +12,7 @@ using InterpreterValue = llvm::PointerUnion<mlir::Type, void *>;
 struct InterpreterState {
   llvm::DenseMap<mlir::Value, InterpreterValue> state;
   mlir::TypeRange args;
+  mlir::Block *block = nullptr;
 };
 
 std::optional<int64_t> getInt(InterpreterValue val);
