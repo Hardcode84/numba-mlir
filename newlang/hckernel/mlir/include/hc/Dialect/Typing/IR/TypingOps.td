@@ -163,7 +163,7 @@ def Typing_MakeIdent : Typing_OpBase<"make_ident",
   );
   let results = (outs Typing_ResolverValueType:$result);
 
-  let assemblyFormat = "attr-dict $name $paramNames ($params^)?";
+  let assemblyFormat = "attr-dict $name $paramNames (`:` $params^)?";
 }
 
 #endif // TYPING_OPS
