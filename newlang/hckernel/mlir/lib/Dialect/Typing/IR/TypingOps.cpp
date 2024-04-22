@@ -93,14 +93,15 @@ hc::typing::getTypes(const hc::typing::InterpreterState &state,
   return ret;
 }
 
-mlir::LogicalResult hc::typing::MakeIdent::interpret(InterpreterState &state) {
+mlir::FailureOr<bool>
+hc::typing::MakeIdent::interpret(InterpreterState &state) {
   auto name = this->getNameAttr();
   auto paramNames =
       castArrayRef<mlir::StringAttr>(this->getParamNames().getValue());
   auto paramTypes = getTypes(state, this->getParams());
   state[getResult()] = hc::typing::IdentType::get(this->getContext(), name,
                                                   paramNames, paramTypes);
-  return mlir::success();
+  return true;
 }
 
 #include "hc/Dialect/Typing/IR/TypingOpsDialect.cpp.inc"

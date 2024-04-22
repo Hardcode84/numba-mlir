@@ -38,7 +38,7 @@ def TypingInterpreterInterface : OpInterface<"TypingInterpreterInterface"> {
   let methods = [
     InterfaceMethod<
       "",
-      "::mlir::LogicalResult",
+      "::mlir::FailureOr<bool>",
       "interpret",
       (ins "::hc::typing::InterpreterState&":$state)>
   ];

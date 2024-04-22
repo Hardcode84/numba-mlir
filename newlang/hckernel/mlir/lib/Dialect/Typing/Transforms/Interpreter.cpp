@@ -4,8 +4,8 @@
 
 #include "hc/Dialect/Typing/IR/TypingOpsInterfaces.hpp"
 
-static mlir::LogicalResult handleOp(hc::typing::InterpreterState &state,
-                                    mlir::Operation &op) {
+static mlir::FailureOr<bool> handleOp(hc::typing::InterpreterState &state,
+                                      mlir::Operation &op) {
   if (auto iface = mlir::dyn_cast<hc::typing::TypingInterpreterInterface>(op))
     return iface.interpret(state);
 
@@ -19,7 +19,8 @@ hc::typing::Interpreter::run(TypeResolverOp resolver, mlir::TypeRange types) {
   mlir::Block *block = &resolver.getBodyRegion().front();
   while (true) {
     for (mlir::Operation &op : block->without_terminator()) {
-      if (mlir::failed(handleOp(state, op)))
+      auto res = handleOp(state, op);
+      if (mlir::failed(res))
         return mlir::failure();
 
       auto term = block->getTerminator();
