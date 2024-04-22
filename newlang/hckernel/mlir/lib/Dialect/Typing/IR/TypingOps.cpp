@@ -76,11 +76,39 @@ static auto castArrayRef(mlir::ArrayRef<Src> src) {
   return mlir::ArrayRef<Dst>(static_cast<const Dst *>(src.data()), src.size());
 }
 
+static const constexpr int PackShift = llvm::PointerLikeTypeTraits<
+    hc::typing::InterpreterValue>::NumLowBitsAvailable;
+
+std::optional<int64_t> hc::typing::getInt(InterpreterValue val) {
+  if (auto ptr = mlir::dyn_cast<void *>(val))
+    return reinterpret_cast<intptr_t>(ptr) >> PackShift;
+
+  auto lit =
+      mlir::dyn_cast<hc::typing::LiteralType>(mlir::cast<mlir::Type>(val));
+  if (!lit)
+    return std::nullopt;
+
+  auto attr = mlir::dyn_cast<mlir::IntegerAttr>(lit.getValue());
+  if (!attr)
+    return std::nullopt;
+
+  return attr.getInt();
+}
+
+hc::typing::InterpreterValue hc::typing::setInt(mlir::MLIRContext *ctx,
+                                                int64_t val) {
+  if (((static_cast<intptr_t>(val) << PackShift) >> PackShift) == val)
+    return reinterpret_cast<void *>(static_cast<intptr_t>(val) << PackShift);
+
+  auto attr = mlir::IntegerAttr::get(mlir::IntegerType::get(ctx, 64), val);
+  return hc::typing::LiteralType::get(attr);
+}
+
 mlir::Type hc::typing::getType(const hc::typing::InterpreterState &state,
                                mlir::Value val) {
   auto it = state.find(val);
   assert(it != state.end());
-  return it->second;
+  return mlir::cast<mlir::Type>(it->second);
 }
 
 void hc::typing::getTypes(const hc::typing::InterpreterState &state,
