@@ -109,6 +109,62 @@ struct AddOpInterpreterInterface final
     return true;
   }
 };
+
+struct CmpOpInterpreterInterface final
+    : public hc::typing::TypingInterpreterInterface::ExternalModel<
+          CmpOpInterpreterInterface, mlir::arith::CmpIOp> {
+  mlir::FailureOr<bool> interpret(mlir::Operation *o,
+                                  InterpreterState &state) const {
+    auto op = mlir::cast<mlir::arith::CmpIOp>(o);
+    auto lhs = getInt(state, op.getLhs());
+    if (!lhs)
+      return op->emitError("Invalid lhs val");
+
+    auto rhs = getInt(state, op.getRhs());
+    if (!rhs)
+      return op->emitError("Invalid rhs val");
+
+    int64_t res;
+    using Pred = mlir::arith::CmpIPredicate;
+    switch (op.getPredicate()) {
+    case Pred::eq:
+      res = (*lhs == *rhs);
+      break;
+    case Pred::ne:
+      res = (*lhs != *rhs);
+      break;
+    case Pred::slt:
+      res = (*lhs < *rhs);
+      break;
+    case Pred::sle:
+      res = (*lhs <= *rhs);
+      break;
+    case Pred::sgt:
+      res = (*lhs > *rhs);
+      break;
+    case Pred::sge:
+      res = (*lhs >= *rhs);
+      break;
+    case Pred::ult:
+      res = (static_cast<uint64_t>(*lhs) < static_cast<uint64_t>(*rhs));
+      break;
+    case Pred::ule:
+      res = (static_cast<uint64_t>(*lhs) <= static_cast<uint64_t>(*rhs));
+      break;
+    case Pred::ugt:
+      res = (static_cast<uint64_t>(*lhs) > static_cast<uint64_t>(*rhs));
+      break;
+    case Pred::uge:
+      res = (static_cast<uint64_t>(*lhs) >= static_cast<uint64_t>(*rhs));
+      break;
+    default:
+      return op->emitError("Unsupported predicate: ") << op.getPredicateAttr();
+    }
+
+    state.state[op.getResult()] = setInt(op.getContext(), res);
+    return true;
+  }
+};
 } // namespace
 
 void hc::typing::registerArithTypingInterpreter(mlir::MLIRContext &ctx) {
@@ -116,6 +172,7 @@ void hc::typing::registerArithTypingInterpreter(mlir::MLIRContext &ctx) {
 
   mlir::arith::ConstantOp::attachInterface<ConstantOpInterpreterInterface>(ctx);
   mlir::arith::AddIOp::attachInterface<AddOpInterpreterInterface>(ctx);
+  mlir::arith::CmpIOp::attachInterface<CmpOpInterpreterInterface>(ctx);
 }
 
 template <typename Dst, typename Src>
@@ -123,8 +180,7 @@ static auto castArrayRef(mlir::ArrayRef<Src> src) {
   return mlir::ArrayRef<Dst>(static_cast<const Dst *>(src.data()), src.size());
 }
 
-static const constexpr int PackShift = llvm::PointerLikeTypeTraits<
-    hc::typing::InterpreterValue>::NumLowBitsAvailable;
+static const constexpr int PackShift = 2;
 
 std::optional<int64_t> hc::typing::getInt(InterpreterValue val) {
   if (val.is<void *>())
