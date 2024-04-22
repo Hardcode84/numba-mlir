@@ -5,16 +5,19 @@
 #include <mlir/IR/OpDefinition.h>
 
 namespace hc::typing {
+void registerArithTypingInterpreter(mlir::MLIRContext &ctx);
+
 using InterpreterValue = llvm::PointerUnion<mlir::Type, void *>;
-
-std::optional<int64_t> getInt(InterpreterValue val);
-
-InterpreterValue setInt(mlir::MLIRContext *ctx, int64_t val);
 
 struct InterpreterState {
   llvm::DenseMap<mlir::Value, InterpreterValue> state;
   mlir::TypeRange args;
 };
+
+std::optional<int64_t> getInt(InterpreterValue val);
+std::optional<int64_t> getInt(InterpreterState &state, mlir::Value val);
+
+InterpreterValue setInt(mlir::MLIRContext *ctx, int64_t val);
 
 mlir::Type getType(const hc::typing::InterpreterState &state, mlir::Value val);
 

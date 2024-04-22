@@ -3,6 +3,7 @@
 #include "hc/Dialect/Typing/IR/TypingOps.hpp"
 #include "hc/Dialect/Typing/IR/TypingOpsInterfaces.hpp"
 
+#include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/DialectImplementation.h>
 #include <mlir/IR/PatternMatch.h>
@@ -53,6 +54,8 @@ void hc::typing::TypingDialect::initialize() {
       >();
 
   addInterface<TypingAsmDialectInterface>();
+
+  registerArithTypingInterpreter(*getContext());
 }
 
 void hc::typing::ResolveOp::build(::mlir::OpBuilder &odsBuilder,
@@ -69,6 +72,30 @@ void hc::typing::ResolveOp::build(::mlir::OpBuilder &odsBuilder,
   llvm::SmallVector<mlir::Location> locs(args.size(),
                                          odsBuilder.getUnknownLoc());
   odsBuilder.createBlock(region, {}, mlir::TypeRange(args), locs);
+}
+
+namespace {
+using namespace hc::typing;
+struct ConstantOpInterpreterInterface final
+    : public hc::typing::TypingInterpreterInterface::ExternalModel<
+          ConstantOpInterpreterInterface, mlir::arith::ConstantOp> {
+  mlir::FailureOr<bool> interpret(mlir::Operation *o,
+                                  InterpreterState &state) const {
+    auto op = mlir::cast<mlir::arith::ConstantOp>(o);
+    auto attr = mlir::dyn_cast<mlir::IntegerAttr>(op.getValue());
+    if (!attr)
+      return op->emitError("Expected int attribute but got ") << op.getValue();
+
+    state.state[op.getResult()] = setInt(op.getContext(), attr.getInt());
+    return true;
+  }
+};
+} // namespace
+
+void hc::typing::registerArithTypingInterpreter(mlir::MLIRContext &ctx) {
+  ctx.loadDialect<mlir::arith::ArithDialect>();
+
+  mlir::arith::ConstantOp::attachInterface<ConstantOpInterpreterInterface>(ctx);
 }
 
 template <typename Dst, typename Src>
@@ -93,6 +120,13 @@ std::optional<int64_t> hc::typing::getInt(InterpreterValue val) {
     return std::nullopt;
 
   return attr.getInt();
+}
+
+std::optional<int64_t> hc::typing::getInt(InterpreterState &state,
+                                          mlir::Value val) {
+  auto it = state.state.find(val);
+  assert(it != state.state.end());
+  return getInt(it->second);
 }
 
 hc::typing::InterpreterValue hc::typing::setInt(mlir::MLIRContext *ctx,
