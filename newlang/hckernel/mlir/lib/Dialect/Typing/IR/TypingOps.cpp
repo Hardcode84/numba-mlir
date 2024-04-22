@@ -106,8 +106,8 @@ hc::typing::InterpreterValue hc::typing::setInt(mlir::MLIRContext *ctx,
 
 mlir::Type hc::typing::getType(const hc::typing::InterpreterState &state,
                                mlir::Value val) {
-  auto it = state.find(val);
-  assert(it != state.end());
+  auto it = state.state.find(val);
+  assert(it != state.state.end());
   return mlir::cast<mlir::Type>(it->second);
 }
 
@@ -133,8 +133,8 @@ hc::typing::MakeIdent::interpret(InterpreterState &state) {
   auto paramNames =
       castArrayRef<mlir::StringAttr>(this->getParamNames().getValue());
   auto paramTypes = getTypes(state, this->getParams());
-  state[getResult()] = hc::typing::IdentType::get(this->getContext(), name,
-                                                  paramNames, paramTypes);
+  state.state[getResult()] = hc::typing::IdentType::get(
+      this->getContext(), name, paramNames, paramTypes);
   return true;
 }
 

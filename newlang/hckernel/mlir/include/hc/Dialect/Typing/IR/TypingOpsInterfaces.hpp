@@ -11,7 +11,10 @@ std::optional<int64_t> getInt(InterpreterValue val);
 
 InterpreterValue setInt(mlir::MLIRContext *ctx, int64_t val);
 
-using InterpreterState = llvm::DenseMap<mlir::Value, InterpreterValue>;
+struct InterpreterState {
+  llvm::DenseMap<mlir::Value, InterpreterValue> state;
+  mlir::TypeRange args;
+};
 
 mlir::Type getType(const hc::typing::InterpreterState &state, mlir::Value val);
 

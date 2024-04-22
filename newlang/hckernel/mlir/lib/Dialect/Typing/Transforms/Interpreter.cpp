@@ -15,7 +15,8 @@ static mlir::FailureOr<bool> handleOp(hc::typing::InterpreterState &state,
 mlir::FailureOr<bool>
 hc::typing::Interpreter::run(TypeResolverOp resolver, mlir::TypeRange types,
                              llvm::SmallVectorImpl<mlir::Type> &result) {
-  state.clear();
+  state.state.clear();
+  state.args = types;
   assert(!resolver.getBodyRegion().empty());
   mlir::Block *block = &resolver.getBodyRegion().front();
   while (true) {
