@@ -90,12 +90,32 @@ struct ConstantOpInterpreterInterface final
     return true;
   }
 };
+
+struct AddOpInterpreterInterface final
+    : public hc::typing::TypingInterpreterInterface::ExternalModel<
+          AddOpInterpreterInterface, mlir::arith::AddIOp> {
+  mlir::FailureOr<bool> interpret(mlir::Operation *o,
+                                  InterpreterState &state) const {
+    auto op = mlir::cast<mlir::arith::AddIOp>(o);
+    auto lhs = getInt(state, op.getLhs());
+    if (!lhs)
+      return op->emitError("Invalid lhs val");
+
+    auto rhs = getInt(state, op.getRhs());
+    if (!rhs)
+      return op->emitError("Invalid rhs val");
+
+    state.state[op.getResult()] = setInt(op.getContext(), *lhs + *rhs);
+    return true;
+  }
+};
 } // namespace
 
 void hc::typing::registerArithTypingInterpreter(mlir::MLIRContext &ctx) {
   ctx.loadDialect<mlir::arith::ArithDialect>();
 
   mlir::arith::ConstantOp::attachInterface<ConstantOpInterpreterInterface>(ctx);
+  mlir::arith::AddIOp::attachInterface<AddOpInterpreterInterface>(ctx);
 }
 
 template <typename Dst, typename Src>
@@ -107,11 +127,10 @@ static const constexpr int PackShift = llvm::PointerLikeTypeTraits<
     hc::typing::InterpreterValue>::NumLowBitsAvailable;
 
 std::optional<int64_t> hc::typing::getInt(InterpreterValue val) {
-  if (auto ptr = mlir::dyn_cast<void *>(val))
-    return reinterpret_cast<intptr_t>(ptr) >> PackShift;
+  if (val.is<void *>())
+    return reinterpret_cast<intptr_t>(val.get<void *>()) >> PackShift;
 
-  auto lit =
-      mlir::dyn_cast<hc::typing::LiteralType>(mlir::cast<mlir::Type>(val));
+  auto lit = mlir::dyn_cast<hc::typing::LiteralType>(val.get<mlir::Type>());
   if (!lit)
     return std::nullopt;
 
