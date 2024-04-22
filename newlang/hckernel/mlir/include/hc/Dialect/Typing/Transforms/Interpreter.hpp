@@ -11,6 +11,6 @@ public:
                             llvm::SmallVectorImpl<mlir::Type> &result);
 
 private:
-  llvm::DenseMap<mlir::Value, mlir::Type> state;
+  InterpreterState state;
 };
 } // namespace hc::typing
