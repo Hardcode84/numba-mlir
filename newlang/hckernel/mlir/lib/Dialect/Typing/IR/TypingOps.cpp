@@ -83,13 +83,19 @@ mlir::Type hc::typing::getType(const hc::typing::InterpreterState &state,
   return it->second;
 }
 
+void hc::typing::getTypes(const hc::typing::InterpreterState &state,
+                          mlir::ValueRange vals,
+                          llvm::SmallVectorImpl<mlir::Type> &result) {
+  result.reserve(result.size() + vals.size());
+  for (auto val : vals)
+    result.emplace_back(getType(state, val));
+}
+
 llvm::SmallVector<mlir::Type>
 hc::typing::getTypes(const hc::typing::InterpreterState &state,
                      mlir::ValueRange vals) {
-  llvm::SmallVector<mlir::Type> ret(vals.size());
-  for (auto &&[i, val] : llvm::enumerate(vals))
-    ret[i] = getType(state, val);
-
+  llvm::SmallVector<mlir::Type> ret;
+  getTypes(state, vals, ret);
   return ret;
 }
 

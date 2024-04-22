@@ -12,8 +12,9 @@ static mlir::FailureOr<bool> handleOp(hc::typing::InterpreterState &state,
   return op.emitError("Type interpreter: unsupported op");
 }
 
-mlir::FailureOr<llvm::SmallVector<mlir::Type>>
-hc::typing::Interpreter::run(TypeResolverOp resolver, mlir::TypeRange types) {
+mlir::FailureOr<bool>
+hc::typing::Interpreter::run(TypeResolverOp resolver, mlir::TypeRange types,
+                             llvm::SmallVectorImpl<mlir::Type> &result) {
   state.clear();
   assert(!resolver.getBodyRegion().empty());
   mlir::Block *block = &resolver.getBodyRegion().front();
@@ -23,9 +24,13 @@ hc::typing::Interpreter::run(TypeResolverOp resolver, mlir::TypeRange types) {
       if (mlir::failed(res))
         return mlir::failure();
 
+      if (!*res)
+        return false;
+
       auto term = block->getTerminator();
       if (auto ret = mlir::dyn_cast<TypeResolverReturnOp>(term)) {
-        return getTypes(state, ret.getArgs());
+        getTypes(state, ret.getArgs(), result);
+        return true;
       } else {
         return term->emitError("Unsupported terminator");
       }

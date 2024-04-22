@@ -122,22 +122,25 @@ struct TypingInterpreter {
     });
   }
 
-  mlir::FailureOr<llvm::SmallVector<mlir::Type>> run(mlir::Operation *op,
-                                                     mlir::TypeRange types) {
+  mlir::FailureOr<bool> run(mlir::Operation *op, mlir::TypeRange types,
+                            llvm::SmallVectorImpl<mlir::Type> &result) {
     mlir::Attribute key = getTypingKey(op);
     if (!key)
-      return mlir::failure();
+      return false;
 
     auto it = resolversMap.find(key);
     if (it == resolversMap.end())
-      return mlir::failure();
+      return false;
 
     for (auto resolverOp : it->second) {
-      auto res = interp.run(resolverOp, types);
-      if (mlir::succeeded(res))
-        return res;
+      auto res = interp.run(resolverOp, types, result);
+      if (mlir::failed(res))
+        return mlir::failure();
+
+      if (*res)
+        return true;
     }
-    return mlir::failure();
+    return false;
   }
 
 private:
@@ -165,10 +168,11 @@ struct PyTypeInferencePass final
     };
 
     llvm::SmallVector<mlir::Type> argTypes;
+    llvm::SmallVector<mlir::Type> resTypes;
 
     auto typingVisitor = [&](hc::py_ir::PyModuleOp op) -> mlir::WalkResult {
       // TODO: Proper dataflow analysis
-      op->walk<mlir::WalkOrder::PreOrder>([&](mlir::Operation *innerOp) {
+      auto innerVisitor = [&](mlir::Operation *innerOp) -> mlir::WalkResult {
         if (auto func = mlir::dyn_cast<hc::py_ir::PyFuncOp>(innerOp)) {
           for (auto &&[arg, annotation] :
                llvm::zip_equal(func.getBlockArgs(), func.getAnnotations())) {
@@ -183,23 +187,35 @@ struct PyTypeInferencePass final
         for (mlir::Value arg : innerOp->getOperands()) {
           mlir::Type type = getType(arg);
           if (!type)
-            return;
+            return mlir::WalkResult::advance();
 
           argTypes.emplace_back(type);
         }
 
-        auto resTypes = interp.run(innerOp, argTypes);
-        if (mlir::failed(resTypes))
-          return;
+        resTypes.clear();
+        auto res = interp.run(innerOp, argTypes, resTypes);
+        if (mlir::failed(res)) {
+          innerOp->emitOpError("Type inference failed");
+          return mlir::WalkResult::interrupt();
+        }
 
-        for (auto &&[type, res] :
-             llvm::zip_equal(*resTypes, innerOp->getResults()))
-          typemap[res] = type;
-      });
+        if (*res) {
+          for (auto &&[type, res] :
+               llvm::zip_equal(resTypes, innerOp->getResults())) {
+            typemap[res] = type;
+          }
+        }
+
+        return mlir::WalkResult::advance();
+      };
+      if (op->walk<mlir::WalkOrder::PreOrder>(innerVisitor).wasInterrupted())
+        return mlir::WalkResult::interrupt();
+
       return mlir::WalkResult::skip();
     };
 
-    rootOp->walk<mlir::WalkOrder::PreOrder>(typingVisitor);
+    if (rootOp->walk<mlir::WalkOrder::PreOrder>(typingVisitor).wasInterrupted())
+      return signalPassFailure();
 
     updateTypes(rootOp, getType);
   }

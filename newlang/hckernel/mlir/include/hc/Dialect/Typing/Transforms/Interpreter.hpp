@@ -7,8 +7,8 @@
 namespace hc::typing {
 class Interpreter final {
 public:
-  mlir::FailureOr<llvm::SmallVector<mlir::Type>> run(TypeResolverOp resolver,
-                                                     mlir::TypeRange types);
+  mlir::FailureOr<bool> run(TypeResolverOp resolver, mlir::TypeRange types,
+                            llvm::SmallVectorImpl<mlir::Type> &result);
 
 private:
   llvm::DenseMap<mlir::Value, mlir::Type> state;
