@@ -316,6 +316,14 @@ hc::typing::MakeIdentOp::interpret(InterpreterState &state) {
 }
 
 mlir::FailureOr<bool>
+hc::typing::MakeSymbolOp::interpret(InterpreterState &state) {
+  auto name = this->getNameAttr();
+  state.state[getResult()] =
+      hc::typing::SymbolType::get(this->getContext(), name);
+  return true;
+}
+
+mlir::FailureOr<bool>
 hc::typing::GetNumArgsOp::interpret(InterpreterState &state) {
   state.state[getResult()] =
       setInt(this->getContext(), static_cast<int64_t>(state.args.size()));

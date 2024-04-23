@@ -167,6 +167,15 @@ def Typing_MakeIdentOp : Typing_OpBase<"make_ident", [
   let assemblyFormat = "attr-dict $name $paramNames (`:` $params^)?";
 }
 
+def Typing_MakeSymbolOp : Typing_OpBase<"make_symbol", [
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
+  let arguments = (ins StrAttr:$name);
+  let results = (outs Typing_ResolverValueType:$result);
+
+  let assemblyFormat = "attr-dict $name";
+}
+
 def Typing_GetNumArgsOp : Typing_OpBase<"get_num_args", [
   Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {
