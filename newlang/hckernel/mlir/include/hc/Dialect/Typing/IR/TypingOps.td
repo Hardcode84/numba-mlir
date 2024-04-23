@@ -149,7 +149,6 @@ def Typing_TypeResolverReturnOp : Typing_OpBase<"type_resolver_return", [
   Pure, HasParent<"TypeResolverOp">, ReturnLike, Terminator,
   DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {
-
   let arguments = (ins Variadic<Typing_ResolverValueType>:$args);
 
   let assemblyFormat = "attr-dict ($args^)?";
@@ -174,6 +173,15 @@ def Typing_GetNumArgsOp : Typing_OpBase<"get_num_args", [
   let results = (outs Index:$result);
 
   let assemblyFormat = "attr-dict";
+}
+
+def Typing_GetArgOp : Typing_OpBase<"get_arg", [
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
+  let arguments = (ins Index:$index);
+  let results = (outs Typing_ResolverValueType:$result);
+
+  let assemblyFormat = "attr-dict $index";
 }
 
 #endif // TYPING_OPS

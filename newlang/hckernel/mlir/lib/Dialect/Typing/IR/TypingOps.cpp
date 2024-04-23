@@ -315,6 +315,21 @@ hc::typing::GetNumArgsOp::interpret(InterpreterState &state) {
   return true;
 }
 
+mlir::FailureOr<bool> hc::typing::GetArgOp::interpret(InterpreterState &state) {
+  auto index = getInt(state, getIndex());
+  if (!index)
+    return emitOpError("Invalid index val");
+
+  auto id = *index;
+  auto args = state.args;
+  if (id < 0 || id >= static_cast<decltype(id)>(args.size()))
+    return emitOpError("Index out of bounds: ")
+           << id << " [0, " << args.size() << "]";
+
+  state.state[getResult()] = args[id];
+  return true;
+}
+
 #include "hc/Dialect/Typing/IR/TypingOpsDialect.cpp.inc"
 
 #define GET_OP_CLASSES
