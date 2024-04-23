@@ -71,15 +71,6 @@ void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
   odsBuilder.createBlock(region, {}, types, locs);
 }
 
-bool hc::py_ir::CastOp::areCastCompatible(mlir::TypeRange inputs,
-                                          mlir::TypeRange outputs) {
-  (void)inputs;
-  (void)outputs;
-  assert(inputs.size() == 1 && "expected one input");
-  assert(outputs.size() == 1 && "expected one output");
-  return true;
-}
-
 mlir::FailureOr<bool>
 hc::py_ir::ConstantOp::inferTypes(mlir::TypeRange types,
                                   llvm::SmallVectorImpl<mlir::Type> &results) {
@@ -89,6 +80,18 @@ hc::py_ir::ConstantOp::inferTypes(mlir::TypeRange types,
   results.emplace_back(hc::typing::LiteralType::get(this->getValue()));
   return true;
 }
+
+bool hc::py_ir::CastOp::areCastCompatible(mlir::TypeRange inputs,
+                                          mlir::TypeRange outputs) {
+  (void)inputs;
+  (void)outputs;
+  assert(inputs.size() == 1 && "expected one input");
+  assert(outputs.size() == 1 && "expected one output");
+  return true;
+}
+
+void hc::py_ir::CastOp::getTypingKeyArgs(
+    llvm::SmallVectorImpl<mlir::Attribute> & /*args*/) {}
 
 void hc::py_ir::LoadVarOp::getTypingKeyArgs(
     llvm::SmallVectorImpl<mlir::Attribute> &args) {

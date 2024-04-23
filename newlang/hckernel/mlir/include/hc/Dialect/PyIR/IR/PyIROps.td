@@ -245,16 +245,19 @@ def PyIR_StoreVarOp : PyIR_OpBase<"storevar", [MemoryEffects<[MemWrite]>]> {
 }
 
 def PyIR_LoadVarOp : PyIR_OpBase<"loadvar", [
-      MemoryEffects<[MemRead]>,
-      DeclareOpInterfaceMethods<TypingKeyInterface>
-    ]> {
+  MemoryEffects<[MemRead]>,
+  DeclareOpInterfaceMethods<TypingKeyInterface>
+]> {
   let arguments = (ins StrAttr:$name);
   let results = (outs AnyType:$result);
 
   let assemblyFormat = "attr-dict $name `:` type($result)";
 }
 
-def PyIR_CastOp : PyIR_OpBase<"cast", [Pure, DeclareOpInterfaceMethods<CastOpInterface>]> {
+def PyIR_CastOp : PyIR_OpBase<"cast", [
+  Pure, DeclareOpInterfaceMethods<CastOpInterface>,
+  DeclareOpInterfaceMethods<TypingKeyInterface>
+]> {
   let arguments = (ins AnyType:$value);
   let results = (outs AnyType:$result);
 
