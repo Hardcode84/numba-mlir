@@ -193,6 +193,17 @@ def Typing_GetArgOp : Typing_OpBase<"get_arg", [
   let assemblyFormat = "attr-dict $index";
 }
 
+def Typing_GetIdentParamOp : Typing_OpBase<"get_ident_param", [
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
+  let arguments = (ins
+    Typing_ResolverValueType:$ident,
+    StrAttr:$name);
+  let results = (outs Typing_ResolverValueType:$result);
+
+  let assemblyFormat = "attr-dict $ident $name";
+}
+
 def Typing_CreateSeqOp : Typing_OpBase<"create_seq", [
   Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {

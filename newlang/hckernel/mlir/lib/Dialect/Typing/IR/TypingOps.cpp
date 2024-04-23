@@ -279,7 +279,7 @@ mlir::Type hc::typing::getType(const hc::typing::InterpreterState &state,
                                mlir::Value val) {
   auto it = state.state.find(val);
   assert(it != state.state.end());
-  return mlir::cast<mlir::Type>(it->second);
+  return mlir::dyn_cast<mlir::Type>(it->second);
 }
 
 void hc::typing::getTypes(const hc::typing::InterpreterState &state,
@@ -346,6 +346,30 @@ mlir::FailureOr<bool> hc::typing::GetArgOp::interpret(InterpreterState &state) {
 }
 
 mlir::FailureOr<bool>
+hc::typing::GetIdentParamOp::interpret(InterpreterState &state) {
+  auto ident = mlir::dyn_cast_if_present<hc::typing::IdentType>(
+      hc::typing::getType(state, getIdent()));
+  if (!ident)
+    return emitError("Invalid ident type");
+
+  auto names = ident.getParamNames();
+  auto params = ident.getParams();
+
+  mlir::Type paramVal;
+  for (auto &&[name, val] : llvm::zip_equal(names, params)) {
+    if (name == getNameAttr()) {
+      paramVal = val;
+      break;
+    }
+  }
+  if (!paramVal)
+    return emitError("Invalid param name");
+
+  state.state[getResult()] = paramVal;
+  return true;
+}
+
+mlir::FailureOr<bool>
 hc::typing::CreateSeqOp::interpret(InterpreterState &state) {
   state.state[getResult()] = SequenceType::get(getContext(), std::nullopt);
   return true;
@@ -353,8 +377,8 @@ hc::typing::CreateSeqOp::interpret(InterpreterState &state) {
 
 mlir::FailureOr<bool>
 hc::typing::AppendSeqOp::interpret(InterpreterState &state) {
-  auto seq =
-      mlir::dyn_cast<SequenceType>(::hc::typing::getType(state, getSeq()));
+  auto seq = mlir::dyn_cast_if_present<SequenceType>(
+      ::hc::typing::getType(state, getSeq()));
   if (!seq)
     return emitError("Invalid seq type");
 
