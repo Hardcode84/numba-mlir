@@ -145,18 +145,19 @@ def Typing_TypeResolverOp : Typing_OpBase<"type_resolver",
   let assemblyFormat = "attr-dict $key $bodyRegion";
 }
 
-def Typing_TypeResolverReturnOp : Typing_OpBase<"type_resolver_return",
-  [Pure, HasParent<"TypeResolverOp">, ReturnLike, Terminator,
-   DeclareOpInterfaceMethods<TypingInterpreterInterface>]> {
+def Typing_TypeResolverReturnOp : Typing_OpBase<"type_resolver_return", [
+  Pure, HasParent<"TypeResolverOp">, ReturnLike, Terminator,
+  DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
 
   let arguments = (ins Variadic<Typing_ResolverValueType>:$args);
 
   let assemblyFormat = "attr-dict ($args^)?";
 }
 
-def Typing_MakeIdent : Typing_OpBase<"make_ident",
-    [Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>]>
-  {
+def Typing_MakeIdentOp : Typing_OpBase<"make_ident", [
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
   let arguments = (ins
     StrAttr:$name,
     ArrayAttr:$paramNames,
@@ -165,6 +166,14 @@ def Typing_MakeIdent : Typing_OpBase<"make_ident",
   let results = (outs Typing_ResolverValueType:$result);
 
   let assemblyFormat = "attr-dict $name $paramNames (`:` $params^)?";
+}
+
+def Typing_GetNumArgsOp : Typing_OpBase<"get_num_args", [
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
+  let results = (outs Index:$result);
+
+  let assemblyFormat = "attr-dict";
 }
 
 #endif // TYPING_OPS

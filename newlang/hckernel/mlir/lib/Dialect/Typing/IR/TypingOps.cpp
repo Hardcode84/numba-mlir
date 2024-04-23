@@ -298,13 +298,20 @@ hc::typing::TypeResolverReturnOp::interpret(InterpreterState &state) {
 }
 
 mlir::FailureOr<bool>
-hc::typing::MakeIdent::interpret(InterpreterState &state) {
+hc::typing::MakeIdentOp::interpret(InterpreterState &state) {
   auto name = this->getNameAttr();
   auto paramNames =
       castArrayRef<mlir::StringAttr>(this->getParamNames().getValue());
   auto paramTypes = getTypes(state, this->getParams());
   state.state[getResult()] = hc::typing::IdentType::get(
       this->getContext(), name, paramNames, paramTypes);
+  return true;
+}
+
+mlir::FailureOr<bool>
+hc::typing::GetNumArgsOp::interpret(InterpreterState &state) {
+  state.state[getResult()] =
+      setInt(this->getContext(), static_cast<int64_t>(state.args.size()));
   return true;
 }
 
