@@ -16,23 +16,20 @@ mlir::FailureOr<bool>
 hc::typing::Interpreter::run(TypeResolverOp resolver, mlir::TypeRange types,
                              llvm::SmallVectorImpl<mlir::Type> &result) {
   assert(!resolver.getBodyRegion().empty());
-  state.state.clear();
-  state.args = types;
-  state.block = &resolver.getBodyRegion().front();
+  state.init(resolver.getBodyRegion().front(), types);
 
   while (true) {
-    for (mlir::Operation &op : *state.block) {
-      auto res = handleOp(state, op);
-      if (mlir::failed(res))
-        return mlir::failure();
+    mlir::Operation &op = state.getNextOp();
+    auto res = handleOp(state, op);
+    if (mlir::failed(res))
+      return mlir::failure();
 
-      if (!*res)
-        return false;
+    if (!*res)
+      return false;
 
-      if (state.isCompleted()) {
-        getTypes(state, op.getOperands(), result);
-        return true;
-      }
+    if (state.isCompleted()) {
+      getTypes(state, op.getOperands(), result);
+      return true;
     }
   }
   llvm_unreachable("Unreachable");

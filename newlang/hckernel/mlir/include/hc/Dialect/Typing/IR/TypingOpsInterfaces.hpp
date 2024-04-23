@@ -10,12 +10,25 @@ void registerArithTypingInterpreter(mlir::MLIRContext &ctx);
 using InterpreterValue = llvm::PointerUnion<mlir::Type, void *>;
 
 struct InterpreterState {
-  void setCompleted() { block = nullptr; }
-  bool isCompleted() const { return block == nullptr; }
+  void init(mlir::Block &block, mlir::TypeRange types) {
+    state.clear();
+    args = types;
+    iter = block.begin();
+    completed = false;
+  }
+
+  mlir::Operation &getNextOp() {
+    auto it = iter++;
+    return *it;
+  }
+
+  void setCompleted() { completed = true; }
+  bool isCompleted() const { return completed; }
 
   llvm::DenseMap<mlir::Value, InterpreterValue> state;
   mlir::TypeRange args;
-  mlir::Block *block = nullptr;
+  mlir::Block::iterator iter;
+  bool completed = false;
 };
 
 std::optional<int64_t> getInt(InterpreterValue val);

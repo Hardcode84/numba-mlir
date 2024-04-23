@@ -85,9 +85,9 @@ static mlir::LogicalResult jumpToBlock(mlir::Operation *op,
   if (newBlock->getNumArguments() != args.size())
     return op->emitError("Block arg count mismatch");
 
-  state.block = newBlock;
+  state.iter = newBlock->begin();
   for (auto &&[blockArg, opArg] :
-       llvm::zip_equal(state.block->getArguments(), args))
+       llvm::zip_equal(newBlock->getArguments(), args))
     state.state[blockArg] = state.state[opArg];
   return mlir::success();
 };
@@ -293,7 +293,7 @@ hc::typing::getTypes(const hc::typing::InterpreterState &state,
 
 mlir::FailureOr<bool>
 hc::typing::TypeResolverReturnOp::interpret(InterpreterState &state) {
-  state.block = nullptr;
+  state.setCompleted();
   return true;
 }
 
