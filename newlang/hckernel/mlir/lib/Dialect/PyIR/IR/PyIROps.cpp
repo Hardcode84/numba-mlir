@@ -83,6 +83,9 @@ void hc::py_ir::LoadVarOp::getTypingKeyArgs(
   args.emplace_back(getNameAttr());
 }
 
+void hc::py_ir::GetItemOp::getTypingKeyArgs(
+    llvm::SmallVectorImpl<mlir::Attribute> & /*args*/) {}
+
 void hc::py_ir::TuplePackOp::getTypingKeyArgs(
     llvm::SmallVectorImpl<mlir::Attribute> & /*args*/) {}
 

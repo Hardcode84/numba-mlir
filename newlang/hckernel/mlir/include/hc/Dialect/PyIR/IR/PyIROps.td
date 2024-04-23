@@ -268,7 +268,9 @@ def PyIR_SetItemOp : PyIR_OpBase<"setitem"> {
   let assemblyFormat = "attr-dict $target `:` type($target) `[` $index `:` type($index) `]` `=` $value `:` type($value)";
 }
 
-def PyIR_GetItemOp : PyIR_OpBase<"getitem"> {
+def PyIR_GetItemOp : PyIR_OpBase<"getitem", [
+  DeclareOpInterfaceMethods<TypingKeyInterface>
+]> {
   let arguments = (ins
     AnyType:$target,
     AnyType:$index);
