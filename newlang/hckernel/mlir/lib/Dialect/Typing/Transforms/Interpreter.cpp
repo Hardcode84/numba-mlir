@@ -2,8 +2,6 @@
 
 #include "hc/Dialect/Typing/Transforms/Interpreter.hpp"
 
-#include <mlir/Dialect/ControlFlow/IR/ControlFlowOps.h>
-
 #include "hc/Dialect/Typing/IR/TypingOpsInterfaces.hpp"
 
 static mlir::FailureOr<bool> handleOp(hc::typing::InterpreterState &state,
@@ -23,36 +21,18 @@ hc::typing::Interpreter::run(TypeResolverOp resolver, mlir::TypeRange types,
   state.block = &resolver.getBodyRegion().front();
 
   while (true) {
-    for (mlir::Operation &op : state.block->without_terminator()) {
+    for (mlir::Operation &op : *state.block) {
       auto res = handleOp(state, op);
       if (mlir::failed(res))
         return mlir::failure();
 
       if (!*res)
         return false;
-    }
 
-    auto term = state.block->getTerminator();
-    auto jumpToBlock = [&](mlir::Block *newBlock,
-                           mlir::ValueRange args) -> mlir::LogicalResult {
-      if (newBlock->getNumArguments() != args.size())
-        return term->emitError("Block arg count mismatch");
-
-      state.block = newBlock;
-      for (auto &&[blockArg, opArg] :
-           llvm::zip_equal(state.block->getArguments(), args))
-        state.state[blockArg] = state.state[opArg];
-      return mlir::success();
-    };
-
-    if (auto ret = mlir::dyn_cast<TypeResolverReturnOp>(term)) {
-      getTypes(state, ret.getArgs(), result);
-      return true;
-    } else if (auto br = mlir::dyn_cast<mlir::cf::BranchOp>(term)) {
-      if (mlir::failed(jumpToBlock(br.getDest(), br.getDestOperands())))
-        return mlir::failure();
-    } else {
-      return term->emitError("Unsupported terminator");
+      if (state.isCompleted()) {
+        getTypes(state, op.getOperands(), result);
+        return true;
+      }
     }
   }
   llvm_unreachable("Unreachable");

@@ -146,7 +146,8 @@ def Typing_TypeResolverOp : Typing_OpBase<"type_resolver",
 }
 
 def Typing_TypeResolverReturnOp : Typing_OpBase<"type_resolver_return",
-  [Pure, HasParent<"TypeResolverOp">, ReturnLike, Terminator]> {
+  [Pure, HasParent<"TypeResolverOp">, ReturnLike, Terminator,
+   DeclareOpInterfaceMethods<TypingInterpreterInterface>]> {
 
   let arguments = (ins Variadic<Typing_ResolverValueType>:$args);
 

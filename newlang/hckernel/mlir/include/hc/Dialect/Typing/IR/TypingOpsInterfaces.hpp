@@ -10,6 +10,9 @@ void registerArithTypingInterpreter(mlir::MLIRContext &ctx);
 using InterpreterValue = llvm::PointerUnion<mlir::Type, void *>;
 
 struct InterpreterState {
+  void setCompleted() { block = nullptr; }
+  bool isCompleted() const { return block == nullptr; }
+
   llvm::DenseMap<mlir::Value, InterpreterValue> state;
   mlir::TypeRange args;
   mlir::Block *block = nullptr;

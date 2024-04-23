@@ -4,6 +4,7 @@
 #include "hc/Dialect/Typing/IR/TypingOpsInterfaces.hpp"
 
 #include <mlir/Dialect/Arith/IR/Arith.h>
+#include <mlir/Dialect/ControlFlow/IR/ControlFlowOps.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/DialectImplementation.h>
 #include <mlir/IR/PatternMatch.h>
@@ -76,6 +77,35 @@ void hc::typing::ResolveOp::build(::mlir::OpBuilder &odsBuilder,
 
 namespace {
 using namespace hc::typing;
+
+static mlir::LogicalResult jumpToBlock(mlir::Operation *op,
+                                       InterpreterState &state,
+                                       mlir::Block *newBlock,
+                                       mlir::ValueRange args) {
+  if (newBlock->getNumArguments() != args.size())
+    return op->emitError("Block arg count mismatch");
+
+  state.block = newBlock;
+  for (auto &&[blockArg, opArg] :
+       llvm::zip_equal(state.block->getArguments(), args))
+    state.state[blockArg] = state.state[opArg];
+  return mlir::success();
+};
+
+struct BarnchOpInterpreterInterface final
+    : public hc::typing::TypingInterpreterInterface::ExternalModel<
+          BarnchOpInterpreterInterface, mlir::cf::BranchOp> {
+  mlir::FailureOr<bool> interpret(mlir::Operation *o,
+                                  InterpreterState &state) const {
+    auto op = mlir::cast<mlir::cf::BranchOp>(o);
+    if (mlir::failed(
+            jumpToBlock(op, state, op.getDest(), op.getDestOperands())))
+      return mlir::failure();
+
+    return true;
+  }
+};
+
 struct ConstantOpInterpreterInterface final
     : public hc::typing::TypingInterpreterInterface::ExternalModel<
           ConstantOpInterpreterInterface, mlir::arith::ConstantOp> {
@@ -168,7 +198,9 @@ struct CmpOpInterpreterInterface final
 } // namespace
 
 void hc::typing::registerArithTypingInterpreter(mlir::MLIRContext &ctx) {
-  ctx.loadDialect<mlir::arith::ArithDialect>();
+  ctx.loadDialect<mlir::arith::ArithDialect, mlir::cf::ControlFlowDialect>();
+
+  mlir::cf::BranchOp::attachInterface<BarnchOpInterpreterInterface>(ctx);
 
   mlir::arith::ConstantOp::attachInterface<ConstantOpInterpreterInterface>(ctx);
   mlir::arith::AddIOp::attachInterface<AddOpInterpreterInterface>(ctx);
@@ -234,6 +266,12 @@ hc::typing::getTypes(const hc::typing::InterpreterState &state,
   llvm::SmallVector<mlir::Type> ret;
   getTypes(state, vals, ret);
   return ret;
+}
+
+mlir::FailureOr<bool>
+hc::typing::TypeResolverReturnOp::interpret(InterpreterState &state) {
+  state.block = nullptr;
+  return true;
 }
 
 mlir::FailureOr<bool>
