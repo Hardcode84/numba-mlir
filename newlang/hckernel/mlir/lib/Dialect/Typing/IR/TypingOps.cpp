@@ -324,6 +324,12 @@ hc::typing::MakeSymbolOp::interpret(InterpreterState &state) {
 }
 
 mlir::FailureOr<bool>
+hc::typing::MakeLiteralOp::interpret(InterpreterState &state) {
+  state.state[getResult()] = hc::typing::LiteralType::get(getValue());
+  return true;
+}
+
+mlir::FailureOr<bool>
 hc::typing::GetNumArgsOp::interpret(InterpreterState &state) {
   state.state[getResult()] =
       setInt(this->getContext(), static_cast<int64_t>(state.args.size()));

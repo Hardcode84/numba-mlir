@@ -5,6 +5,7 @@
 
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
+include "mlir/IR/BuiltinAttributeInterfaces.td"
 include "mlir/IR/OpBase.td"
 
 include "hc/Dialect/Typing/IR/TypingOpsInterfaces.td"
@@ -175,6 +176,16 @@ def Typing_MakeSymbolOp : Typing_OpBase<"make_symbol", [
 
   let assemblyFormat = "attr-dict $name";
 }
+
+def Typing_MakeLiteralOp : Typing_OpBase<"make_literal", [
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
+  let arguments = (ins TypedAttrInterface:$value);
+  let results = (outs Typing_ValueType:$result);
+
+  let assemblyFormat = "attr-dict $value";
+}
+
 
 def Typing_GetNumArgsOp : Typing_OpBase<"get_num_args", [
   Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
