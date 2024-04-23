@@ -30,12 +30,23 @@ static bool UpdateInplace = true;
 
 static void updateTypes(mlir::Operation *rootOp,
                         llvm::function_ref<mlir::Type(mlir::Value)> getType) {
+  mlir::OpBuilder builder(rootOp->getContext());
   if (UpdateInplace) {
     auto updateTypes = [&](mlir::ValueRange vals) {
       for (mlir::Value arg : vals) {
-        mlir::Type type = getType(arg);
-        if (type && type != arg.getType())
-          arg.setType(type);
+        mlir::Type oldType = arg.getType();
+        mlir::Type newType = getType(arg);
+        if (!newType || newType == oldType)
+          continue;
+
+        if (mlir::isa<hc::py_ir::UndefinedType>(oldType)) {
+          arg.setType(newType);
+        } else {
+          builder.setInsertionPointAfterValue(arg);
+          auto cast =
+              builder.create<hc::py_ir::CastOp>(arg.getLoc(), newType, arg);
+          arg.replaceAllUsesExcept(cast.getResult(), cast);
+        }
       }
     };
     rootOp->walk(
@@ -58,7 +69,6 @@ static void updateTypes(mlir::Operation *rootOp,
       opsToUpdate.insert(op);
   });
 
-  mlir::OpBuilder builder(rootOp->getContext());
   for (mlir::Operation *op : opsToUpdate) {
     builder.setInsertionPoint(op);
     mlir::Location loc = op->getLoc();
