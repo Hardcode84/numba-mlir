@@ -391,6 +391,20 @@ hc::typing::AppendSeqOp::interpret(InterpreterState &state) {
   return true;
 }
 
+mlir::FailureOr<bool> hc::typing::IsSameOp::interpret(InterpreterState &state) {
+  auto lhs = hc::typing::getType(state, getLhs());
+  auto rhs = hc::typing::getType(state, getRhs());
+  state.state[getResult()] = setInt(getContext(), lhs == rhs);
+  return true;
+}
+
+mlir::FailureOr<bool> hc::typing::CheckOp::interpret(InterpreterState &state) {
+  auto val = getInt(state, getCondition());
+  if (!val)
+    return emitError("Inavlid condition val");
+  return static_cast<bool>(*val);
+}
+
 #include "hc/Dialect/Typing/IR/TypingOpsDialect.cpp.inc"
 
 #define GET_OP_CLASSES

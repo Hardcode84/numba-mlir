@@ -223,4 +223,23 @@ def Typing_AppendSeqOp : Typing_OpBase<"append_seq", [
   let assemblyFormat = "attr-dict $seq $arg";
 }
 
+def Typing_IsSameOp : Typing_OpBase<"is_same", [
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
+  let arguments = (ins
+    Typing_ValueType:$lhs,
+    Typing_ValueType:$rhs);
+  let results = (outs I1:$result);
+
+  let assemblyFormat = "attr-dict $lhs $rhs";
+}
+
+def Typing_CheckOp : Typing_OpBase<"check", [
+  DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
+  let arguments = (ins I1:$condition);
+
+  let assemblyFormat = "attr-dict $condition";
+}
+
 #endif // TYPING_OPS
