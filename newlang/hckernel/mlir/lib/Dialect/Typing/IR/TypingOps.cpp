@@ -336,6 +336,22 @@ hc::typing::CreateSeqOp::interpret(InterpreterState &state) {
   return true;
 }
 
+mlir::FailureOr<bool>
+hc::typing::AppendSeqOp::interpret(InterpreterState &state) {
+  auto seq =
+      mlir::dyn_cast<SequenceType>(::hc::typing::getType(state, getSeq()));
+  if (!seq)
+    return emitError("Invalid seq type");
+
+  auto arg = ::hc::typing::getType(state, getSeq());
+  llvm::SmallVector<mlir::Type> newArgs;
+  llvm::append_range(newArgs, seq.getParams());
+  newArgs.emplace_back(arg);
+
+  state.state[getResult()] = SequenceType::get(getContext(), newArgs);
+  return true;
+}
+
 #include "hc/Dialect/Typing/IR/TypingOpsDialect.cpp.inc"
 
 #define GET_OP_CLASSES

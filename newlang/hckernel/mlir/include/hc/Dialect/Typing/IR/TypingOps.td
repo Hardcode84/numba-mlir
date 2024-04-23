@@ -187,9 +187,20 @@ def Typing_GetArgOp : Typing_OpBase<"get_arg", [
 def Typing_CreateSeqOp : Typing_OpBase<"create_seq", [
   Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {
-  let results = (outs Index:$Typing_ResolverValueType);
+  let results = (outs Typing_ResolverValueType:$result);
 
   let assemblyFormat = "attr-dict";
+}
+
+def Typing_AppendSeqOp : Typing_OpBase<"append_seq", [
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
+  let arguments = (ins
+    Typing_ResolverValueType:$seq,
+    Typing_ResolverValueType:$arg);
+  let results = (outs Typing_ResolverValueType:$result);
+
+  let assemblyFormat = "attr-dict $seq $arg";
 }
 
 #endif // TYPING_OPS
