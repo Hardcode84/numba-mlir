@@ -26,8 +26,24 @@ static mlir::Value makeCast(mlir::OpBuilder &builder, mlir::Location loc,
   return builder.create<hc::py_ir::CastOp>(loc, newType, val);
 }
 
+static bool UpdateInplace = true;
+
 static void updateTypes(mlir::Operation *rootOp,
                         llvm::function_ref<mlir::Type(mlir::Value)> getType) {
+  if (UpdateInplace) {
+    auto updateTypes = [&](mlir::ValueRange vals) {
+      for (mlir::Value arg : vals) {
+        mlir::Type type = getType(arg);
+        if (type && type != arg.getType())
+          arg.setType(type);
+      }
+    };
+    rootOp->walk(
+        [&](mlir::Block *block) { updateTypes(block->getArguments()); });
+    rootOp->walk([&](mlir::Operation *op) { updateTypes(op->getResults()); });
+    return;
+  }
+
   llvm::SetVector<mlir::Operation *> opsToUpdate;
   rootOp->walk([&](mlir::Operation *op) {
     if (op->mightHaveTrait<mlir::OpTrait::IsTerminator>())

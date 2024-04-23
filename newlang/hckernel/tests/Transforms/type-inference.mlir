@@ -9,13 +9,9 @@ typing.type_resolver ["py_ir.loadvar", "CurrentGroup"] {
 //       CHECK: ![[ID:.*]] = !typing<ident "CurrentGroup">
 // CHECK-LABEL: py_ir.module
 //       CHECK:  py_ir.func "func"
-//       CHECK:  ^bb0(%[[ARG:.*]]: !py_ir.undefined):
-//       CHECK:  %[[CASTED:.*]] = py_ir.cast %[[ARG]] : !py_ir.undefined to ![[ID]]
-//       CHECK:  %[[R1:.*]] = typing.resolve %[[CASTED]] : ![[ID]] -> !py_ir.undefined
-//       CHECK:  ^bb0(%[[ARG1:.*]]: !py_ir.undefined):
-//       CHECK:  %[[R2:.*]] = py_ir.getattr %[[ARG1]] : !py_ir.undefined attr "foo" -> !py_ir.undefined
-//       CHECK:  typing.resolve_yield %[[R2]] : !py_ir.undefined
-//       CHECK:  py_ir.return %[[R1]] : !py_ir.undefined
+//       CHECK:  ^bb0(%[[ARG:.*]]: ![[ID]]):
+//       CHECK:  %[[R:.*]] = py_ir.getattr %[[ARG]] : ![[ID]] attr "foo" -> !py_ir.undefined
+//       CHECK:  py_ir.return %[[R]] : !py_ir.undefined
 
 py_ir.module {
   %0 = py_ir.loadvar "CurrentGroup" : !py_ir.undefined
