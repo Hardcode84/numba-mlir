@@ -49,6 +49,47 @@ py_ir.module {
 
 // -----
 
+typing.type_resolver ["py_ir.cast"] {
+  %c0 = arith.constant 0 : index
+  %0 = typing.get_arg %c0
+  %1 = typing.make_literal 1 : i64
+  %2 = typing.is_same %0 %1
+  typing.check %2
+  %3 = typing.make_ident "Foo" []
+  typing.type_resolver_return %3
+}
+
+typing.type_resolver ["py_ir.cast"] {
+  %c0 = arith.constant 0 : index
+  %0 = typing.get_arg %c0
+  %1 = typing.make_literal 2 : i64
+  %2 = typing.is_same %0 %1
+  typing.check %2
+  %3 = typing.make_ident "Bar" []
+  typing.type_resolver_return %3
+}
+
+//   CHECK-DAG: ![[ID1:.*]] = !typing<ident "Foo">
+//   CHECK-DAG: ![[ID2:.*]] = !typing<ident "Bar">
+// CHECK-LABEL: py_ir.module
+//       CHECK:  py_ir.func "func"
+//       CHECK:  ^bb0(%{{.*}}: ![[ID1]], %{{.*}}: ![[ID2]]):
+
+py_ir.module {
+  %0 = py_ir.constant 1 : i64
+  %1 = py_ir.constant 2 : i64
+  %2 = py_ir.cast %0 : i64 to !py_ir.undefined
+  %3 = py_ir.cast %1 : i64 to !py_ir.undefined
+  %4 = py_ir.func "func" (A:%2, A:%3) : !py_ir.undefined, !py_ir.undefined capture () -> !py_ir.undefined {
+  ^bb0(%arg0: !py_ir.undefined, %arg1: !py_ir.undefined):
+    %5 = py_ir.none
+    py_ir.return %5 : none
+  }
+  %6 = py_ir.call %4 : !py_ir.undefined  () -> !py_ir.undefined
+}
+
+// -----
+
 typing.type_resolver ["py_ir.loadvar", "Foo"] {
   %0 = typing.make_ident "Foo" []
   typing.type_resolver_return %0
