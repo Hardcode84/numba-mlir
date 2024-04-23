@@ -92,14 +92,35 @@ static mlir::LogicalResult jumpToBlock(mlir::Operation *op,
   return mlir::success();
 };
 
-struct BarnchOpInterpreterInterface final
+struct BranchOpInterpreterInterface final
     : public hc::typing::TypingInterpreterInterface::ExternalModel<
-          BarnchOpInterpreterInterface, mlir::cf::BranchOp> {
+          BranchOpInterpreterInterface, mlir::cf::BranchOp> {
   mlir::FailureOr<bool> interpret(mlir::Operation *o,
                                   InterpreterState &state) const {
     auto op = mlir::cast<mlir::cf::BranchOp>(o);
     if (mlir::failed(
             jumpToBlock(op, state, op.getDest(), op.getDestOperands())))
+      return mlir::failure();
+
+    return true;
+  }
+};
+
+struct CondBranchOpInterpreterInterface final
+    : public hc::typing::TypingInterpreterInterface::ExternalModel<
+          CondBranchOpInterpreterInterface, mlir::cf::CondBranchOp> {
+  mlir::FailureOr<bool> interpret(mlir::Operation *o,
+                                  InterpreterState &state) const {
+    auto op = mlir::cast<mlir::cf::CondBranchOp>(o);
+    auto cond = getInt(state, op.getCondition());
+    if (!cond)
+      return op.emitError("Invalid cond val");
+
+    mlir::Block *dest = (*cond ? op.getTrueDest() : op.getFalseDest());
+    mlir::ValueRange destArgs =
+        (*cond ? op.getTrueDestOperands() : op.getFalseDestOperands());
+
+    if (mlir::failed(jumpToBlock(op, state, dest, destArgs)))
       return mlir::failure();
 
     return true;
@@ -200,7 +221,9 @@ struct CmpOpInterpreterInterface final
 void hc::typing::registerArithTypingInterpreter(mlir::MLIRContext &ctx) {
   ctx.loadDialect<mlir::arith::ArithDialect, mlir::cf::ControlFlowDialect>();
 
-  mlir::cf::BranchOp::attachInterface<BarnchOpInterpreterInterface>(ctx);
+  mlir::cf::BranchOp::attachInterface<BranchOpInterpreterInterface>(ctx);
+  mlir::cf::CondBranchOp::attachInterface<CondBranchOpInterpreterInterface>(
+      ctx);
 
   mlir::arith::ConstantOp::attachInterface<ConstantOpInterpreterInterface>(ctx);
   mlir::arith::AddIOp::attachInterface<AddOpInterpreterInterface>(ctx);
