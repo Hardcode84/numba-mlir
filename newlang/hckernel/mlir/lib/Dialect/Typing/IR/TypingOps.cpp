@@ -330,6 +330,12 @@ mlir::FailureOr<bool> hc::typing::GetArgOp::interpret(InterpreterState &state) {
   return true;
 }
 
+mlir::FailureOr<bool>
+hc::typing::CreateSeqOp::interpret(InterpreterState &state) {
+  state.state[getResult()] = SequenceType::get(getContext(), std::nullopt);
+  return true;
+}
+
 #include "hc/Dialect/Typing/IR/TypingOpsDialect.cpp.inc"
 
 #define GET_OP_CLASSES

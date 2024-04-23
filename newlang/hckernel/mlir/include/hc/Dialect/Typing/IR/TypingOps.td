@@ -184,4 +184,12 @@ def Typing_GetArgOp : Typing_OpBase<"get_arg", [
   let assemblyFormat = "attr-dict $index";
 }
 
+def Typing_CreateSeqOp : Typing_OpBase<"create_seq", [
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
+  let results = (outs Index:$Typing_ResolverValueType);
+
+  let assemblyFormat = "attr-dict";
+}
+
 #endif // TYPING_OPS
