@@ -295,7 +295,9 @@ def PyIR_GetAttrOp : PyIR_OpBase<"getattr"> {
   let assemblyFormat = "attr-dict $target `:` type($target) `attr` $name `->` type($result)";
 }
 
-def PyIR_TuplePackOp : PyIR_OpBase<"tuple_pack"> {
+def PyIR_TuplePackOp : PyIR_OpBase<"tuple_pack", [
+  Pure, DeclareOpInterfaceMethods<TypingKeyInterface>
+]> {
   let arguments = (ins Variadic<AnyType>:$args);
 
   let results = (outs AnyType:$result);
