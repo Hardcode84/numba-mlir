@@ -358,7 +358,7 @@ hc::typing::AppendSeqOp::interpret(InterpreterState &state) {
   if (!seq)
     return emitError("Invalid seq type");
 
-  auto arg = ::hc::typing::getType(state, getSeq());
+  auto arg = ::hc::typing::getType(state, getArg());
   llvm::SmallVector<mlir::Type> newArgs;
   llvm::append_range(newArgs, seq.getParams());
   newArgs.emplace_back(arg);
