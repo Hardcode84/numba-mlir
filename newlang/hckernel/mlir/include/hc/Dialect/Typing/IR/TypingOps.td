@@ -37,7 +37,7 @@ class Typing_OpBase<string mnemonic, list<Trait> traits = []>
     : Op<Typing_Dialect, mnemonic, traits>;
 
 
-def Typing_ResolverValueType : Typing_Type<"ResVal", "res_val", [], "::mlir::Type">;
+def Typing_ValueType : Typing_Type<"Value", "value", [], "::mlir::Type">;
 
 def Typing_IdentType : Typing_Type<"Ident", "ident", [], "::mlir::Type"> {
   let parameters = (ins
@@ -149,7 +149,7 @@ def Typing_TypeResolverReturnOp : Typing_OpBase<"type_resolver_return", [
   Pure, HasParent<"TypeResolverOp">, ReturnLike, Terminator,
   DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {
-  let arguments = (ins Variadic<Typing_ResolverValueType>:$args);
+  let arguments = (ins Variadic<Typing_ValueType>:$args);
 
   let assemblyFormat = "attr-dict ($args^)?";
 }
@@ -160,9 +160,9 @@ def Typing_MakeIdentOp : Typing_OpBase<"make_ident", [
   let arguments = (ins
     StrAttr:$name,
     ArrayAttr:$paramNames,
-    Variadic<Typing_ResolverValueType>:$params
+    Variadic<Typing_ValueType>:$params
   );
-  let results = (outs Typing_ResolverValueType:$result);
+  let results = (outs Typing_ValueType:$result);
 
   let assemblyFormat = "attr-dict $name $paramNames (`:` $params^)?";
 }
@@ -171,7 +171,7 @@ def Typing_MakeSymbolOp : Typing_OpBase<"make_symbol", [
   Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {
   let arguments = (ins StrAttr:$name);
-  let results = (outs Typing_ResolverValueType:$result);
+  let results = (outs Typing_ValueType:$result);
 
   let assemblyFormat = "attr-dict $name";
 }
@@ -188,7 +188,7 @@ def Typing_GetArgOp : Typing_OpBase<"get_arg", [
   Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {
   let arguments = (ins Index:$index);
-  let results = (outs Typing_ResolverValueType:$result);
+  let results = (outs Typing_ValueType:$result);
 
   let assemblyFormat = "attr-dict $index";
 }
@@ -197,9 +197,9 @@ def Typing_GetIdentParamOp : Typing_OpBase<"get_ident_param", [
   Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {
   let arguments = (ins
-    Typing_ResolverValueType:$ident,
+    Typing_ValueType:$ident,
     StrAttr:$name);
-  let results = (outs Typing_ResolverValueType:$result);
+  let results = (outs Typing_ValueType:$result);
 
   let assemblyFormat = "attr-dict $ident $name";
 }
@@ -207,7 +207,7 @@ def Typing_GetIdentParamOp : Typing_OpBase<"get_ident_param", [
 def Typing_CreateSeqOp : Typing_OpBase<"create_seq", [
   Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {
-  let results = (outs Typing_ResolverValueType:$result);
+  let results = (outs Typing_ValueType:$result);
 
   let assemblyFormat = "attr-dict";
 }
@@ -216,9 +216,9 @@ def Typing_AppendSeqOp : Typing_OpBase<"append_seq", [
   Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {
   let arguments = (ins
-    Typing_ResolverValueType:$seq,
-    Typing_ResolverValueType:$arg);
-  let results = (outs Typing_ResolverValueType:$result);
+    Typing_ValueType:$seq,
+    Typing_ValueType:$arg);
+  let results = (outs Typing_ValueType:$result);
 
   let assemblyFormat = "attr-dict $seq $arg";
 }
