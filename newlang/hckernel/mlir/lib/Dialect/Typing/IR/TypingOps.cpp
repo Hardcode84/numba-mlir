@@ -86,9 +86,16 @@ static mlir::LogicalResult jumpToBlock(mlir::Operation *op,
     return op->emitError("Block arg count mismatch");
 
   state.iter = newBlock->begin();
-  for (auto &&[blockArg, opArg] :
-       llvm::zip_equal(newBlock->getArguments(), args))
-    state.state[blockArg] = state.state[opArg];
+
+  // Make a temp copy so we won't overwrite values prematurely if we jump to the
+  // same block.
+  llvm::SmallVector<InterpreterValue> newValues(args.size());
+  for (auto &&[i, arg] : llvm::enumerate(args))
+    newValues[i] = state.state[arg];
+
+  for (auto &&[i, arg] : llvm::enumerate(newBlock->getArguments()))
+    state.state[arg] = newValues[i];
+
   return mlir::success();
 };
 
