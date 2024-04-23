@@ -2,6 +2,8 @@
 
 #include "hc/Dialect/PyIR/IR/PyIROps.hpp"
 
+#include "hc/Dialect/Typing/IR/TypingOps.hpp"
+
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/DialectImplementation.h>
 #include <mlir/IR/PatternMatch.h>
@@ -75,6 +77,16 @@ bool hc::py_ir::CastOp::areCastCompatible(mlir::TypeRange inputs,
   (void)outputs;
   assert(inputs.size() == 1 && "expected one input");
   assert(outputs.size() == 1 && "expected one output");
+  return true;
+}
+
+mlir::FailureOr<bool>
+hc::py_ir::ConstantOp::inferTypes(mlir::TypeRange types,
+                                  llvm::SmallVectorImpl<mlir::Type> &results) {
+  if (!types.empty())
+    return emitError("Invalid arg count");
+
+  results.emplace_back(hc::typing::LiteralType::get(this->getValue()));
   return true;
 }
 

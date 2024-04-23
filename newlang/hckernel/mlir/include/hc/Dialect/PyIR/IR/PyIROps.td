@@ -105,8 +105,10 @@ def PyIR_NoneOp : PyIR_OpBase<"none", [Pure]> {
   let assemblyFormat = "attr-dict";
 }
 
-def PyIR_ConstantOp : PyIR_OpBase<"constant",
-    [ConstantLike, Pure, AllTypesMatch<["value", "result"]>]> {
+def PyIR_ConstantOp : PyIR_OpBase<"constant", [
+    ConstantLike, Pure, AllTypesMatch<["value", "result"]>,
+    DeclareOpInterfaceMethods<TypeInferenceInterface>
+]> {
 
   let arguments = (ins TypedAttrInterface:$value);
   let results = (outs AnyType:$result);

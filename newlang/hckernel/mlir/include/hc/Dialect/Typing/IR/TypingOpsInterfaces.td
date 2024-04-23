@@ -45,5 +45,20 @@ def TypingInterpreterInterface : OpInterface<"TypingInterpreterInterface"> {
 
 }
 
+def TypeInferenceInterface : OpInterface<"TypeInferenceInterface"> {
+  let cppNamespace = "::hc::typing";
+
+  let methods = [
+    InterfaceMethod<
+      "",
+      "::mlir::FailureOr<bool>",
+      "inferTypes",
+      (ins
+        "::mlir::TypeRange":$types,
+        "::llvm::SmallVectorImpl<::mlir::Type>&":$results
+      )>
+  ];
+
+}
 
 #endif // TYPING_OPS_INTERFACES

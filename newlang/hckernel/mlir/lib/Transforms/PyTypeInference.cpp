@@ -150,6 +150,12 @@ struct TypingInterpreter {
 
   mlir::FailureOr<bool> run(mlir::Operation *op, mlir::TypeRange types,
                             llvm::SmallVectorImpl<mlir::Type> &result) {
+    if (auto iface = mlir::dyn_cast<hc::typing::TypeInferenceInterface>(op)) {
+      auto res = iface.inferTypes(types, result);
+      if (mlir::failed(res) || *res)
+        return res;
+    }
+
     mlir::Attribute key = getTypingKey(op);
     if (!key)
       return false;
