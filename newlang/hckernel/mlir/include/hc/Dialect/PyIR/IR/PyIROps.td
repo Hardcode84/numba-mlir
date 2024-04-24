@@ -246,7 +246,7 @@ def PyIR_StoreVarOp : PyIR_OpBase<"storevar", [MemoryEffects<[MemWrite]>]> {
 
 def PyIR_LoadVarOp : PyIR_OpBase<"loadvar", [
   MemoryEffects<[MemRead]>,
-  DeclareOpInterfaceMethods<TypingKeyInterface>
+  DeclareOpInterfaceMethods<TypingKeyInterface, ["getTypingKeyArgs"]>
 ]> {
   let arguments = (ins StrAttr:$name);
   let results = (outs AnyType:$result);

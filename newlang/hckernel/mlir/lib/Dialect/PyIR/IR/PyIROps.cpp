@@ -90,19 +90,10 @@ bool hc::py_ir::CastOp::areCastCompatible(mlir::TypeRange inputs,
   return true;
 }
 
-void hc::py_ir::CastOp::getTypingKeyArgs(
-    llvm::SmallVectorImpl<mlir::Attribute> & /*args*/) {}
-
 void hc::py_ir::LoadVarOp::getTypingKeyArgs(
     llvm::SmallVectorImpl<mlir::Attribute> &args) {
   args.emplace_back(getNameAttr());
 }
-
-void hc::py_ir::GetItemOp::getTypingKeyArgs(
-    llvm::SmallVectorImpl<mlir::Attribute> & /*args*/) {}
-
-void hc::py_ir::TuplePackOp::getTypingKeyArgs(
-    llvm::SmallVectorImpl<mlir::Attribute> & /*args*/) {}
 
 static bool parseArgList(
     mlir::OpAsmParser &parser,
