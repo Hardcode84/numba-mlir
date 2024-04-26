@@ -204,6 +204,15 @@ def Typing_GetArgOp : Typing_OpBase<"get_arg", [
   let assemblyFormat = "attr-dict $index";
 }
 
+def Typing_GetIdentNameOp : Typing_OpBase<"get_ident_name", [
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
+  let arguments = (ins Typing_ValueType:$ident);
+  let results = (outs Typing_ValueType:$result);
+
+  let assemblyFormat = "attr-dict $ident";
+}
+
 def Typing_GetIdentParamOp : Typing_OpBase<"get_ident_param", [
   Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {

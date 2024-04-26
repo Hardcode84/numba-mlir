@@ -352,6 +352,18 @@ mlir::FailureOr<bool> hc::typing::GetArgOp::interpret(InterpreterState &state) {
 }
 
 mlir::FailureOr<bool>
+hc::typing::GetIdentNameOp::interpret(InterpreterState &state) {
+  auto ident = mlir::dyn_cast_if_present<hc::typing::IdentType>(
+      hc::typing::getType(state, getIdent()));
+  if (!ident)
+    return emitError("Invalid ident type");
+
+  auto name = ident.getName();
+  state.state[getResult()] = hc::typing::LiteralType::get(name);
+  return true;
+}
+
+mlir::FailureOr<bool>
 hc::typing::GetIdentParamOp::interpret(InterpreterState &state) {
   auto ident = mlir::dyn_cast_if_present<hc::typing::IdentType>(
       hc::typing::getType(state, getIdent()));
