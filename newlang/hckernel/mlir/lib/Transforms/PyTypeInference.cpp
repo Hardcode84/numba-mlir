@@ -98,9 +98,8 @@ static void updateTypes(mlir::Operation *rootOp,
           arg.setType(newType);
         } else {
           builder.setInsertionPointAfterValue(arg);
-          auto cast =
-              builder.create<hc::py_ir::CastOp>(arg.getLoc(), newType, arg);
-          arg.replaceAllUsesExcept(cast.getResult(), cast);
+          mlir::Value cast = makeCast(builder, arg.getLoc(), arg, newType);
+          arg.replaceAllUsesExcept(cast, cast.getDefiningOp());
         }
       }
     };
