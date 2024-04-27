@@ -323,6 +323,13 @@ public:
         TypeValueLattice *argLattice = getLatticeElement(arg);
         propagateIfChanged(argLattice, argLattice->join(val));
       }
+      for (auto &&[capture, arg] :
+           llvm::zip_equal(func.getCaptureArgs(), func.getCaptureBlockArgs())) {
+        TypeValueLattice *annotationLattice = getLatticeElement(capture);
+        TypeValue val = annotationLattice->getValue();
+        TypeValueLattice *argLattice = getLatticeElement(arg);
+        propagateIfChanged(argLattice, argLattice->join(val));
+      }
     }
 
     return SparseForwardDataFlowAnalysis::visitNonControlFlowArguments(
