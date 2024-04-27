@@ -40,8 +40,12 @@ class PyIR_Attr<string name, string attrMnemonic, list<Trait> traits = []>
 }
 
 class PyIR_OpBase<string mnemonic, list<Trait> traits = []>
-    : Op<PyIR_Dialect, mnemonic, traits>;
+    : Op<PyIR_Dialect, mnemonic, !listconcat(traits, [
+      DeclareOpInterfaceMethods<TypingUpdateInplaceInterface>
+    ])>;
 
+class PyIR_OpBaseNoTypeUpdate<string mnemonic, list<Trait> traits = []>
+    : Op<PyIR_Dialect, mnemonic, traits>;
 
 def PyIR_UndefinedType : PyIR_Type<"Undefined", "undefined", [], "::mlir::Type">;
 
@@ -105,7 +109,7 @@ def PyIR_NoneOp : PyIR_OpBase<"none", [Pure]> {
   let assemblyFormat = "attr-dict";
 }
 
-def PyIR_ConstantOp : PyIR_OpBase<"constant", [
+def PyIR_ConstantOp : PyIR_OpBaseNoTypeUpdate<"constant", [
     ConstantLike, Pure, AllTypesMatch<["value", "result"]>,
     DeclareOpInterfaceMethods<TypeInferenceInterface>
 ]> {
