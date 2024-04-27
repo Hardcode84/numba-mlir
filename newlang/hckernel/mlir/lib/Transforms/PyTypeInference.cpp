@@ -70,6 +70,17 @@ updatePredecessorTypes(mlir::OpBuilder &builder, mlir::Block *block,
   }
 }
 
+static bool canUpdateValType(mlir::Value val) {
+  auto def = val.getDefiningOp();
+
+  // TODO: Assume for now that can always update block args.
+  if (!def)
+    return true;
+
+  auto iface = mlir::dyn_cast<hc::typing::TypingUpdateInplaceInterface>(def);
+  return iface && iface.canUpdateArgTypeInplace(val);
+}
+
 static bool UpdateInplace = true;
 
 static void updateTypes(mlir::Operation *rootOp,
@@ -83,7 +94,7 @@ static void updateTypes(mlir::Operation *rootOp,
         if (!newType || newType == oldType)
           continue;
 
-        if (mlir::isa<hc::py_ir::UndefinedType>(oldType)) {
+        if (canUpdateValType(arg)) {
           arg.setType(newType);
         } else {
           builder.setInsertionPointAfterValue(arg);
