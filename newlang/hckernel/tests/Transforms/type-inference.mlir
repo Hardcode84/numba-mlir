@@ -153,3 +153,54 @@ py_ir.module {
   }
   %6 = py_ir.call %5 : !py_ir.undefined  () -> !py_ir.undefined
 }
+
+// -----
+
+typing.type_resolver ["py_ir.loadvar", "B"] {
+  %0 = typing.make_ident "B" []
+  typing.type_resolver_return %0
+}
+
+typing.type_resolver ["py_ir.loadvar", "C"] {
+  %0 = typing.make_ident "C" []
+  typing.type_resolver_return %0
+}
+
+typing.type_resolver "join_types" {
+  %0 = typing.make_ident "D" []
+  typing.type_resolver_return %0
+}
+
+//   CHECK-DAG: ![[ID1:.*]] = !typing<ident "B">
+//   CHECK-DAG: ![[ID2:.*]] = !typing<ident "C">
+//   CHECK-DAG: ![[ID3:.*]] = !typing<ident "D">
+// CHECK-LABEL: py_ir.module
+//       CHECK:  py_ir.func "func"
+//       CHECK:  ^bb0(%{{.*}}: !py_ir.undefined, %[[B:.*]]: ![[ID1]], %[[C:.*]]: ![[ID2]]):
+//       CHECK:  cf.cond_br %{{.*}}, ^bb1(%[[B]] : ![[ID1]]), ^bb2(%[[C]] : ![[ID2]])
+//       CHECK:  ^bb1(%[[C1:.*]]: ![[ID1]]):
+//       CHECK:  %[[C2:.*]] = py_ir.cast %[[C1]] : ![[ID1]] to ![[ID3]]
+//       CHECK:  cf.br ^bb3(%[[C2]] : ![[ID3]])
+//       CHECK:  ^bb2(%[[B1:.*]]: ![[ID2]]):
+//       CHECK:  %[[B2:.*]] = py_ir.cast %[[B1]] : ![[ID2]] to ![[ID3]]
+//       CHECK:  cf.br ^bb3(%[[B2]] : ![[ID3]])
+//       CHECK:  ^bb3(%[[RES:.*]]: ![[ID3]]):
+//       CHECK:  py_ir.return %[[RES]] : ![[ID3]]
+
+py_ir.module {
+  %0 = py_ir.loadvar "A" : !py_ir.undefined
+  %2 = py_ir.loadvar "B" : !py_ir.undefined
+  %3 = py_ir.loadvar "C" : !py_ir.undefined
+  %4 = py_ir.func "func" () capture (A:%0, B:%2, C:%3) : !py_ir.undefined, !py_ir.undefined, !py_ir.undefined -> !py_ir.undefined {
+  ^bb0(%arg0: !py_ir.undefined, %arg2: !py_ir.undefined, %arg3: !py_ir.undefined):
+    %6 = py_ir.cast %arg0 : !py_ir.undefined to i1
+    cf.cond_br %6, ^bb1(%arg2 : !py_ir.undefined), ^bb2(%arg3 : !py_ir.undefined)
+  ^bb1(%8: !py_ir.undefined):
+    cf.br ^bb3(%8 : !py_ir.undefined)
+  ^bb2(%10: !py_ir.undefined):
+    cf.br ^bb3(%10 : !py_ir.undefined)
+  ^bb3(%11: !py_ir.undefined):
+    py_ir.return %11 : !py_ir.undefined
+  }
+  %5 = py_ir.call %4 : !py_ir.undefined  () -> !py_ir.undefined
+}

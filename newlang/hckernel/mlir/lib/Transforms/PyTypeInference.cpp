@@ -28,6 +28,48 @@ static mlir::Value makeCast(mlir::OpBuilder &builder, mlir::Location loc,
   return builder.create<hc::py_ir::CastOp>(loc, newType, val);
 }
 
+static unsigned getSuccessorIndex(mlir::Operation *op, mlir::Block *successor) {
+  for (auto &&[i, s] : llvm::enumerate(op->getSuccessors())) {
+    if (s == successor)
+      return static_cast<unsigned>(i);
+  }
+  llvm_unreachable("Invalid successor");
+}
+
+static void
+updatePredecessorTypes(mlir::OpBuilder &builder, mlir::Block *block,
+                       llvm::function_ref<mlir::Type(mlir::Value)> getType) {
+  auto getTypeChecked = [&](mlir::Value arg) -> mlir::Type {
+    if (auto t = getType(arg))
+      return t;
+
+    return arg.getType();
+  };
+  mlir::ValueRange blockArgs = block->getArguments();
+  for (mlir::Block *predecessor : block->getPredecessors()) {
+    auto term =
+        mlir::cast<mlir::BranchOpInterface>(predecessor->getTerminator());
+    auto idx = getSuccessorIndex(term, block);
+    mlir::ValueRange successorArgs =
+        term.getSuccessorOperands(idx).getForwardedOperands();
+    mlir::Location loc = term.getLoc();
+    builder.setInsertionPoint(term);
+    for (auto &&[srcArg, dstArg] : llvm::zip_equal(successorArgs, blockArgs)) {
+      mlir::Type srcType = getTypeChecked(srcArg);
+      mlir::Type dstType = getTypeChecked(dstArg);
+      if (srcType == dstType)
+        continue;
+
+      mlir::Value cast = makeCast(builder, loc, srcArg, dstType);
+      auto shouldReplace = [&](mlir::OpOperand &op) -> bool {
+        return op.getOwner() == term;
+      };
+
+      srcArg.replaceUsesWithIf(cast, shouldReplace);
+    }
+  }
+}
+
 static bool UpdateInplace = true;
 
 static void updateTypes(mlir::Operation *rootOp,
@@ -51,8 +93,10 @@ static void updateTypes(mlir::Operation *rootOp,
         }
       }
     };
-    rootOp->walk(
-        [&](mlir::Block *block) { updateTypes(block->getArguments()); });
+    rootOp->walk([&](mlir::Block *block) {
+      updateTypes(block->getArguments());
+      updatePredecessorTypes(builder, block, getType);
+    });
     rootOp->walk([&](mlir::Operation *op) { updateTypes(op->getResults()); });
     return;
   }
@@ -143,6 +187,9 @@ static mlir::Attribute getTypingKey(mlir::Operation *op) {
 
 namespace {
 struct TypingInterpreter {
+  TypingInterpreter(mlir::MLIRContext *ctx) {
+    joinTypesKey = mlir::StringAttr::get(ctx, "join_types");
+  }
 
   void populate(mlir::Operation *rootOp) {
     rootOp->walk([&](hc::typing::TypeResolverOp op) {
@@ -159,6 +206,17 @@ struct TypingInterpreter {
     }
 
     mlir::Attribute key = getTypingKey(op);
+    return run(key, types, result);
+  }
+
+  mlir::FailureOr<bool>
+  runJoinTypes(mlir::TypeRange types,
+               llvm::SmallVectorImpl<mlir::Type> &result) {
+    return run(joinTypesKey, types, result);
+  }
+
+  mlir::FailureOr<bool> run(mlir::Attribute key, mlir::TypeRange types,
+                            llvm::SmallVectorImpl<mlir::Type> &result) {
     if (!key)
       return false;
 
@@ -179,6 +237,7 @@ struct TypingInterpreter {
 
 private:
   hc::typing::Interpreter interp;
+  mlir::Attribute joinTypesKey;
   llvm::DenseMap<mlir::Attribute,
                  llvm::SmallVector<hc::typing::TypeResolverOp, 1>>
       resolversMap;
@@ -186,7 +245,8 @@ private:
 
 struct TypeValue {
   TypeValue() = default;
-  TypeValue(mlir::Type t) : type(t) {}
+  TypeValue(TypingInterpreter *interp, mlir::Type t = {})
+      : interpreter(interp), type(t) {}
   TypeValue(std::string desc) : errDesc(std::move(desc)) {
     assert(!errDesc.empty());
   }
@@ -212,17 +272,17 @@ struct TypeValue {
   }
 
   static TypeValue join(const TypeValue &lhs, const TypeValue &rhs) {
-    if (!lhs.isInitialized())
-      return rhs;
-
-    if (!rhs.isInitialized())
-      return lhs;
-
     if (!lhs.isValid())
       return lhs;
 
     if (!rhs.isValid())
       return rhs;
+
+    if (!lhs.isInitialized())
+      return rhs;
+
+    if (!rhs.isInitialized())
+      return lhs;
 
     mlir::Type lhsType = lhs.type;
     mlir::Type rhsType = rhs.type;
@@ -235,7 +295,14 @@ struct TypeValue {
     if (!rhsType || mlir::isa<hc::py_ir::UndefinedType>(rhsType))
       return lhs;
 
-    return getInvalid(lhs, rhs);
+    assert(lhs.interpreter == rhs.interpreter);
+    auto interp = lhs.interpreter;
+    mlir::SmallVector<mlir::Type> res;
+    if (mlir::failed(interp->runJoinTypes({lhsType, rhsType}, res)) ||
+        res.size() != 1)
+      return getInvalid(lhs, rhs);
+
+    return TypeValue(interp, res.front());
   }
 
   bool operator==(const TypeValue &rhs) const { return type == rhs.type; }
@@ -252,7 +319,7 @@ struct TypeValue {
 
   mlir::Type getType() const { return type; }
 
-  bool isInitialized() const { return type != nullptr; }
+  bool isInitialized() const { return isValid() && type != nullptr; }
 
   bool isValid() const { return errDesc.empty(); }
 
@@ -262,6 +329,7 @@ struct TypeValue {
   }
 
 private:
+  TypingInterpreter *interpreter = nullptr;
   mlir::Type type;
   std::string errDesc;
 };
@@ -305,7 +373,7 @@ public:
 
     assert(result.size() == results.size());
     for (auto &&[resultLattice, res] : llvm::zip_equal(results, result)) {
-      auto changed = resultLattice->join(TypeValue(res));
+      auto changed = resultLattice->join(TypeValue(&interpreter, res));
       propagateIfChanged(resultLattice, changed);
     }
   }
@@ -337,7 +405,7 @@ public:
   }
 
   void setToEntryState(TypeValueLattice *lattice) override {
-    propagateIfChanged(lattice, lattice->join(TypeValue{}));
+    propagateIfChanged(lattice, lattice->join(TypeValue(&interpreter)));
   }
 
 private:
@@ -356,7 +424,7 @@ struct PyTypeInferencePass final
 
   void runOnOperation() override {
     auto rootOp = getOperation();
-    TypingInterpreter interp;
+    TypingInterpreter interp(&getContext());
     interp.populate(rootOp);
 
     mlir::DataFlowSolver solver;
