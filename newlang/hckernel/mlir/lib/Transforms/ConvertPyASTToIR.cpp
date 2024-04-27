@@ -301,17 +301,13 @@ public:
     if (!isTopLevel(op))
       return mlir::failure();
 
-    auto term = op->getBlock()->getTerminator();
-    if (&*std::next(op->getIterator()) != term)
-      return mlir::failure();
-
     mlir::Value val = op.getValue();
     if (!val)
       return mlir::failure();
 
     val = getVar(rewriter, op.getLoc(), val);
-    rewriter.replaceOpWithNewOp<hc::py_ir::ReturnOp>(op, val);
-    rewriter.eraseOp(term);
+    auto newOp = rewriter.replaceOpWithNewOp<hc::py_ir::ReturnOp>(op, val);
+    rewriter.splitBlock(newOp->getBlock(), std::next(newOp->getIterator()));
     return mlir::success();
   }
 };

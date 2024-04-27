@@ -715,3 +715,34 @@ py_ast.module {
   %1 = py_ast.call %0( keywords )
   py_ast.expr %1
 }
+
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK:  py_ir.func "func"
+//       CHECK:  %[[A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:  %[[COND:.*]] = py_ir.cast %[[A]] : !py_ir.undefined to i1
+//       CHECK:  cf.cond_br %[[COND]], ^bb1, ^bb2
+//       CHECK:  ^bb1:
+//       CHECK:  %[[B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
+//       CHECK:  py_ir.return %[[B]] : !py_ir.undefined
+//       CHECK:  ^bb2:
+//       CHECK:  %[[C:.*]] = py_ir.loadvar "C" : !py_ir.undefined
+//       CHECK:  py_ir.return %[[C]] : !py_ir.undefined
+py_ast.module {
+  py_ast.func "func"() {
+    %3 = py_ast.name "A"
+    py_ast.if %3 {
+      %5 = py_ast.name "B"
+      py_ast.return %5
+    } {
+      %5 = py_ast.name "C"
+      py_ast.return %5
+    }
+    %4 = py_ast.constant #py_ast.none
+    py_ast.return %4
+  }
+  %1 = py_ast.name "test"
+  %2 = py_ast.call %1( keywords )
+  py_ast.expr %2
+}
