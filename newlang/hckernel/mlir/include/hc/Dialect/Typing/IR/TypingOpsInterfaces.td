@@ -34,7 +34,6 @@ def TypingKeyInterface : OpInterface<"TypingKeyInterface"> {
       }]
       >
   ];
-
 }
 
 def TypingInterpreterInterface : OpInterface<"TypingInterpreterInterface"> {
@@ -47,7 +46,6 @@ def TypingInterpreterInterface : OpInterface<"TypingInterpreterInterface"> {
       "interpret",
       (ins "::hc::typing::InterpreterState&":$state)>
   ];
-
 }
 
 def TypeInferenceInterface : OpInterface<"TypeInferenceInterface"> {
@@ -63,7 +61,23 @@ def TypeInferenceInterface : OpInterface<"TypeInferenceInterface"> {
         "::llvm::SmallVectorImpl<::mlir::Type>&":$results
       )>
   ];
+}
 
+def TypingUpdateInplaceInterface : OpInterface<"TypingUpdateInplaceInterface"> {
+  let cppNamespace = "::hc::typing";
+
+  let methods = [
+    InterfaceMethod<
+      "",
+      "bool",
+      "canUpdateArgTypeInplace",
+      (ins "::mlir::Value":$arg),
+      [{}],
+      [{
+        return true;
+      }]
+      >
+  ];
 }
 
 #endif // TYPING_OPS_INTERFACES
