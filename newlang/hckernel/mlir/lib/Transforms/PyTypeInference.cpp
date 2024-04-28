@@ -76,7 +76,8 @@ static bool canUpdateValType(mlir::Value val) {
   if (!def)
     def = val.getParentBlock()->getParentOp();
 
-  auto iface = mlir::dyn_cast<hc::typing::TypingUpdateInplaceInterface>(def);
+  auto iface =
+      mlir::dyn_cast_if_present<hc::typing::TypingUpdateInplaceInterface>(def);
   return iface && iface.canUpdateArgTypeInplace(val);
 }
 
@@ -86,27 +87,74 @@ static void updateTypes(mlir::Operation *rootOp,
                         llvm::function_ref<mlir::Type(mlir::Value)> getType) {
   mlir::OpBuilder builder(rootOp->getContext());
   if (UpdateInplace) {
-    auto updateTypes = [&](mlir::ValueRange vals) {
-      for (mlir::Value arg : vals) {
-        mlir::Type oldType = arg.getType();
-        mlir::Type newType = getType(arg);
+    auto needWrap = [&](mlir::Operation *op) -> bool {
+      if (op->mightHaveTrait<mlir::OpTrait::IsTerminator>())
+        return false;
+
+      auto iface = mlir::dyn_cast<hc::typing::TypingUpdateInplaceInterface>(op);
+      for (auto args : {mlir::ValueRange(op->getOperands()),
+                        mlir::ValueRange(op->getResults())}) {
+        for (mlir::Value arg : args) {
+          mlir::Type oldType = arg.getType();
+          mlir::Type newType = getType(arg);
+          if (!newType || newType == oldType)
+            continue;
+
+          if (!iface || !iface.canUpdateArgTypeInplace(arg))
+            return true;
+        }
+      }
+      return false;
+    };
+    rootOp->walk<mlir::WalkOrder::PostOrder>([&](mlir::Operation *op) {
+      if (!needWrap(op))
+        return;
+
+      builder.setInsertionPoint(op);
+      mlir::Location loc = op->getLoc();
+      auto resolve = builder.create<hc::typing::ResolveOp>(
+          loc, op->getResultTypes(), op->getOperands());
+      mlir::Block *body = resolve.getBody();
+      assert(body->getNumArguments() == op->getNumOperands());
+      op->setOperands(body->getArguments());
+      op->replaceAllUsesWith(resolve.getResults());
+
+      op->moveBefore(body, body->begin());
+      builder.setInsertionPointToEnd(body);
+      builder.create<hc::typing::ResolveYieldOp>(loc, op->getResults());
+    });
+    auto updateTypes = [&](mlir::ValueRange resVals,
+                           mlir::ValueRange typeVals) {
+      for (auto &&[resArg, typeArg] : llvm::zip_equal(resVals, typeVals)) {
+        mlir::Type oldType = typeArg.getType();
+        mlir::Type newType = getType(typeArg);
         if (!newType || newType == oldType)
           continue;
 
-        if (canUpdateValType(arg)) {
-          arg.setType(newType);
+        if (canUpdateValType(resArg)) {
+          resArg.setType(newType);
         } else {
-          builder.setInsertionPointAfterValue(arg);
-          mlir::Value cast = makeCast(builder, arg.getLoc(), arg, newType);
-          arg.replaceAllUsesExcept(cast, cast.getDefiningOp());
+          builder.setInsertionPointAfterValue(resArg);
+          mlir::Value cast =
+              makeCast(builder, resArg.getLoc(), resArg, newType);
+          resArg.replaceAllUsesExcept(cast, cast.getDefiningOp());
         }
       }
     };
     rootOp->walk([&](mlir::Block *block) {
-      updateTypes(block->getArguments());
+      updateTypes(block->getArguments(), block->getArguments());
       updatePredecessorTypes(builder, block, getType);
     });
-    rootOp->walk([&](mlir::Operation *op) { updateTypes(op->getResults()); });
+    rootOp->walk([&](mlir::Operation *op) {
+      if (auto resolve = mlir::dyn_cast<hc::typing::ResolveOp>(op)) {
+        mlir::Operation &innerOp = resolve.getBody()->front();
+        return updateTypes(op->getResults(), innerOp.getResults());
+      }
+      if (mlir::isa_and_present<hc::typing::ResolveOp>(op->getParentOp()))
+        return;
+
+      updateTypes(op->getResults(), op->getResults());
+    });
     return;
   }
 

@@ -103,8 +103,9 @@ def Typing_LiteralType : Typing_Type<"Literal", "literal", [], "::mlir::Type"> {
 
 
 def Typing_ResolveOp : Typing_OpBase<"resolve", [
-      SingleBlockImplicitTerminator<"ResolveYieldOp">, RecursiveMemoryEffects
-    ]> {
+  SingleBlockImplicitTerminator<"ResolveYieldOp">, RecursiveMemoryEffects,
+  DeclareOpInterfaceMethods<TypingUpdateInplaceInterface>
+]> {
 
   let arguments = (ins Variadic<AnyType>:$args);
   let results = (outs Variadic<AnyType>:$results);
