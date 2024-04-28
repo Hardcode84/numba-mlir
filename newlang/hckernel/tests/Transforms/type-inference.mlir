@@ -245,3 +245,48 @@ py_ir.module {
   }
   %4 = py_ir.call %3 : !py_ir.undefined  () -> !py_ir.undefined
 }
+
+// -----
+
+typing.type_resolver ["py_ir.loadvar", "B"] {
+  %0 = typing.make_ident "B" []
+  typing.type_resolver_return %0
+}
+
+typing.type_resolver ["py_ir.loadvar", "C"] {
+  %0 = typing.make_ident "C" []
+  typing.type_resolver_return %0
+}
+
+typing.type_resolver "join_types" {
+  %c0 = arith.constant 0 : index
+  %c1 = arith.constant 1 : index
+  %0 = typing.get_arg %c0
+  %1 = typing.get_arg %c1
+  %2 = typing.make_union %0, %1
+  typing.type_resolver_return %2
+}
+
+//   CHECK-DAG: ![[ID1:.*]] = !typing<ident "B">
+//   CHECK-DAG: ![[ID2:.*]] = !typing<ident "C">
+//   CHECK-DAG: ![[ID3:.*]] = !typing<union ![[ID1]], ![[ID2]]>
+// CHECK-LABEL: py_ir.module
+//       CHECK:  py_ir.func "func"
+//       CHECK:  ^bb0(%{{.*}}: !py_ir.undefined, %[[ARG1:.*]]: ![[ID1]], %[[ARG2:.*]]: ![[ID2]]):
+//       CHECK:  %[[RES:.*]] = typing.resolve %{{.*}}, %[[ARG1]], %[[ARG2]] : i1, ![[ID1]], ![[ID2]] -> ![[ID3]] {
+//       CHECK:  %[[R:.*]] = arith.select %{{.*}}, %{{.*}}, %{{.*}} : !py_ir.undefined
+//       CHECK:  typing.resolve_yield %[[R]] : !py_ir.undefined
+//       CHECK:  py_ir.return %[[RES]] : ![[ID3]]
+
+py_ir.module {
+  %0 = py_ir.loadvar "A" : !py_ir.undefined
+  %1 = py_ir.loadvar "B" : !py_ir.undefined
+  %2 = py_ir.loadvar "C" : !py_ir.undefined
+  %3 = py_ir.func "func" () capture (A:%0, B:%1, C:%2) : !py_ir.undefined, !py_ir.undefined, !py_ir.undefined -> !py_ir.undefined {
+  ^bb0(%arg0: !py_ir.undefined, %arg1: !py_ir.undefined, %arg2: !py_ir.undefined):
+    %5 = py_ir.cast %arg0 : !py_ir.undefined to i1
+    %6 = arith.select %5, %arg1, %arg2 : !py_ir.undefined
+    py_ir.return %6 : !py_ir.undefined
+  }
+  %4 = py_ir.call %3 : !py_ir.undefined  () -> !py_ir.undefined
+}

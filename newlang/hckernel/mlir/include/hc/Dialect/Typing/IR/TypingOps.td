@@ -101,6 +101,14 @@ def Typing_LiteralType : Typing_Type<"Literal", "literal", [], "::mlir::Type"> {
   let assemblyFormat = "$value";
 }
 
+def Typing_UnionType : Typing_Type<"Union", "union", [], "::mlir::Type"> {
+  let parameters = (ins
+    ArrayRefParameter<"::mlir::Type">:$params
+  );
+
+  let assemblyFormat = "$params";
+}
+
 
 def Typing_ResolveOp : Typing_OpBase<"resolve", [
   SingleBlockImplicitTerminator<"ResolveYieldOp">, RecursiveMemoryEffects,
@@ -261,6 +269,15 @@ def Typing_CheckOp : Typing_OpBase<"check", [
   let arguments = (ins I1:$condition);
 
   let assemblyFormat = "attr-dict $condition";
+}
+
+def Typing_MakeUnionOp : Typing_OpBase<"make_union", [
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
+  let arguments = (ins Variadic<Typing_ValueType>:$args);
+  let results = (outs Typing_ValueType:$result);
+
+  let assemblyFormat = "attr-dict $args";
 }
 
 #endif // TYPING_OPS

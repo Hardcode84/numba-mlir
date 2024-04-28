@@ -33,6 +33,10 @@ struct TypingAsmDialectInterface : public mlir::OpAsmDialectInterface {
       os << "literal";
       return AliasResult::OverridableAlias;
     }
+    if (auto lit = llvm::dyn_cast<hc::typing::UnionType>(type)) {
+      os << "union";
+      return AliasResult::OverridableAlias;
+    }
     return AliasResult::NoAlias;
   }
 };
@@ -435,6 +439,26 @@ mlir::FailureOr<bool> hc::typing::CheckOp::interpret(InterpreterState &state) {
   if (!val)
     return emitError("Inavlid condition val");
   return static_cast<bool>(*val);
+}
+
+mlir::FailureOr<bool>
+hc::typing::MakeUnionOp::interpret(InterpreterState &state) {
+  llvm::SmallSetVector<mlir::Type, 8> types;
+  for (mlir::Value arg : getArgs()) {
+    auto type = hc::typing::getType(state, arg);
+    if (!type)
+      return emitError("Invalid arg");
+    if (auto u = mlir::dyn_cast<hc::typing::UnionType>(type)) {
+      for (mlir::Type p : u.getParams())
+        types.insert(p);
+    } else {
+      types.insert(type);
+    }
+  }
+
+  state.state[getResult()] =
+      hc::typing::UnionType::get(getContext(), types.getArrayRef());
+  return true;
 }
 
 #include "hc/Dialect/Typing/IR/TypingOpsDialect.cpp.inc"
