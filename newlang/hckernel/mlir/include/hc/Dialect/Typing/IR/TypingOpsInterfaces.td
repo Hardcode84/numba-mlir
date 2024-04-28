@@ -80,4 +80,19 @@ def TypingUpdateInplaceInterface : OpInterface<"TypingUpdateInplaceInterface"> {
   ];
 }
 
+def DataflowJoinInterface : OpInterface<"DataflowJoinInterface"> {
+  let cppNamespace = "::hc::typing";
+
+  let methods = [
+    InterfaceMethod<
+      "",
+      "void",
+      "getArgsIndices",
+      (ins
+        "unsigned":$resultIndex,
+        "::llvm::SmallVectorImpl<unsigned>&":$argsIndices
+      )>
+  ];
+}
+
 #endif // TYPING_OPS_INTERFACES
