@@ -263,12 +263,6 @@ struct TypeValue {
     if (lhsType == rhsType)
       return lhs;
 
-    if (!lhsType || mlir::isa<hc::py_ir::UndefinedType>(lhsType))
-      return rhs;
-
-    if (!rhsType || mlir::isa<hc::py_ir::UndefinedType>(rhsType))
-      return lhs;
-
     assert(lhs.interpreter == rhs.interpreter);
     auto interp = lhs.interpreter;
     mlir::SmallVector<mlir::Type> res;
