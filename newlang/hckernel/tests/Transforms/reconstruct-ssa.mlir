@@ -79,7 +79,7 @@ py_ir.module {
     cf.br ^bb1
    ^bb1:
     %n = py_ir.none
-    %c = py_ir.cast %n : none to i1
+    %c = typing.cast %n : none to i1
     cf.cond_br %c, ^bb1, ^bb2
    ^bb2:
     %1 = py_ir.loadvar "A" : none
@@ -106,7 +106,7 @@ py_ir.module {
     cf.br ^bb1
    ^bb1:
     %n = py_ir.none
-    %c = py_ir.cast %n : none to i1
+    %c = typing.cast %n : none to i1
     cf.cond_br %c, ^bb2, ^bb2
    ^bb2:
     %1 = py_ir.loadvar "A" : none
@@ -120,7 +120,7 @@ py_ir.module {
 //       CHECK:  py_ir.func
 //       CHECK:    cf.br ^[[CONDBR:.*]](%{{.*}})
 //       CHECK:  ^[[CONDBR]](%[[BV1:.*]]: [[BV1T:.*]]):
-//       CHECK:    %[[COND:.*]] = py_ir.cast %[[BV1]] : [[BV1T]] to i1
+//       CHECK:    %[[COND:.*]] = typing.cast %[[BV1]] : [[BV1T]] to i1
 //       CHECK:    cf.cond_br %[[COND]], ^[[THENBR:.*]](%[[BV1]] : [[BV1T]]), ^[[ELSEBR:.*]]
 //       CHECK:  ^[[THENBR]](%[[BV2:.*]]: [[BV2T:.*]]):
 //       CHECK:    %[[R:.*]] = py_ir.binop %[[BV2]] : [[BV2T]] add {{.*}} -> [[RT:.*]]
@@ -134,7 +134,7 @@ py_ir.module {
     cf.br ^bb1
   ^bb1:  // 2 preds: ^bb0, ^bb2
     %4 = py_ir.loadvar "A" : !py_ir.undefined
-    %5 = py_ir.cast %4 : !py_ir.undefined to i1
+    %5 = typing.cast %4 : !py_ir.undefined to i1
     cf.cond_br %5, ^bb2, ^bb3
   ^bb2:  // pred: ^bb1
     %6 = py_ir.loadvar "A" : !py_ir.undefined
@@ -162,11 +162,11 @@ py_ir.module {
     cf.br ^bb1
   ^bb1:  // 2 preds: ^bb0, ^bb2
     %3 = py_ir.loadvar "A" : !py_ir.undefined
-    %4 = py_ir.cast %3 : !py_ir.undefined to i1
+    %4 = typing.cast %3 : !py_ir.undefined to i1
     cf.cond_br %4, ^bb2, ^bb3
   ^bb2:  // pred: ^bb1
     %5 = py_ir.loadvar "B" : !py_ir.undefined
-    %6 = py_ir.cast %5 : !py_ir.undefined to i1
+    %6 = typing.cast %5 : !py_ir.undefined to i1
     cf.cond_br %6, ^bb3, ^bb1
   ^bb3:  // 2 preds: ^bb1, ^bb2
     %7 = py_ir.none

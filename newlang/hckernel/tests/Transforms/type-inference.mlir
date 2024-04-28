@@ -25,7 +25,7 @@ py_ir.module {
 
 // -----
 
-typing.type_resolver ["py_ir.cast"] {
+typing.type_resolver ["typing.cast"] {
   %c0 = arith.constant 0 : index
   %0 = typing.get_arg %c0
   typing.type_resolver_return %0
@@ -38,7 +38,7 @@ typing.type_resolver ["py_ir.cast"] {
 
 py_ir.module {
   %0 = py_ir.constant 1 : i64
-  %1 = py_ir.cast %0 : i64 to !py_ir.undefined
+  %1 = typing.cast %0 : i64 to !py_ir.undefined
   %2 = py_ir.func "func" (A:%1) : !py_ir.undefined capture () -> !py_ir.undefined {
   ^bb0(%arg0: !py_ir.undefined):
     %4 = py_ir.none
@@ -49,7 +49,7 @@ py_ir.module {
 
 // -----
 
-typing.type_resolver ["py_ir.cast"] {
+typing.type_resolver ["typing.cast"] {
   %c0 = arith.constant 0 : index
   %0 = typing.get_arg %c0
   %1 = typing.make_literal 1 : i64
@@ -59,7 +59,7 @@ typing.type_resolver ["py_ir.cast"] {
   typing.type_resolver_return %3
 }
 
-typing.type_resolver ["py_ir.cast"] {
+typing.type_resolver ["typing.cast"] {
   %c0 = arith.constant 0 : index
   %0 = typing.get_arg %c0
   %1 = typing.make_literal 2 : i64
@@ -78,8 +78,8 @@ typing.type_resolver ["py_ir.cast"] {
 py_ir.module {
   %0 = py_ir.constant 1 : i64
   %1 = py_ir.constant 2 : i64
-  %2 = py_ir.cast %0 : i64 to !py_ir.undefined
-  %3 = py_ir.cast %1 : i64 to !py_ir.undefined
+  %2 = typing.cast %0 : i64 to !py_ir.undefined
+  %3 = typing.cast %1 : i64 to !py_ir.undefined
   %4 = py_ir.func "func" (A:%2, A:%3) : !py_ir.undefined, !py_ir.undefined capture () -> !py_ir.undefined {
   ^bb0(%arg0: !py_ir.undefined, %arg1: !py_ir.undefined):
     %5 = py_ir.none
@@ -179,10 +179,10 @@ typing.type_resolver "join_types" {
 //       CHECK:  ^bb0(%{{.*}}: !py_ir.undefined, %[[B:.*]]: ![[ID1]], %[[C:.*]]: ![[ID2]]):
 //       CHECK:  cf.cond_br %{{.*}}, ^bb1(%[[B]] : ![[ID1]]), ^bb2(%[[C]] : ![[ID2]])
 //       CHECK:  ^bb1(%[[C1:.*]]: ![[ID1]]):
-//       CHECK:  %[[C2:.*]] = py_ir.cast %[[C1]] : ![[ID1]] to ![[ID3]]
+//       CHECK:  %[[C2:.*]] = typing.cast %[[C1]] : ![[ID1]] to ![[ID3]]
 //       CHECK:  cf.br ^bb3(%[[C2]] : ![[ID3]])
 //       CHECK:  ^bb2(%[[B1:.*]]: ![[ID2]]):
-//       CHECK:  %[[B2:.*]] = py_ir.cast %[[B1]] : ![[ID2]] to ![[ID3]]
+//       CHECK:  %[[B2:.*]] = typing.cast %[[B1]] : ![[ID2]] to ![[ID3]]
 //       CHECK:  cf.br ^bb3(%[[B2]] : ![[ID3]])
 //       CHECK:  ^bb3(%[[RES:.*]]: ![[ID3]]):
 //       CHECK:  py_ir.return %[[RES]] : ![[ID3]]
@@ -193,7 +193,7 @@ py_ir.module {
   %3 = py_ir.loadvar "C" : !py_ir.undefined
   %4 = py_ir.func "func" () capture (A:%0, B:%2, C:%3) : !py_ir.undefined, !py_ir.undefined, !py_ir.undefined -> !py_ir.undefined {
   ^bb0(%arg0: !py_ir.undefined, %arg2: !py_ir.undefined, %arg3: !py_ir.undefined):
-    %6 = py_ir.cast %arg0 : !py_ir.undefined to i1
+    %6 = typing.cast %arg0 : !py_ir.undefined to i1
     cf.cond_br %6, ^bb1(%arg2 : !py_ir.undefined), ^bb2(%arg3 : !py_ir.undefined)
   ^bb1(%8: !py_ir.undefined):
     cf.br ^bb3(%8 : !py_ir.undefined)
@@ -239,7 +239,7 @@ py_ir.module {
   %2 = py_ir.loadvar "C" : !py_ir.undefined
   %3 = py_ir.func "func" () capture (A:%0, B:%1, C:%2) : !py_ir.undefined, !py_ir.undefined, !py_ir.undefined -> !py_ir.undefined {
   ^bb0(%arg0: !py_ir.undefined, %arg1: !py_ir.undefined, %arg2: !py_ir.undefined):
-    %5 = py_ir.cast %arg0 : !py_ir.undefined to i1
+    %5 = typing.cast %arg0 : !py_ir.undefined to i1
     %6 = arith.select %5, %arg1, %arg2 : !py_ir.undefined
     py_ir.return %6 : !py_ir.undefined
   }
@@ -284,7 +284,7 @@ py_ir.module {
   %2 = py_ir.loadvar "C" : !py_ir.undefined
   %3 = py_ir.func "func" () capture (A:%0, B:%1, C:%2) : !py_ir.undefined, !py_ir.undefined, !py_ir.undefined -> !py_ir.undefined {
   ^bb0(%arg0: !py_ir.undefined, %arg1: !py_ir.undefined, %arg2: !py_ir.undefined):
-    %5 = py_ir.cast %arg0 : !py_ir.undefined to i1
+    %5 = typing.cast %arg0 : !py_ir.undefined to i1
     %6 = arith.select %5, %arg1, %arg2 : !py_ir.undefined
     py_ir.return %6 : !py_ir.undefined
   }

@@ -25,7 +25,7 @@ static mlir::Value makeCast(mlir::OpBuilder &builder, mlir::Location loc,
   if (val.getType() == newType)
     return val;
 
-  return builder.create<hc::py_ir::CastOp>(loc, newType, val);
+  return builder.create<hc::typing::CastOp>(loc, newType, val);
 }
 
 static unsigned getSuccessorIndex(mlir::Operation *op, mlir::Block *successor) {

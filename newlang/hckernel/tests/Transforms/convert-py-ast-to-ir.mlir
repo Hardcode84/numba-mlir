@@ -35,7 +35,7 @@ py_ast.module {
 // CHECK-LABEL: py_ir.module
 //       CHECK:  %[[R:.*]] = py_ir.constant 42 : i64
 //       CHECK:  py_ir.func "func"
-//       CHECK:  %[[R1:.*]] = py_ir.cast %[[R]] : i64 to !py_ir.undefined
+//       CHECK:  %[[R1:.*]] = typing.cast %[[R]] : i64 to !py_ir.undefined
 //       CHECK:  py_ir.return %[[R1]] : !py_ir.undefined
 py_ast.module {
   py_ast.func "func"() {
@@ -154,7 +154,7 @@ py_ast.module {
 
 // CHECK-LABEL: py_ir.module
 //       CHECK:  %[[C:.*]] = py_ir.constant 42 : i64
-//       CHECK:  %[[C1:.*]] = py_ir.cast %[[C]] : i64 to !py_ir.undefined
+//       CHECK:  %[[C1:.*]] = typing.cast %[[C]] : i64 to !py_ir.undefined
 //       CHECK:  py_ir.func "func" (a:%[[C1]]) : !py_ir.undefined capture () -> !py_ir.undefined
 //       CHECK:  ^bb0(%[[ARG1:.*]]: !py_ir.undefined):
 //       CHECK:  py_ir.storevar "a" %[[ARG1]] : !py_ir.undefined
@@ -174,7 +174,7 @@ py_ast.module {
 // CHECK-LABEL: py_ir.module
 //       CHECK:  py_ir.func "func"
 //       CHECK:  %[[C1:.*]] = py_ir.loadvar "Cond" : !py_ir.undefined
-//       CHECK:  %[[C2:.*]] = py_ir.cast %[[C1]] : !py_ir.undefined to i1
+//       CHECK:  %[[C2:.*]] = typing.cast %[[C1]] : !py_ir.undefined to i1
 //       CHECK:  cf.cond_br %[[C2]], ^bb1, ^bb2
 //       CHECK:  ^bb1
 //       CHECK:  "test.test1"() : () -> ()
@@ -198,7 +198,7 @@ py_ast.module {
 // CHECK-LABEL: py_ir.module
 //       CHECK:  py_ir.func "func"
 //       CHECK:  %[[C1:.*]] = py_ir.loadvar "Cond" : !py_ir.undefined
-//       CHECK:  %[[C2:.*]] = py_ir.cast %[[C1]] : !py_ir.undefined to i1
+//       CHECK:  %[[C2:.*]] = typing.cast %[[C1]] : !py_ir.undefined to i1
 //       CHECK:  cf.cond_br %[[C2]], ^bb1, ^bb2
 //       CHECK:  ^bb1
 //       CHECK:  "test.test1"() : () -> ()
@@ -421,11 +421,11 @@ py_ast.module {
 //       CHECK:  cf.br ^[[CONDBR:.*]]
 //       CHECK:  ^[[CONDBR]]:
 //       CHECK:  %[[A1:.*]] = py_ir.loadvar "A" : [[A1T:.*]]
-//       CHECK:  %[[COND:.*]] = py_ir.cast %[[A1]] : [[A1T]] to i1
+//       CHECK:  %[[COND:.*]] = typing.cast %[[A1]] : [[A1T]] to i1
 //       CHECK:  cf.cond_br %[[COND]], ^[[THENBR:.*]], ^[[ELSEBR:.*]]
 //       CHECK:  ^[[THENBR]]:
 //   CHECK-DAG:  %[[A2:.*]] = py_ir.loadvar "A" : [[A2T:.*]]
-//   CHECK-DAG:  %[[C1:.*]] = py_ir.cast %[[C1_I]] : i64 to !py_ir.undefined
+//   CHECK-DAG:  %[[C1:.*]] = typing.cast %[[C1_I]] : i64 to !py_ir.undefined
 //       CHECK:  %[[R:.*]] = py_ir.binop %[[A2]] : [[A2T]] add %[[C1]] : !py_ir.undefined
 //       CHECK:  py_ir.storevar "A" %[[R]]
 //       CHECK:  cf.br ^[[CONDBR]]
@@ -490,7 +490,7 @@ py_ast.module {
 //       CHECK:  ^[[BodyBr]](%[[IValue:.*]]: !py_ir.undefined, %[[BIter:.*]]: !py_ir.undefined):
 //       CHECK:    py_ir.storevar "i" %[[IValue]] : !py_ir.undefined
 //       CHECK:    %[[B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
-//       CHECK:    %[[BCond:.*]] = py_ir.cast %[[B]] : !py_ir.undefined to i1
+//       CHECK:    %[[BCond:.*]] = typing.cast %[[B]] : !py_ir.undefined to i1
 //       CHECK:    cf.cond_br %[[BCond]], ^[[RestBr:.*]], ^[[CondBr]](%[[BIter:.*]] : !py_ir.undefined)
 //       CHECK:  ^[[RestBr]]:
 py_ast.module {
@@ -525,11 +525,11 @@ py_ast.module {
 //       CHECK: ^[[BB2]](%[[STORE_ARG:.*]]: !py_ir.undefined, %[[CAST_ARG:.*]]: !py_ir.undefined):  // pred: ^[[BB1]]
 //       CHECK:   py_ir.storevar "i" %[[STORE_ARG]] : !py_ir.undefined
 //       CHECK:   %[[B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
-//       CHECK:   %[[CAST_RESULT:.*]] = py_ir.cast %[[B]] : !py_ir.undefined to i1
+//       CHECK:   %[[CAST_RESULT:.*]] = typing.cast %[[B]] : !py_ir.undefined to i1
 //       CHECK:   cf.cond_br %[[CAST_RESULT]], ^[[BB3]], ^[[BB1]](%[[CAST_ARG]] : !py_ir.undefined)
 //       CHECK: ^[[BB3]]:  // pred: ^[[BB2]]
 //       CHECK:   %[[C:.*]] = py_ir.loadvar "C" : !py_ir.undefined
-//       CHECK:   %[[CAST_C:.*]] = py_ir.cast %[[C]] : !py_ir.undefined to i1
+//       CHECK:   %[[CAST_C:.*]] = typing.cast %[[C]] : !py_ir.undefined to i1
 //       CHECK:   cf.cond_br %[[CAST_C]], ^[[BB4]], ^[[BB1]](%[[CAST_ARG]] : !py_ir.undefined)
 //       CHECK: ^[[BB4]]:  // 2 preds: ^[[BB1]], ^[[BB3]]
 py_ast.module {
@@ -562,11 +562,11 @@ py_ast.module {
 //       CHECK:   cf.br ^[[BB1:.*]]
 //       CHECK: ^[[BB1]]:  // 2 preds: ^[[BB0:.*]], ^[[BB2:.*]]
 //       CHECK:   %[[LOAD_A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
-//       CHECK:   %[[CAST_A:.*]] = py_ir.cast %[[LOAD_A]] : !py_ir.undefined to i1
+//       CHECK:   %[[CAST_A:.*]] = typing.cast %[[LOAD_A]] : !py_ir.undefined to i1
 //       CHECK:   cf.cond_br %[[CAST_A]], ^[[BB2]], ^[[BB3:.*]]
 //       CHECK: ^[[BB2]]:  // pred: ^[[BB1]]
 //       CHECK:   %[[LOAD_B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
-//       CHECK:   %[[CAST_B:.*]] = py_ir.cast %[[LOAD_B]] : !py_ir.undefined to i1
+//       CHECK:   %[[CAST_B:.*]] = typing.cast %[[LOAD_B]] : !py_ir.undefined to i1
 //       CHECK:   cf.cond_br %[[CAST_B]], ^[[BB3]], ^[[BB1]]
 //       CHECK: ^[[BB3]]:  // 2 preds: ^[[BB1]], ^[[BB2]]
 py_ast.module {
@@ -594,15 +594,15 @@ py_ast.module {
 //       CHECK:   cf.br ^[[BB1:.*]]
 //       CHECK: ^[[BB1]]:  // 3 preds: ^[[BB0:.*]], ^[[BB2:.*]], ^[[BB3:.*]]
 //       CHECK:   %[[LOAD_A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
-//       CHECK:   %[[CAST_A:.*]] = py_ir.cast %[[LOAD_A]] : !py_ir.undefined to i1
+//       CHECK:   %[[CAST_A:.*]] = typing.cast %[[LOAD_A]] : !py_ir.undefined to i1
 //       CHECK:   cf.cond_br %[[CAST_A]], ^[[BB2]], ^[[BB4:.*]]
 //       CHECK: ^[[BB2]]:  // pred: ^[[BB1]]
 //       CHECK:   %[[LOAD_B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
-//       CHECK:   %[[CAST_B:.*]] = py_ir.cast %[[LOAD_B]] : !py_ir.undefined to i1
+//       CHECK:   %[[CAST_B:.*]] = typing.cast %[[LOAD_B]] : !py_ir.undefined to i1
 //       CHECK:   cf.cond_br %[[CAST_B]], ^[[BB3]], ^[[BB1]]
 //       CHECK: ^[[BB3]]:  // pred: ^[[BB2]]
 //       CHECK:   %[[LOAD_C:.*]] = py_ir.loadvar "C" : !py_ir.undefined
-//       CHECK:   %[[CAST_C:.*]] = py_ir.cast %[[LOAD_C]] : !py_ir.undefined to i1
+//       CHECK:   %[[CAST_C:.*]] = typing.cast %[[LOAD_C]] : !py_ir.undefined to i1
 //       CHECK:   cf.cond_br %[[CAST_C]], ^[[BB4]], ^[[BB1]]
 //       CHECK: ^[[BB4]]:  // 2 preds: ^[[BB1]], ^[[BB3]]
 py_ast.module {
@@ -635,15 +635,15 @@ py_ast.module {
 //       CHECK:   cf.br ^[[BB1:.*]]
 //       CHECK: ^[[BB1]]:  // 3 preds: ^[[BB0:.*]], ^[[BB2:.*]], ^[[BB3:.*]]
 //       CHECK:   %[[LOAD_A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
-//       CHECK:   %[[CAST_A:.*]] = py_ir.cast %[[LOAD_A]] : !py_ir.undefined to i1
+//       CHECK:   %[[CAST_A:.*]] = typing.cast %[[LOAD_A]] : !py_ir.undefined to i1
 //       CHECK:   cf.cond_br %[[CAST_A]], ^[[BB2]], ^[[BB4:.*]]
 //       CHECK: ^[[BB2]]:  // pred: ^[[BB1]]
 //       CHECK:   %[[LOAD_B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
-//       CHECK:   %[[CAST_B:.*]] = py_ir.cast %[[LOAD_B]] : !py_ir.undefined to i1
+//       CHECK:   %[[CAST_B:.*]] = typing.cast %[[LOAD_B]] : !py_ir.undefined to i1
 //       CHECK:   cf.cond_br %[[CAST_B]], ^[[BB1]], ^[[BB3]]
 //       CHECK: ^[[BB3]]:  // pred: ^[[BB2]]
 //   CHECK-DAG:   %[[LOAD_A2:.*]] = py_ir.loadvar "A" : !py_ir.undefined
-//   CHECK-DAG:   %[[CONST:.*]] = py_ir.cast %[[CONST_I]] : i64 to !py_ir.undefined
+//   CHECK-DAG:   %[[CONST:.*]] = typing.cast %[[CONST_I]] : i64 to !py_ir.undefined
 //       CHECK:   %[[BINOP:.*]] = py_ir.binop %[[LOAD_A2]] : !py_ir.undefined sub %[[CONST]] : !py_ir.undefined -> !py_ir.undefined
 //       CHECK:   py_ir.storevar "A" %[[BINOP]] : !py_ir.undefined
 //       CHECK:   cf.br ^[[BB1]]
@@ -685,11 +685,11 @@ py_ast.module {
 //       CHECK: ^[[BB2]](%[[STORE_ARG:.*]]: !py_ir.undefined, %[[CAST_ARG:.*]]: !py_ir.undefined):  // pred: ^[[BB1]]
 //       CHECK:   py_ir.storevar "i" %[[STORE_ARG]] : !py_ir.undefined
 //       CHECK:   %[[LOAD_B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
-//       CHECK:   %[[CAST_B:.*]] = py_ir.cast %[[LOAD_B]] : !py_ir.undefined to i1
+//       CHECK:   %[[CAST_B:.*]] = typing.cast %[[LOAD_B]] : !py_ir.undefined to i1
 //       CHECK:   cf.cond_br %[[CAST_B]], ^[[BB1]](%[[CAST_ARG]] : !py_ir.undefined), ^[[BB3]]
 //       CHECK: ^[[BB3]]:  // pred: ^[[BB2]]
 //   CHECK-DAG:   %[[LOAD_C:.*]] = py_ir.loadvar "C" : !py_ir.undefined
-//   CHECK-DAG:   %[[CONST:.*]] = py_ir.cast %[[CONST_I]] : i64 to !py_ir.undefined
+//   CHECK-DAG:   %[[CONST:.*]] = typing.cast %[[CONST_I]] : i64 to !py_ir.undefined
 //       CHECK:   %[[BINOP:.*]] = py_ir.binop %[[LOAD_C]] : !py_ir.undefined add %[[CONST]] : !py_ir.undefined -> !py_ir.undefined
 //       CHECK:   cf.br ^[[BB1]](%[[CAST_ARG]] : !py_ir.undefined)
 //       CHECK: ^[[BB4]]:  // pred: ^[[BB1]]
@@ -721,7 +721,7 @@ py_ast.module {
 // CHECK-LABEL: py_ir.module
 //       CHECK:  py_ir.func "func"
 //       CHECK:  %[[A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
-//       CHECK:  %[[COND:.*]] = py_ir.cast %[[A]] : !py_ir.undefined to i1
+//       CHECK:  %[[COND:.*]] = typing.cast %[[A]] : !py_ir.undefined to i1
 //       CHECK:  cf.cond_br %[[COND]], ^bb1, ^bb2
 //       CHECK:  ^bb1:
 //       CHECK:  %[[B:.*]] = py_ir.loadvar "B" : !py_ir.undefined

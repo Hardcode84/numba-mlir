@@ -4,6 +4,7 @@
 
 #include "hc/Dialect/PyAST/IR/PyASTOps.hpp"
 #include "hc/Dialect/PyIR/IR/PyIROps.hpp"
+#include "hc/Dialect/Typing/IR/TypingOps.hpp"
 
 #include <mlir/Dialect/ControlFlow/IR/ControlFlowOps.h>
 #include <mlir/IR/PatternMatch.h>
@@ -43,7 +44,7 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
 
     mlir::Value val = builder.create<hc::py_ir::ConstantOp>(
         loc, mlir::cast<mlir::TypedAttr>(attr));
-    return builder.create<hc::py_ir::CastOp>(loc, type, val);
+    return builder.create<hc::typing::CastOp>(loc, type, val);
   }
 
   if (auto name = val.getDefiningOp<hc::py_ast::NameOp>())
@@ -204,7 +205,7 @@ static bool isTopLevel(mlir::Operation *op) {
 static mlir::Value boolCast(mlir::OpBuilder &builder, mlir::Location loc,
                             mlir::Value val) {
   auto type = builder.getIntegerType(1);
-  return builder.create<hc::py_ir::CastOp>(loc, type, val);
+  return builder.create<hc::typing::CastOp>(loc, type, val);
 }
 
 namespace {

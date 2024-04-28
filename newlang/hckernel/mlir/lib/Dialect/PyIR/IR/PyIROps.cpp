@@ -81,15 +81,6 @@ hc::py_ir::ConstantOp::inferTypes(mlir::TypeRange types,
   return true;
 }
 
-bool hc::py_ir::CastOp::areCastCompatible(mlir::TypeRange inputs,
-                                          mlir::TypeRange outputs) {
-  (void)inputs;
-  (void)outputs;
-  assert(inputs.size() == 1 && "expected one input");
-  assert(outputs.size() == 1 && "expected one output");
-  return true;
-}
-
 void hc::py_ir::LoadVarOp::getTypingKeyArgs(
     llvm::SmallVectorImpl<mlir::Attribute> &args) {
   args.emplace_back(getNameAttr());

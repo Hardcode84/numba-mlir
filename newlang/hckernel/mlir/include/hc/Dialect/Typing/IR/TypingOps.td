@@ -3,6 +3,7 @@
 #ifndef TYPING_OPS
 #define TYPING_OPS
 
+include "mlir/Interfaces/CastInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/IR/BuiltinAttributeInterfaces.td"
@@ -163,6 +164,19 @@ def Typing_TypeResolverReturnOp : Typing_OpBase<"type_resolver_return", [
 
   let assemblyFormat = "attr-dict ($args^)?";
 }
+
+def Typing_CastOp : Typing_OpBase<"cast", [
+  Pure,
+  DeclareOpInterfaceMethods<CastOpInterface>,
+  DeclareOpInterfaceMethods<TypingKeyInterface>,
+  DeclareOpInterfaceMethods<TypingUpdateInplaceInterface>
+]> {
+  let arguments = (ins AnyType:$value);
+  let results = (outs AnyType:$result);
+
+  let assemblyFormat = "attr-dict $value `:` type($value) `to` type($result)";
+}
+
 
 def Typing_MakeIdentOp : Typing_OpBase<"make_ident", [
   Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>

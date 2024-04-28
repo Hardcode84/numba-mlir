@@ -3,7 +3,6 @@
 #ifndef PYIR_OPS
 #define PYIR_OPS
 
-include "mlir/Interfaces/CastInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/IR/AttrTypeBase.td"
@@ -256,16 +255,6 @@ def PyIR_LoadVarOp : PyIR_OpBase<"loadvar", [
   let results = (outs AnyType:$result);
 
   let assemblyFormat = "attr-dict $name `:` type($result)";
-}
-
-def PyIR_CastOp : PyIR_OpBase<"cast", [
-  Pure, DeclareOpInterfaceMethods<CastOpInterface>,
-  DeclareOpInterfaceMethods<TypingKeyInterface>
-]> {
-  let arguments = (ins AnyType:$value);
-  let results = (outs AnyType:$result);
-
-  let assemblyFormat = "attr-dict $value `:` type($value) `to` type($result)";
 }
 
 def PyIR_SetItemOp : PyIR_OpBase<"setitem"> {

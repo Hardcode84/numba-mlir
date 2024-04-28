@@ -79,6 +79,15 @@ void hc::typing::ResolveOp::build(::mlir::OpBuilder &odsBuilder,
   odsBuilder.createBlock(region, {}, mlir::TypeRange(args), locs);
 }
 
+bool hc::typing::CastOp::areCastCompatible(mlir::TypeRange inputs,
+                                           mlir::TypeRange outputs) {
+  (void)inputs;
+  (void)outputs;
+  assert(inputs.size() == 1 && "expected one input");
+  assert(outputs.size() == 1 && "expected one output");
+  return true;
+}
+
 namespace {
 using namespace hc::typing;
 

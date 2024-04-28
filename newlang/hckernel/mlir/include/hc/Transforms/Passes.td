@@ -21,6 +21,7 @@ def ConvertPyASTToIRPass : Pass<"hc-convert-py-ast-to-ir-pass"> {
   let dependentDialects = [
     "::hc::py_ir::PyIRDialect",
     "::mlir::cf::ControlFlowDialect",
+    "::hc::typing::TypingDialect",
   ];
 }
 
@@ -29,6 +30,10 @@ def ReconstuctPySSAPass : Pass<"hc-reconstruct-py-ssa-pass"> {
   let description = [{
     TBD
   }];
+
+  let dependentDialects = [
+    "::hc::typing::TypingDialect"
+  ];
 }
 
 def CleanupPySetVarPass : Pass<"hc-cleanup-py-setvar-pass"> {

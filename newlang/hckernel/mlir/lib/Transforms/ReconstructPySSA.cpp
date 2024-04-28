@@ -3,6 +3,7 @@
 #include "hc/Transforms/Passes.hpp"
 
 #include "hc/Dialect/PyIR/IR/PyIROps.hpp"
+#include "hc/Dialect/Typing/IR/TypingOps.hpp"
 
 #include <queue>
 
@@ -43,7 +44,7 @@ struct ReconstuctPySSA {
       if (resType != val.getType()) {
         mlir::OpBuilder builder(op->getContext());
         builder.setInsertionPoint(op);
-        val = builder.create<hc::py_ir::CastOp>(op.getLoc(), resType, val);
+        val = builder.create<hc::typing::CastOp>(op.getLoc(), resType, val);
       }
       res.replaceAllUsesWith(val);
       op->erase();
@@ -100,7 +101,7 @@ struct ReconstuctPySSA {
     }
 
     if (type != val.getType())
-      val = builder.create<hc::py_ir::CastOp>(term->getLoc(), type, val);
+      val = builder.create<hc::typing::CastOp>(term->getLoc(), type, val);
 
     if (auto br = mlir::dyn_cast<mlir::cf::BranchOp>(term)) {
       assert(successor == br.getSuccessor());
