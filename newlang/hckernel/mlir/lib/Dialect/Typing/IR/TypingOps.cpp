@@ -223,6 +223,18 @@ struct CmpOpInterpreterInterface final
     return true;
   }
 };
+
+struct SelectOpDataflowJoinInterface final
+    : public hc::typing::DataflowJoinInterface::ExternalModel<
+          SelectOpDataflowJoinInterface, mlir::arith::SelectOp> {
+
+  void getArgsIndices(mlir::Operation * /*op*/, unsigned resultIndex,
+                      llvm::SmallVectorImpl<unsigned> &argsIndices) const {
+    assert(resultIndex == 0);
+    argsIndices.emplace_back(1);
+    argsIndices.emplace_back(2);
+  }
+};
 } // namespace
 
 void hc::typing::registerArithTypingInterpreter(mlir::MLIRContext &ctx) {
@@ -235,6 +247,8 @@ void hc::typing::registerArithTypingInterpreter(mlir::MLIRContext &ctx) {
   mlir::arith::ConstantOp::attachInterface<ConstantOpInterpreterInterface>(ctx);
   mlir::arith::AddIOp::attachInterface<AddOpInterpreterInterface>(ctx);
   mlir::arith::CmpIOp::attachInterface<CmpOpInterpreterInterface>(ctx);
+
+  mlir::arith::SelectOp::attachInterface<SelectOpDataflowJoinInterface>(ctx);
 }
 
 template <typename Dst, typename Src>

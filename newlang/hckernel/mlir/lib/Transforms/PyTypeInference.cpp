@@ -322,6 +322,25 @@ public:
   void visitOperation(mlir::Operation *op,
                       llvm::ArrayRef<const TypeValueLattice *> operands,
                       llvm::ArrayRef<TypeValueLattice *> results) override {
+    if (auto joinInterface =
+            mlir::dyn_cast<hc::typing::DataflowJoinInterface>(op)) {
+      llvm::SmallVector<unsigned> resIndices;
+      for (auto i : llvm::seq(0u, op->getNumResults())) {
+        resIndices.clear();
+        joinInterface.getArgsIndices(i, resIndices);
+        if (resIndices.empty())
+          continue;
+
+        auto resultLattice = results[i];
+        auto changed = mlir::ChangeResult::NoChange;
+        for (auto idx : resIndices)
+          changed |= resultLattice->join(*operands[idx]);
+
+        propagateIfChanged(resultLattice, changed);
+      }
+      return;
+    }
+
     llvm::SmallVector<mlir::Type> argTypes;
     for (auto arg : operands) {
       auto &latticeVal = arg->getValue();
