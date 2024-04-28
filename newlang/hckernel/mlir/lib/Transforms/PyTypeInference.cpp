@@ -73,9 +73,8 @@ updatePredecessorTypes(mlir::OpBuilder &builder, mlir::Block *block,
 static bool canUpdateValType(mlir::Value val) {
   auto def = val.getDefiningOp();
 
-  // TODO: Assume for now that can always update block args.
   if (!def)
-    return true;
+    def = val.getParentBlock()->getParentOp();
 
   auto iface = mlir::dyn_cast<hc::typing::TypingUpdateInplaceInterface>(def);
   return iface && iface.canUpdateArgTypeInplace(val);
