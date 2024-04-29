@@ -290,3 +290,67 @@ py_ir.module {
   }
   %4 = py_ir.call %3 : !py_ir.undefined  () -> !py_ir.undefined
 }
+
+// -----
+
+typing.type_resolver ["py_ir.loadvar", "B"] {
+  %0 = typing.make_ident "B" []
+  typing.type_resolver_return %0
+}
+
+typing.type_resolver ["py_ir.loadvar", "D"] {
+  %0 = typing.make_ident "D" []
+  typing.type_resolver_return %0
+}
+
+typing.type_resolver ["py_ir.loadvar", "E"] {
+  %0 = typing.make_ident "E" []
+  typing.type_resolver_return %0
+}
+
+typing.type_resolver "join_types" {
+  %c0 = arith.constant 0 : index
+  %c1 = arith.constant 1 : index
+  %0 = typing.get_arg %c0
+  %1 = typing.get_arg %c1
+  %2 = typing.make_union %0, %1
+  typing.type_resolver_return %2
+}
+
+//   CHECK-DAG: ![[ID1:.*]] = !typing<ident "B">
+//   CHECK-DAG: ![[ID2:.*]] = !typing<ident "D">
+//   CHECK-DAG: ![[ID3:.*]] = !typing<ident "E">
+//   CHECK-DAG: ![[U:.*]] = !typing<union ![[ID1]], ![[ID3]], ![[ID2]]>
+// CHECK-LABEL: py_ir.module
+//       CHECK:  py_ir.func "func"
+//       CHECK:  ^bb0(%[[ARG0:.*]]: !py_ir.undefined, %[[ARG1:.*]]: ![[ID1]], %[[ARG2:.*]]: !py_ir.undefined, %[[ARG3:.*]]: ![[ID2]], %[[ARG4:.*]]: ![[ID3]]):
+//       CHECK:  %[[COND:.*]] = typing.cast %[[ARG0]] : !py_ir.undefined to i1
+//       CHECK:  %[[U1:.*]] = typing.cast %[[ARG1]] : ![[ID1]] to ![[U]]
+//       CHECK:  cf.cond_br %[[COND]], ^bb1(%[[U1]] : ![[U]]), ^bb2(%[[ARG2]], %[[ARG3]], %[[ARG4]] : !py_ir.undefined, ![[ID2]], ![[ID3]])
+//       CHECK:  ^bb1(%[[U2:.*]]: ![[U]]):
+//       CHECK:  py_ir.return %[[U2]] : ![[U]]
+//       CHECK:  ^bb2(%[[COND2:.*]]: !py_ir.undefined, %[[ARG5:.*]]: ![[ID2]], %[[ARG6:.*]]: ![[ID3]]):
+//       CHECK:  %[[COND3:.*]] = typing.cast %[[COND2]] : !py_ir.undefined to i1
+//       CHECK:  %[[A1:.*]] = typing.cast %11 : ![[ID2]] to ![[U]]
+//       CHECK:  %[[A2:.*]] = typing.cast %12 : ![[ID3]] to ![[U]]
+//       CHECK:  cf.cond_br %[[COND3]], ^bb1(%[[A1]] : ![[U]]), ^bb1(%[[A2]] : ![[U]])
+//       CHECK:  }
+
+py_ir.module {
+  %0 = py_ir.loadvar "A" : !py_ir.undefined
+  %1 = py_ir.loadvar "B" : !py_ir.undefined
+  %2 = py_ir.loadvar "C" : !py_ir.undefined
+  %3 = py_ir.loadvar "D" : !py_ir.undefined
+  %4 = py_ir.loadvar "E" : !py_ir.undefined
+  %5 = py_ir.func "func" () capture (A:%0, B:%1, C:%2, D:%3, E:%4) : !py_ir.undefined, !py_ir.undefined, !py_ir.undefined, !py_ir.undefined, !py_ir.undefined -> !py_ir.undefined {
+  ^bb0(%arg0: !py_ir.undefined, %arg1: !py_ir.undefined, %arg2: !py_ir.undefined, %arg3: !py_ir.undefined, %arg4: !py_ir.undefined):
+    %7 = typing.cast %arg0 : !py_ir.undefined to i1
+    cf.cond_br %7, ^bb1(%arg1 : !py_ir.undefined), ^bb2(%arg2, %arg3, %arg4 : !py_ir.undefined, !py_ir.undefined, !py_ir.undefined)
+  ^bb1(%8: !py_ir.undefined):  // 3 preds: ^bb0, ^bb2, ^bb2
+    py_ir.return %8 : !py_ir.undefined
+  ^bb2(%9: !py_ir.undefined, %10: !py_ir.undefined, %11: !py_ir.undefined):  // pred: ^bb0
+    %12 = typing.cast %9 : !py_ir.undefined to i1
+    cf.cond_br %12, ^bb1(%10 : !py_ir.undefined), ^bb1(%11 : !py_ir.undefined)
+  }
+  %6 = py_ir.call %5 : !py_ir.undefined  () -> !py_ir.undefined
+}

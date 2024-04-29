@@ -22,50 +22,36 @@ namespace hc {
 
 static mlir::Value makeCast(mlir::OpBuilder &builder, mlir::Location loc,
                             mlir::Value val, mlir::Type newType) {
-  if (val.getType() == newType)
-    return val;
-
   return builder.create<hc::typing::CastOp>(loc, newType, val);
 }
 
-static unsigned getSuccessorIndex(mlir::Operation *op, mlir::Block *successor) {
-  for (auto &&[i, s] : llvm::enumerate(op->getSuccessors())) {
-    if (s == successor)
-      return static_cast<unsigned>(i);
-  }
-  llvm_unreachable("Invalid successor");
-}
+static void updateBranchTypes(mlir::OpBuilder &builder, mlir::Block *block) {
+  if (!block->mightHaveTerminator())
+    return;
 
-static void
-updatePredecessorTypes(mlir::OpBuilder &builder, mlir::Block *block,
-                       llvm::function_ref<mlir::Type(mlir::Value)> getType) {
-  auto getTypeChecked = [&](mlir::Value arg) -> mlir::Type {
-    if (auto t = getType(arg))
-      return t;
+  auto branch = mlir::dyn_cast<mlir::BranchOpInterface>(block->getTerminator());
+  if (!branch)
+    return;
 
-    return arg.getType();
-  };
-  mlir::ValueRange blockArgs = block->getArguments();
-  for (mlir::Block *predecessor : block->getPredecessors()) {
-    auto term =
-        mlir::cast<mlir::BranchOpInterface>(predecessor->getTerminator());
-    auto idx = getSuccessorIndex(term, block);
-    mlir::ValueRange successorArgs =
-        term.getSuccessorOperands(idx).getForwardedOperands();
-    mlir::Location loc = term.getLoc();
-    builder.setInsertionPoint(term);
-    for (auto &&[srcArg, dstArg] : llvm::zip_equal(successorArgs, blockArgs)) {
-      mlir::Type srcType = getTypeChecked(srcArg);
-      mlir::Type dstType = getTypeChecked(dstArg);
+  for (auto &&[i, successor] : llvm::enumerate(branch->getSuccessors())) {
+    mlir::ValueRange branchArgs =
+        branch.getSuccessorOperands(i).getForwardedOperands();
+
+    mlir::Location loc = branch.getLoc();
+    builder.setInsertionPoint(branch);
+    for (auto &&[branchArg, successorArg] :
+         llvm::zip_equal(branchArgs, successor->getArguments())) {
+      mlir::Type srcType = branchArg.getType();
+      mlir::Type dstType = successorArg.getType();
       if (srcType == dstType)
         continue;
 
-      mlir::Value cast = makeCast(builder, loc, srcArg, dstType);
+      mlir::Value cast = makeCast(builder, loc, branchArg, dstType);
       auto shouldReplace = [&](mlir::OpOperand &op) -> bool {
-        return op.getOwner() == term;
+        return op.getOwner() == branch;
       };
 
-      srcArg.replaceUsesWithIf(cast, shouldReplace);
+      branchArg.replaceUsesWithIf(cast, shouldReplace);
     }
   }
 }
@@ -138,7 +124,6 @@ static void updateTypes(mlir::Operation *rootOp,
   };
   rootOp->walk([&](mlir::Block *block) {
     updateTypes(block->getArguments(), block->getArguments());
-    updatePredecessorTypes(builder, block, getType);
   });
   rootOp->walk([&](mlir::Operation *op) {
     if (auto resolve = mlir::dyn_cast<hc::typing::ResolveOp>(op)) {
@@ -150,6 +135,7 @@ static void updateTypes(mlir::Operation *rootOp,
 
     updateTypes(op->getResults(), op->getResults());
   });
+  rootOp->walk([&](mlir::Block *block) { updateBranchTypes(builder, block); });
 }
 
 static mlir::Attribute getTypingKey(mlir::Operation *op) {
