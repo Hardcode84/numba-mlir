@@ -84,3 +84,5 @@ add_dependencies(${PROJECT_NAME}
     MLIRTypingOpsIncGen
     MLIRTypingOpsInterfacesIncGen
     )
+
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX})

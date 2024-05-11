@@ -32,3 +32,5 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     )
 
 apply_llvm_compile_flags(${PROJECT_NAME})
+
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX})
