@@ -37,6 +37,7 @@ endmacro()
 
 add_subdirectory(mlir)
 add_subdirectory(frontend)
+add_subdirectory(python)
 
 if (HC_ENABLE_TOOLS)
   add_subdirectory(tools/pyfront)
