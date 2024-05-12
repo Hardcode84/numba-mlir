@@ -128,9 +128,8 @@ def PyIR_ConstantOp : PyIR_OpBaseNoTypeUpdate<"constant", [
 }
 
 def PyIR_PyModuleOp : PyIR_OpBase<"module", [
-      IsolatedFromAbove, SingleBlockImplicitTerminator<"PyModuleEndOp">
-    ]> {
-
+  IsolatedFromAbove, SingleBlockImplicitTerminator<"PyModuleEndOp">
+]> {
 
   let regions = (region SizedRegion<1>:$bodyRegion);
 
@@ -140,7 +139,10 @@ def PyIR_PyModuleOp : PyIR_OpBase<"module", [
 def PyIR_PyModuleEndOp : PyIR_OpBase<"module_end", [
   Terminator, HasParent<"PyModuleOp">, Pure
 ]> {
-  let assemblyFormat = "attr-dict";
+  let arguments = (ins Variadic<AnyType>:$results);
+  let builders = [OpBuilder<(ins), [{ /* nothing to do */ }]>];
+
+  let assemblyFormat = "attr-dict ($results^ `:` type($results))?";
 }
 
 def PyIR_EmptyAnnotationOp : PyIR_OpBase<"empty_annotation", [Pure]> {

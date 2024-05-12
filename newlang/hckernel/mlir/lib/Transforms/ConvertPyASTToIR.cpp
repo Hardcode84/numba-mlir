@@ -560,6 +560,37 @@ public:
   }
 };
 
+class ConvertCaptureVal final
+    : public mlir::OpRewritePattern<hc::py_ast::CaptureValOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hc::py_ast::CaptureValOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    // Direct parent must be a PyModuleOp.
+    auto mod = mlir::dyn_cast<hc::py_ir::PyModuleOp>(op->getParentOp());
+    if (!mod)
+      return mlir::failure();
+
+    auto term =
+        mlir::cast<hc::py_ir::PyModuleEndOp>(mod.getBody()->getTerminator());
+
+    mlir::Type type = hc::py_ir::UndefinedType::get(rewriter.getContext());
+    mlir::OpBuilder::InsertionGuard g(rewriter);
+    rewriter.setInsertionPoint(term);
+    mlir::Value val = rewriter.create<hc::py_ir::LoadVarOp>(term.getLoc(), type,
+                                                            op.getIdAttr());
+
+    auto args = llvm::to_vector(term.getResults());
+    args.emplace_back(val);
+    rewriter.replaceOpWithNewOp<hc::py_ir::PyModuleEndOp>(term, args);
+
+    rewriter.eraseOp(op);
+    return mlir::success();
+  }
+};
+
 struct ConvertPyASTToIRPass final
     : public hc::impl::ConvertPyASTToIRPassBase<ConvertPyASTToIRPass> {
 
@@ -588,5 +619,5 @@ struct ConvertPyASTToIRPass final
 void hc::populateConvertPyASTToIRPatterns(mlir::RewritePatternSet &patterns) {
   patterns.insert<ConvertModule, ConvertFunc, ConvertReturn, ConvertIf,
                   ConvertWhile, ConvertFor, ConvertAssign, ConvertAugAssign,
-                  ConvertExpr>(patterns.getContext());
+                  ConvertExpr, ConvertCaptureVal>(patterns.getContext());
 }
