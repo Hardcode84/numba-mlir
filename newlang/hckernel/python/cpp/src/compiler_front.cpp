@@ -13,10 +13,9 @@
 #include <mlir/Support/FileUtilities.h>
 #include <mlir/Support/LogicalResult.h>
 #include <mlir/Tools/mlir-opt/MlirOptMain.h>
-#include <mlir/Transforms/Passes.h>
 
+#include "hc/Pipelines/FrontendPipeline.hpp"
 #include "hc/PyFront/Import.hpp"
-#include "hc/Transforms/Passes.hpp"
 #include "hc/Utils.hpp"
 
 #include <pybind11/functional.h>
@@ -69,25 +68,6 @@ static mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
   });
 }
 
-static void populatePyIROptPasses(mlir::PassManager &pm) {
-  pm.addPass(mlir::createCompositeFixedPointPass(
-      "PyIROptPass", [](mlir::OpPassManager &p) {
-        p.addPass(mlir::createCanonicalizerPass());
-        p.addPass(mlir::createCSEPass());
-        p.addPass(hc::createCleanupPySetVarPass());
-      }));
-}
-
-static void populatePasses(mlir::PassManager &pm) {
-  pm.addPass(hc::createSimplifyASTPass());
-  pm.addPass(hc::createConvertPyASTToIRPass());
-  populatePyIROptPasses(pm);
-  pm.addPass(hc::createReconstuctPySSAPass());
-  populatePyIROptPasses(pm);
-  pm.addPass(hc::createPyTypeInferencePass());
-  pm.addPass(mlir::createCanonicalizerPass());
-}
-
 static bool compile_ast(std::string source) {
   mlir::MLIRContext ctx;
   auto loc = mlir::OpBuilder(&ctx).getUnknownLoc();
@@ -102,7 +82,7 @@ static bool compile_ast(std::string source) {
     ctx.disableMultithreading();
     pm.enableIRPrinting();
 
-    populatePasses(pm);
+    hc::populateFrontendPipeline(pm);
     if (mlir::failed(runUnderDiag(pm, mod)))
       return false;
 
