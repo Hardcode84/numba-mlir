@@ -14,6 +14,7 @@
 #include <mlir/Support/LogicalResult.h>
 #include <mlir/Tools/mlir-opt/MlirOptMain.h>
 
+#include "hc/Dialect/PyAST/IR/PyASTOps.hpp"
 #include "hc/Pipelines/FrontendPipeline.hpp"
 #include "hc/PyFront/Import.hpp"
 #include "hc/Utils.hpp"
@@ -68,30 +69,44 @@ static mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
   });
 }
 
-static bool compileAst(std::string source) {
+static mlir::LogicalResult importAST(mlir::ModuleOp mod, llvm::StringRef source,
+                                     llvm::StringRef funcName) {
+  auto res = hc::importPyModule(source, mod);
+  if (mlir::failed(res))
+    return mlir::failure();
+
+  auto pyMod = mlir::cast<hc::py_ast::PyModuleOp>(*res);
+
+  mlir::OpBuilder builder(mod.getContext());
+  auto term = pyMod.getBody()->getTerminator();
+  builder.setInsertionPoint(term);
+  builder.create<hc::py_ast::CaptureValOp>(term->getLoc(), funcName);
+  return mlir::success();
+}
+
+static bool compileAST(const std::string &source, const std::string &funcName) {
   mlir::MLIRContext ctx;
   auto loc = mlir::OpBuilder(&ctx).getUnknownLoc();
 
   auto mod = mlir::ModuleOp::create(loc);
 
-  auto res = hc::importPyModule(source, mod);
+  auto res = importAST(mod, source, funcName);
+  if (mlir::failed(res))
+    return false;
 
-  if (mlir::succeeded(res)) {
-    mlir::PassManager pm(&ctx);
+  mlir::PassManager pm(&ctx);
 
-    ctx.disableMultithreading();
-    pm.enableIRPrinting();
+  ctx.disableMultithreading();
+  pm.enableIRPrinting();
 
-    hc::populateFrontendPipeline(pm);
-    if (mlir::failed(runUnderDiag(pm, mod)))
-      return false;
-
-    return true;
-  }
+  hc::populateFrontendPipeline(pm);
+  if (mlir::failed(runUnderDiag(pm, mod)))
+    return false;
 
   return true;
 }
 
 PYBIND11_MODULE(compiler, m) {
-  m.def("compile_ast", &compileAst, "compile_ast", py::arg("source"));
+  m.def("compile_ast", &compileAST, "compile_ast", py::arg("source"),
+        py::arg("func_name"));
 }
