@@ -446,4 +446,10 @@ def PyAST_ReturnOp : PyAST_OpBase<"return", [NoReturn]> {
   let assemblyFormat = "attr-dict $value";
 }
 
+def PyAST_CaptureValOp : PyAST_OpBase<"capture_val"> {
+  let arguments = (ins StrAttr:$id);
+
+  let assemblyFormat = "attr-dict $id";
+}
+
 #endif // PYAST_OPS
