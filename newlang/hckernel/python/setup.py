@@ -46,6 +46,7 @@ cmake_cmd = [
     "-DCMAKE_BUILD_TYPE=Release",
     "-DLLVM_DIR=" + LLVM_DIR,
     "-DMLIR_DIR=" + MLIR_DIR,
+    "-DHC_ENABLE_PYTHON=ON",
     "-DHC_ENABLE_TOOLS=OFF",
     "-DHC_ENABLE_TESTS=OFF",
 ]

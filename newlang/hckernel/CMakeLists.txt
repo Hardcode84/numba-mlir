@@ -23,9 +23,11 @@ if(POLICY CMP0148)
 endif()
 
 option(HC_ENABLE_TOOLS "Enable Tools" ON)
+option(HC_ENABLE_PYTHON "Enable Python" OFF)
 option(HC_ENABLE_TESTS "Enable Tests" OFF)
 
 message(STATUS "HC_ENABLE_TOOLS ${HC_ENABLE_TOOLS}")
+message(STATUS "HC_ENABLE_PYTHON ${HC_ENABLE_PYTHON}")
 message(STATUS "HC_ENABLE_TESTS ${HC_ENABLE_TESTS}")
 
 macro(apply_llvm_compile_flags target)
@@ -37,7 +39,10 @@ endmacro()
 
 add_subdirectory(mlir)
 add_subdirectory(frontend)
-add_subdirectory(python)
+
+if (HC_ENABLE_PYTHON)
+  add_subdirectory(python)
+endif()
 
 if (HC_ENABLE_TOOLS)
   add_subdirectory(tools/pyfront)
