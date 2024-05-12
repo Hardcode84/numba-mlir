@@ -1,9 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 from itertools import product
 from numpy.testing import assert_equal
 import numpy as np
 import pytest
 
-from newlang.kernel import (
+from hckernel.kernel import (
     kernel,
     sym,
     CurrentGroup,

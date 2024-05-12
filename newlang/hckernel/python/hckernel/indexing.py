@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 from typing import Any, ClassVar, Optional, Type, TypeVar, Union, cast
 import sympy
 

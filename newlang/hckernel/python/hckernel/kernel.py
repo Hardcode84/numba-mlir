@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 from collections.abc import Iterable
 from functools import partial
 from greenlet import greenlet
