@@ -68,7 +68,7 @@ static mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
   });
 }
 
-static bool compile_ast(std::string source) {
+static bool compileAst(std::string source) {
   mlir::MLIRContext ctx;
   auto loc = mlir::OpBuilder(&ctx).getUnknownLoc();
 
@@ -93,5 +93,5 @@ static bool compile_ast(std::string source) {
 }
 
 PYBIND11_MODULE(compiler, m) {
-  m.def("compile_ast", &compile_ast, "compile_ast", py::arg("source"));
+  m.def("compile_ast", &compileAst, "compile_ast", py::arg("source"));
 }
