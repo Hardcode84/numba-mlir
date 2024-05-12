@@ -5,7 +5,7 @@ from numpy.testing import assert_equal
 import numpy as np
 import pytest
 
-from hckernel.kernel import (
+from hckernel.kernel_sim import (
     kernel,
     sym,
     CurrentGroup,
