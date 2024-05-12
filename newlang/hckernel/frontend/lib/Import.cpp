@@ -892,6 +892,7 @@ static mlir::LogicalResult importPyModuleImpl(llvm::StringRef str,
 mlir::LogicalResult hc::importPyModule(llvm::StringRef str,
                                        mlir::ModuleOp module) {
   try {
+    module.getContext()->loadDialect<mlir::complex::ComplexDialect>();
     return importPyModuleImpl(str, module);
   } catch (std::exception &e) {
     module->emitError(e.what());

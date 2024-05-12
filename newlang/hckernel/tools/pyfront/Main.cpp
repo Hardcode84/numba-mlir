@@ -5,7 +5,6 @@
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/SourceMgr.h>
 
-#include <mlir/Dialect/Complex/IR/Complex.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/Verifier.h>
@@ -101,7 +100,6 @@ static mlir::LogicalResult pyfrontMain(llvm::StringRef inputFilename, Cmd cmd) {
   }
 
   mlir::MLIRContext ctx;
-  ctx.loadDialect<mlir::complex::ComplexDialect>();
   auto loc = mlir::OpBuilder(&ctx).getUnknownLoc();
 
   auto processBuffer = [&](std::unique_ptr<llvm::MemoryBuffer> chunkBuffer,
