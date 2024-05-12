@@ -72,5 +72,5 @@ invoke_cmake(["--install", ".", "--config", "Release"])
 setup(
     name="hckernel",
     version="0.1",
-    packages=find_packages(where=root_dir, include=["*", "hckernel", "hckernel.*"]),
+    packages=find_packages(where=root_dir, include=["hckernel", "hckernel.*"]),
 )
