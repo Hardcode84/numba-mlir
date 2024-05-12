@@ -13,7 +13,7 @@ include(HandleLLVMOptions)
 set(python_module_name compiler)
 
 pybind11_add_module(${python_module_name} MODULE
-    src/compiler_front.cpp
+    src/CompilerFront.cpp
 )
 
 target_include_directories(${python_module_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
