@@ -2,15 +2,18 @@
 
 #pragma once
 
+#include <mlir/Support/LogicalResult.h>
+
 namespace llvm {
 class StringRef;
 }
 
 namespace mlir {
-struct LogicalResult;
 class ModuleOp;
+class Operation;
 } // namespace mlir
 
 namespace hc {
-mlir::LogicalResult importPyModule(llvm::StringRef str, mlir::ModuleOp module);
-}
+mlir::FailureOr<mlir::Operation *> importPyModule(llvm::StringRef str,
+                                                  mlir::ModuleOp module);
+} // namespace hc

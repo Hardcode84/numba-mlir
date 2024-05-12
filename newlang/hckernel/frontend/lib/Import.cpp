@@ -64,6 +64,8 @@ struct ParserState {
   llvm::SmallVector<mlir::OpBuilder::InsertionGuard> guardsStack;
   llvm::SmallVector<std::pair<py::object, NodeHandlerPtr>> handlersStack;
 
+  hc::py_ast::PyModuleOp rootModule;
+
   mlir::Location getLoc(py::handle /*node*/) {
     // TODO: get loc
     return builder.getUnknownLoc();
@@ -633,6 +635,7 @@ struct ModuleHandler {
     state.pushGuard();
     auto &builder = state.builder;
     auto mod = builder.create<hc::py_ast::PyModuleOp>(state.getLoc(node));
+    state.rootModule = mod;
     builder.setInsertionPointToStart(mod.getBody());
     state.pushHandler(node, &popGuard);
     state.pushHandlers(node.attr("body"));
@@ -867,18 +870,19 @@ void fillHandlers(
 }
 } // namespace
 
-static void parseModule(py::handle astMod, py::handle ast,
-                        mlir::ModuleOp module) {
+static hc::py_ast::PyModuleOp parseModule(py::handle astMod, py::handle ast,
+                                          mlir::ModuleOp module) {
   auto ctx = module->getContext();
   ctx->loadDialect<mlir::complex::ComplexDialect>();
   ctx->loadDialect<hc::py_ast::PyASTDialect>();
   ParserState parser(ctx, astMod);
 
   parser.parse(module.getBody(), ast);
+  return parser.rootModule;
 }
 
-static mlir::LogicalResult importPyModuleImpl(llvm::StringRef str,
-                                              mlir::ModuleOp module) {
+static mlir::Operation *importPyModuleImpl(llvm::StringRef str,
+                                           mlir::ModuleOp module) {
   initPython();
   auto mod = py::module::import("ast");
   auto parse = mod.attr("parse");
@@ -886,12 +890,11 @@ static mlir::LogicalResult importPyModuleImpl(llvm::StringRef str,
   llvm::outs() << mod.attr("dump")(ast, "indent"_a = 1).cast<std::string>()
                << "\n";
 
-  parseModule(mod, ast, module);
-  return mlir::success();
+  return parseModule(mod, ast, module);
 }
 
-mlir::LogicalResult hc::importPyModule(llvm::StringRef str,
-                                       mlir::ModuleOp module) {
+mlir::FailureOr<mlir::Operation *> hc::importPyModule(llvm::StringRef str,
+                                                      mlir::ModuleOp module) {
   try {
     return importPyModuleImpl(str, module);
   } catch (std::exception &e) {
