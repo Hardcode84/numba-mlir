@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 import os
 import subprocess
 from setuptools import setup, find_packages
