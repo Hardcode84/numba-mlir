@@ -870,6 +870,7 @@ void fillHandlers(
 static void parseModule(py::handle astMod, py::handle ast,
                         mlir::ModuleOp module) {
   auto ctx = module->getContext();
+  ctx->loadDialect<mlir::complex::ComplexDialect>();
   ctx->loadDialect<hc::py_ast::PyASTDialect>();
   ParserState parser(ctx, astMod);
 
@@ -892,7 +893,6 @@ static mlir::LogicalResult importPyModuleImpl(llvm::StringRef str,
 mlir::LogicalResult hc::importPyModule(llvm::StringRef str,
                                        mlir::ModuleOp module) {
   try {
-    module.getContext()->loadDialect<mlir::complex::ComplexDialect>();
     return importPyModuleImpl(str, module);
   } catch (std::exception &e) {
     module->emitError(e.what());
