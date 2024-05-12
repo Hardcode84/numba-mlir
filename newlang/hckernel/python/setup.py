@@ -65,8 +65,8 @@ def invoke_cmake(args):
 
 
 invoke_cmake(cmake_cmd)
-invoke_cmake(["--build", ".", "--config", "Release"])
-invoke_cmake(["--install", ".", "--config", "Release"])
+invoke_cmake(["--build", cmake_build_dir, "--config", "Release"])
+invoke_cmake(["--install", cmake_build_dir, "--config", "Release"])
 
 setup(
     name="hckernel",
