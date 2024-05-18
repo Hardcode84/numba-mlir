@@ -2,13 +2,14 @@
 
 #pragma once
 
-#include <string>
+namespace llvm {
+class StringRef;
+}
 
 namespace mlir {
 class MLIRContext;
 struct LogicalResult;
 } // namespace mlir
 
-mlir::LogicalResult compileAST(mlir::MLIRContext &ctx,
-                               const std::string &source,
-                               const std::string &funcName);
+mlir::LogicalResult compileAST(mlir::MLIRContext &ctx, llvm::StringRef source,
+                               llvm::StringRef funcName);
