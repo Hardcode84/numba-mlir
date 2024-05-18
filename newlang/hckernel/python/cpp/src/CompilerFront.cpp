@@ -80,15 +80,16 @@ static mlir::LogicalResult importAST(mlir::ModuleOp mod, llvm::StringRef source,
   return mlir::success();
 }
 
-bool compileAST(mlir::MLIRContext &ctx, const std::string &source,
-                const std::string &funcName) {
+mlir::LogicalResult compileAST(mlir::MLIRContext &ctx,
+                               const std::string &source,
+                               const std::string &funcName) {
   auto loc = mlir::OpBuilder(&ctx).getUnknownLoc();
 
   auto mod = mlir::ModuleOp::create(loc);
 
   auto res = importAST(mod, source, funcName);
   if (mlir::failed(res))
-    return false;
+    return mlir::failure();
 
   mlir::PassManager pm(&ctx);
 
@@ -96,8 +97,5 @@ bool compileAST(mlir::MLIRContext &ctx, const std::string &source,
   pm.enableIRPrinting();
 
   hc::populateFrontendPipeline(pm);
-  if (mlir::failed(runUnderDiag(pm, mod)))
-    return false;
-
-  return true;
+  return runUnderDiag(pm, mod);
 }

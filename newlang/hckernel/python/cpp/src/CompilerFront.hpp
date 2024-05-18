@@ -6,7 +6,9 @@
 
 namespace mlir {
 class MLIRContext;
-}
+struct LogicalResult;
+} // namespace mlir
 
-bool compileAST(mlir::MLIRContext &ctx, const std::string &source,
-                const std::string &funcName);
+mlir::LogicalResult compileAST(mlir::MLIRContext &ctx,
+                               const std::string &source,
+                               const std::string &funcName);

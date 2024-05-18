@@ -2,10 +2,17 @@
 
 #include "Dispatcher.hpp"
 
+#include <llvm/ADT/Twine.h>
+#include <mlir/Support/LogicalResult.h>
+
 #include "CompilerFront.hpp"
 #include "Context.hpp"
 
 namespace py = pybind11;
+
+[[noreturn]] static void reportError(const llvm::Twine &msg) {
+  throw std::runtime_error(msg.str());
+}
 
 void Dispatcher::definePyClass(pybind11::module_ &m) {
   py::class_<Dispatcher>(m, "Dispatcher")
@@ -24,5 +31,6 @@ static std::pair<std::string, std::string> getSource(py::object getSourceFunc) {
 
 void Dispatcher::call(py::args args, py::kwargs kwargs) {
   auto [src, funcName] = getSource(std::move(getSourceFunc));
-  compileAST(context.context, src, funcName);
+  if (mlir::failed(compileAST(context.context, src, funcName)))
+    reportError("Compilation failed");
 }
