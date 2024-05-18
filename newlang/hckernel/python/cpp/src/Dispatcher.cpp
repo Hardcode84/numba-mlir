@@ -17,13 +17,12 @@ Dispatcher::Dispatcher(pybind11::capsule ctx, py::object getSrc)
     : context(*ctx.get_pointer<Context>()), contextRef(std::move(ctx)),
       getSourceFunc(std::move(getSrc)) {}
 
-static std::pair<std::string, std::string> getSource(py::handle getSourceFunc) {
+static std::pair<std::string, std::string> getSource(py::object getSourceFunc) {
   auto res = getSourceFunc().cast<py::tuple>();
   return {res[0].cast<std::string>(), res[1].cast<std::string>()};
 }
 
 void Dispatcher::call(py::args args, py::kwargs kwargs) {
-  auto [src, funcName] = getSource(getSourceFunc);
-  getSourceFunc = py::object();
+  auto [src, funcName] = getSource(std::move(getSourceFunc));
   compileAST(context.context, src, funcName);
 }
