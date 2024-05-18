@@ -6,7 +6,10 @@
 
 class Dispatcher {
 public:
-  Dispatcher();
+  Dispatcher(pybind11::object getSrc);
 
   void call(pybind11::args args, pybind11::kwargs kwargs);
+
+private:
+  pybind11::object getSourceFunc;
 };

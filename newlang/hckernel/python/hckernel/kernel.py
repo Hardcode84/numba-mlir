@@ -1,9 +1,18 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import inspect
+
 from .kernel_api import _verify_kernel_params
 from .kernel_api import *
 
 from hckernel._native.compiler import Dispatcher
+
+
+def _get_source(func):
+    def _wrapper():
+        return inspect.getsource(func), func.__name__
+
+    return _wrapper
 
 
 def kernel(
@@ -16,6 +25,6 @@ def kernel(
     _verify_kernel_params(work_shape, group_shape, subgroup_size, literals, tunables)
 
     def _kernel_impl(func):
-        return Dispatcher()
+        return Dispatcher(_get_source(func))
 
     return _kernel_impl

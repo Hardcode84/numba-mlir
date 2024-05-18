@@ -14,6 +14,6 @@ PYBIND11_MODULE(compiler, m) {
         py::arg("func_name"));
 
   py::class_<Dispatcher>(m, "Dispatcher")
-      .def(py::init())
+      .def(py::init<py::object>())
       .def("__call__", &Dispatcher::call);
 }
