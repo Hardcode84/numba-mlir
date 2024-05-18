@@ -9,6 +9,9 @@ from .compiler import mlir_context, Dispatcher
 
 
 def _get_source(func):
+    if not isinstance(func, FunctionType):
+        raise RuntimeError(f"Unsupported object {type(func)}")
+
     def _wrapper():
         return inspect.getsource(func), func.__name__
 
@@ -25,9 +28,6 @@ def kernel(
     _verify_kernel_params(work_shape, group_shape, subgroup_size, literals, tunables)
 
     def _kernel_impl(func):
-        if not isinstance(func, FunctionType):
-            raise RuntimeError(f"Unsupported object {type(func)}")
-
         return Dispatcher(mlir_context, _get_source(func))
 
     return _kernel_impl
