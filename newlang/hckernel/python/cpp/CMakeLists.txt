@@ -14,6 +14,8 @@ set(python_module_name compiler)
 
 pybind11_add_module(${python_module_name} MODULE
     src/CompilerFront.cpp
+    src/CompilerFront.hpp
+    src/PyModule.cpp
 )
 
 target_include_directories(${python_module_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

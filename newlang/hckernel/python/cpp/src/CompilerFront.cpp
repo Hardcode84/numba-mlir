@@ -19,11 +19,7 @@
 #include "hc/PyFront/Import.hpp"
 #include "hc/Utils.hpp"
 
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
-namespace py = pybind11;
+#include "CompilerFront.hpp"
 
 static void printDiag(llvm::raw_ostream &os, const mlir::Diagnostic &diag) {
   os << diag;
@@ -84,7 +80,7 @@ static mlir::LogicalResult importAST(mlir::ModuleOp mod, llvm::StringRef source,
   return mlir::success();
 }
 
-static bool compileAST(const std::string &source, const std::string &funcName) {
+bool compileAST(const std::string &source, const std::string &funcName) {
   mlir::MLIRContext ctx;
   auto loc = mlir::OpBuilder(&ctx).getUnknownLoc();
 
@@ -104,9 +100,4 @@ static bool compileAST(const std::string &source, const std::string &funcName) {
     return false;
 
   return true;
-}
-
-PYBIND11_MODULE(compiler, m) {
-  m.def("compile_ast", &compileAST, "compile_ast", py::arg("source"),
-        py::arg("func_name"));
 }
