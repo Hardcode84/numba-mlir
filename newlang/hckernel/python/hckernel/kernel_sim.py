@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from .kernel_api import _divup
+from .kernel_api import _divup, _verify_kernel_params
 from .kernel_api import *
 
 DEF_GROUP_SHAPE = 64
@@ -175,12 +175,10 @@ def kernel(
     literals=(),
     tunables=(),
 ):
+    _verify_kernel_params(work_shape, group_shape, subgroup_size, literals, tunables)
     if subgroup_size is None:
         subgroup_size = DEF_SUBGROUP_SIZE
 
-    assert (
-        isinstance(subgroup_size, int) or subgroup_size in literals
-    ), "Subgroup size must be const or literal"
     work_shape = _get_dims(work_shape)
 
     if group_shape is None:
