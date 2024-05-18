@@ -16,7 +16,5 @@ PYBIND11_MODULE(compiler, m) {
 
   m.def("create_context", &createContext);
 
-  py::class_<Dispatcher>(m, "Dispatcher")
-      .def(py::init<py::capsule, py::object>())
-      .def("__call__", &Dispatcher::call);
+  Dispatcher::definePyClass(m);
 }

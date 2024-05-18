@@ -4,10 +4,12 @@
 
 #include <pybind11/pybind11.h>
 
-class Context;
+struct Context;
 
 class Dispatcher {
 public:
+  static void definePyClass(pybind11::module_ &m);
+
   Dispatcher(pybind11::capsule ctx, pybind11::object getSrc);
 
   void call(pybind11::args args, pybind11::kwargs kwargs);
