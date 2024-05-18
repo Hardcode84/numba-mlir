@@ -30,7 +30,16 @@ static std::pair<std::string, std::string> getSource(py::object getSourceFunc) {
 }
 
 void Dispatcher::call(py::args args, py::kwargs kwargs) {
-  auto [src, funcName] = getSource(std::move(getSourceFunc));
-  if (mlir::failed(compileAST(context.context, src, funcName)))
-    reportError("Compilation failed");
+  if (!func) {
+    assert(getSourceFunc);
+    auto [src, funcName] = getSource(std::move(getSourceFunc));
+    if (mlir::failed(compileAST(context.context, src, funcName)))
+      reportError("Compilation failed");
+  }
+
+  assert(func && "Func is not set");
+
+  ExceptionDesc exc;
+  if (!func(&exc, args.ptr(), kwargs.ptr()))
+    reportError(exc.message);
 }

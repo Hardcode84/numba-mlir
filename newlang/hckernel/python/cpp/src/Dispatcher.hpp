@@ -18,4 +18,11 @@ private:
   Context &context;
   pybind11::object contextRef; // to keep context alive
   pybind11::object getSourceFunc;
+
+  struct ExceptionDesc {
+    std::string message;
+  };
+
+  using FuncT = int (*)(ExceptionDesc *exc, PyObject *args, PyObject *kwargs);
+  FuncT func = nullptr;
 };
