@@ -40,6 +40,6 @@ void Dispatcher::call(py::args args, py::kwargs kwargs) {
   assert(func && "Func is not set");
 
   ExceptionDesc exc;
-  if (!func(&exc, args.ptr(), kwargs.ptr()))
+  if (func(&exc, args.ptr(), kwargs.ptr()) != 0)
     reportError(exc.message);
 }
