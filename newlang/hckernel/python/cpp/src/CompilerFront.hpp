@@ -2,14 +2,17 @@
 
 #pragma once
 
+#include <mlir/IR/OwningOpRef.h>
+#include <mlir/Support/LogicalResult.h>
+
 namespace llvm {
 class StringRef;
 }
 
 namespace mlir {
 class MLIRContext;
-struct LogicalResult;
-} // namespace mlir
+}
 
-mlir::LogicalResult compileAST(mlir::MLIRContext &ctx, llvm::StringRef source,
-                               llvm::StringRef funcName);
+mlir::FailureOr<mlir::OwningOpRef<mlir::Operation *>>
+compileAST(mlir::MLIRContext &ctx, llvm::StringRef source,
+           llvm::StringRef funcName);

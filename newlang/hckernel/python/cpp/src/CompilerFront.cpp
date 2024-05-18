@@ -30,7 +30,7 @@ static void printDiag(llvm::raw_ostream &os, const mlir::Diagnostic &diag) {
 }
 
 static mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
-                                        mlir::ModuleOp module) {
+                                        mlir::Operation *module) {
   bool dumpDiag = true;
   std::string err;
   llvm::raw_string_ostream errStream(err);
@@ -44,13 +44,13 @@ static mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
 
   auto getErr = [&]() -> const std::string & {
     errStream << "\n";
-    module.print(errStream);
+    module->print(errStream);
     errStream.flush();
     return err;
   };
 
   bool verify = true;
-  return hc::scopedDiagHandler(*module.getContext(), diagHandler, [&]() {
+  return hc::scopedDiagHandler(*module->getContext(), diagHandler, [&]() {
     if (verify && mlir::failed(mlir::verify(module))) {
       llvm::errs() << "MLIR broken module\n" << getErr();
       return mlir::failure();
@@ -65,7 +65,8 @@ static mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
   });
 }
 
-static mlir::LogicalResult importAST(mlir::ModuleOp mod, llvm::StringRef source,
+static mlir::LogicalResult importAST(mlir::Operation *mod,
+                                     llvm::StringRef source,
                                      llvm::StringRef funcName) {
   auto res = hc::importPyModule(source, mod);
   if (mlir::failed(res))
@@ -73,21 +74,21 @@ static mlir::LogicalResult importAST(mlir::ModuleOp mod, llvm::StringRef source,
 
   auto pyMod = mlir::cast<hc::py_ast::PyModuleOp>(*res);
 
-  mlir::OpBuilder builder(mod.getContext());
+  mlir::OpBuilder builder(mod->getContext());
   auto term = pyMod.getBody()->getTerminator();
   builder.setInsertionPoint(term);
   builder.create<hc::py_ast::CaptureValOp>(term->getLoc(), funcName);
   return mlir::success();
 }
 
-mlir::LogicalResult compileAST(mlir::MLIRContext &ctx, llvm::StringRef source,
-                               llvm::StringRef funcName) {
+mlir::FailureOr<mlir::OwningOpRef<mlir::Operation *>>
+compileAST(mlir::MLIRContext &ctx, llvm::StringRef source,
+           llvm::StringRef funcName) {
   auto loc = mlir::OpBuilder(&ctx).getUnknownLoc();
 
-  auto mod = mlir::ModuleOp::create(loc);
+  mlir::OwningOpRef<mlir::Operation *> mod(mlir::ModuleOp::create(loc));
 
-  auto res = importAST(mod, source, funcName);
-  if (mlir::failed(res))
+  if (mlir::failed(importAST(*mod, source, funcName)))
     return mlir::failure();
 
   mlir::PassManager pm(&ctx);
@@ -96,5 +97,8 @@ mlir::LogicalResult compileAST(mlir::MLIRContext &ctx, llvm::StringRef source,
   pm.enableIRPrinting();
 
   hc::populateFrontendPipeline(pm);
-  return runUnderDiag(pm, mod);
+  if (mlir::failed(runUnderDiag(pm, *mod)))
+    return mlir::failure();
+
+  return mod;
 }

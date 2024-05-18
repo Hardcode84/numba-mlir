@@ -9,11 +9,10 @@ class StringRef;
 }
 
 namespace mlir {
-class ModuleOp;
 class Operation;
-} // namespace mlir
+}
 
 namespace hc {
 mlir::FailureOr<mlir::Operation *> importPyModule(llvm::StringRef str,
-                                                  mlir::ModuleOp module);
+                                                  mlir::Operation *module);
 } // namespace hc

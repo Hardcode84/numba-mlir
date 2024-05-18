@@ -3,6 +3,7 @@
 #include "Dispatcher.hpp"
 
 #include <llvm/ADT/Twine.h>
+#include <mlir/IR/BuiltinOps.h>
 #include <mlir/Support/LogicalResult.h>
 
 #include "CompilerFront.hpp"
@@ -24,19 +25,23 @@ Dispatcher::Dispatcher(py::capsule ctx, py::object getDesc)
     : context(*ctx.get_pointer<Context>()), contextRef(std::move(ctx)),
       getFuncDesc(std::move(getDesc)) {}
 
+Dispatcher::~Dispatcher() {}
+
 static std::pair<std::string, std::string> getSource(py::handle desc) {
   return {desc.attr("source").cast<std::string>(),
           desc.attr("name").cast<std::string>()};
 }
 
 void Dispatcher::call(py::args args, py::kwargs kwargs) {
-  if (!func) {
+  if (!mod) {
     assert(getFuncDesc);
     py::object desc = getFuncDesc();
     getFuncDesc = py::object();
     auto [src, funcName] = getSource(desc);
-    if (mlir::failed(compileAST(context.context, src, funcName)))
+    auto res = compileAST(context.context, src, funcName);
+    if (mlir::failed(res))
       reportError("Compilation failed");
+    std::swap(mod, *res);
   }
 
   assert(func && "Func is not set");

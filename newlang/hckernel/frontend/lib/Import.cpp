@@ -894,9 +894,9 @@ static mlir::Operation *importPyModuleImpl(llvm::StringRef str,
 }
 
 mlir::FailureOr<mlir::Operation *> hc::importPyModule(llvm::StringRef str,
-                                                      mlir::ModuleOp module) {
+                                                      mlir::Operation *module) {
   try {
-    return importPyModuleImpl(str, module);
+    return importPyModuleImpl(str, mlir::cast<mlir::ModuleOp>(module));
   } catch (std::exception &e) {
     module->emitError(e.what());
     return mlir::failure();
