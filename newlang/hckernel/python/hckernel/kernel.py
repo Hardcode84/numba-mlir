@@ -4,8 +4,7 @@ import inspect
 
 from .kernel_api import _verify_kernel_params
 from .kernel_api import *
-
-from hckernel._native.compiler import Dispatcher
+from .compiler import Dispatcher
 
 
 def _get_source(func):
