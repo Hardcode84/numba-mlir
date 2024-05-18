@@ -4,4 +4,9 @@
 
 #include <string>
 
-bool compileAST(const std::string &source, const std::string &funcName);
+namespace mlir {
+class MLIRContext;
+}
+
+bool compileAST(mlir::MLIRContext &ctx, const std::string &source,
+                const std::string &funcName);

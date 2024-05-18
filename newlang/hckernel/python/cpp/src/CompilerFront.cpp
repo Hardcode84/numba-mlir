@@ -80,8 +80,8 @@ static mlir::LogicalResult importAST(mlir::ModuleOp mod, llvm::StringRef source,
   return mlir::success();
 }
 
-bool compileAST(const std::string &source, const std::string &funcName) {
-  mlir::MLIRContext ctx;
+bool compileAST(mlir::MLIRContext &ctx, const std::string &source,
+                const std::string &funcName) {
   auto loc = mlir::OpBuilder(&ctx).getUnknownLoc();
 
   auto mod = mlir::ModuleOp::create(loc);

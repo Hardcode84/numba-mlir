@@ -4,7 +4,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "CompilerFront.hpp"
 #include "Context.hpp"
 #include "Dispatcher.hpp"
 

@@ -3,6 +3,7 @@
 #include "Dispatcher.hpp"
 
 #include "CompilerFront.hpp"
+#include "Context.hpp"
 
 namespace py = pybind11;
 
@@ -24,5 +25,5 @@ static std::pair<std::string, std::string> getSource(py::handle getSourceFunc) {
 void Dispatcher::call(py::args args, py::kwargs kwargs) {
   auto [src, funcName] = getSource(getSourceFunc);
   getSourceFunc = py::object();
-  compileAST(src, funcName);
+  compileAST(context.context, src, funcName);
 }
