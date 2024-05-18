@@ -20,19 +20,21 @@ void Dispatcher::definePyClass(py::module_ &m) {
       .def("__call__", &Dispatcher::call);
 }
 
-Dispatcher::Dispatcher(py::capsule ctx, py::object getSrc)
+Dispatcher::Dispatcher(py::capsule ctx, py::object getDesc)
     : context(*ctx.get_pointer<Context>()), contextRef(std::move(ctx)),
-      getSourceFunc(std::move(getSrc)) {}
+      getFuncDesc(std::move(getDesc)) {}
 
-static std::pair<std::string, std::string> getSource(py::object getSourceFunc) {
-  auto res = getSourceFunc().cast<py::tuple>();
-  return {res[0].cast<std::string>(), res[1].cast<std::string>()};
+static std::pair<std::string, std::string> getSource(py::handle desc) {
+  return {desc.attr("source").cast<std::string>(),
+          desc.attr("name").cast<std::string>()};
 }
 
 void Dispatcher::call(py::args args, py::kwargs kwargs) {
   if (!func) {
-    assert(getSourceFunc);
-    auto [src, funcName] = getSource(std::move(getSourceFunc));
+    assert(getFuncDesc);
+    py::object desc = getFuncDesc();
+    getFuncDesc = py::object();
+    auto [src, funcName] = getSource(desc);
     if (mlir::failed(compileAST(context.context, src, funcName)))
       reportError("Compilation failed");
   }

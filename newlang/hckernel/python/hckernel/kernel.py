@@ -2,18 +2,22 @@
 
 import inspect
 from types import FunctionType
+from collections import namedtuple
 
 from .kernel_api import _verify_kernel_params
 from .kernel_api import *
 from .compiler import mlir_context, Dispatcher
 
 
-def _get_source(func):
+FuncDesc = namedtuple("FuncDesc", ["source", "name"])
+
+
+def _get_desc(func):
     if not isinstance(func, FunctionType):
         raise RuntimeError(f"Unsupported object {type(func)}")
 
     def _wrapper():
-        return inspect.getsource(func), func.__name__
+        return FuncDesc(source=inspect.getsource(func), name=func.__name__)
 
     return _wrapper
 
@@ -28,6 +32,6 @@ def kernel(
     _verify_kernel_params(work_shape, group_shape, subgroup_size, literals, tunables)
 
     def _kernel_impl(func):
-        return Dispatcher(mlir_context, _get_source(func))
+        return Dispatcher(mlir_context, _get_desc(func))
 
     return _kernel_impl
