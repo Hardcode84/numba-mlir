@@ -11,9 +11,6 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(compiler, m) {
-  m.def("compile_ast", &compileAST, "compile_ast", py::arg("source"),
-        py::arg("func_name"));
-
   m.def("create_context", &createContext);
 
   Dispatcher::definePyClass(m);

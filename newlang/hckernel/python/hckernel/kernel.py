@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import inspect
+from types import FunctionType
 
 from .kernel_api import _verify_kernel_params
 from .kernel_api import *
@@ -24,6 +25,9 @@ def kernel(
     _verify_kernel_params(work_shape, group_shape, subgroup_size, literals, tunables)
 
     def _kernel_impl(func):
+        if not isinstance(func, FunctionType):
+            raise RuntimeError(f"Unsupported object {type(func)}")
+
         return Dispatcher(mlir_context, _get_source(func))
 
     return _kernel_impl
