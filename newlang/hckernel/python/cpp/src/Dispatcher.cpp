@@ -6,7 +6,9 @@
 
 namespace py = pybind11;
 
-Dispatcher::Dispatcher(py::object getSrc) : getSourceFunc(std::move(getSrc)) {}
+Dispatcher::Dispatcher(pybind11::capsule ctx, py::object getSrc)
+    : context(*ctx.get_pointer<Context>()), contextRef(std::move(ctx)),
+      getSourceFunc(std::move(getSrc)) {}
 
 static std::pair<std::string, std::string> getSource(py::handle getSourceFunc) {
   auto res = getSourceFunc().cast<py::tuple>();

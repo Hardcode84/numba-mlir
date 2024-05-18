@@ -4,7 +4,7 @@ import inspect
 
 from .kernel_api import _verify_kernel_params
 from .kernel_api import *
-from .compiler import Dispatcher
+from .compiler import mlir_context, Dispatcher
 
 
 def _get_source(func):
@@ -24,6 +24,6 @@ def kernel(
     _verify_kernel_params(work_shape, group_shape, subgroup_size, literals, tunables)
 
     def _kernel_impl(func):
-        return Dispatcher(_get_source(func))
+        return Dispatcher(mlir_context, _get_source(func))
 
     return _kernel_impl

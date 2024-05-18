@@ -5,6 +5,7 @@
 #include <pybind11/stl.h>
 
 #include "CompilerFront.hpp"
+#include "Context.hpp"
 #include "Dispatcher.hpp"
 
 namespace py = pybind11;
@@ -13,7 +14,9 @@ PYBIND11_MODULE(compiler, m) {
   m.def("compile_ast", &compileAST, "compile_ast", py::arg("source"),
         py::arg("func_name"));
 
+  m.def("create_context", &createContext);
+
   py::class_<Dispatcher>(m, "Dispatcher")
-      .def(py::init<py::object>())
+      .def(py::init<py::capsule, py::object>())
       .def("__call__", &Dispatcher::call);
 }

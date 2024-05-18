@@ -2,7 +2,9 @@
 
 import inspect
 from types import FunctionType
-from hckernel._native.compiler import compile_ast, Dispatcher
+from hckernel._native.compiler import compile_ast, create_context, Dispatcher
+
+mlir_context = create_context()
 
 
 def mlir_compile(func):

@@ -15,6 +15,8 @@ set(python_module_name compiler)
 pybind11_add_module(${python_module_name} MODULE
     src/CompilerFront.cpp
     src/CompilerFront.hpp
+    src/Context.cpp
+    src/Context.hpp
     src/Dispatcher.cpp
     src/Dispatcher.hpp
     src/PyModule.cpp
