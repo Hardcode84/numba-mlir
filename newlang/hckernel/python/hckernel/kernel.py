@@ -17,8 +17,9 @@ def _process_annotation(ann):
         return typing.get_origin(ann) == typ or isinstance(ann, typ)
 
     def get_typing_args(ann):
+        print("asdasd 1", ann)
         if isinstance(ann, (types.GenericAlias, typing._GenericAlias)):
-            return typing.get_args(ann)
+            return typing.get_args(ann)[0]
 
         if isinstance(ann, Iterable):
             return ann

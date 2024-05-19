@@ -64,6 +64,9 @@ using HandlerT = std::function<void(mlir::MLIRContext &, pybind11::handle,
                                     llvm::SmallVectorImpl<mlir::Type> &,
                                     llvm::SmallVectorImpl<PyObject *> &)>;
 
+static const constexpr int64_t kDynamic = mlir::ShapedType::kDynamic;
+static const constexpr int64_t kLiteral = kDynamic + 1;
+
 static HandlerT getArgHandler(py::handle arg) {
   py::str sym("sym");
   if (arg.equal(sym)) {
@@ -97,10 +100,50 @@ static HandlerT getArgHandler(py::handle arg) {
     };
   }
   if (py::isinstance<py::list>(arg)) {
-    reportError(llvm::Twine("TODO: handle buffer"));
+    py::str lit("lit");
+    llvm::SmallVector<int64_t> srcShape(py::len(arg));
+    for (auto &&[i, s] : llvm::enumerate(arg)) {
+      if (py::isinstance<py::int_>(s)) {
+        srcShape[i] = s.cast<int64_t>();
+      } else if (s.equal(sym)) {
+        srcShape[i] = kDynamic;
+      } else if (s.equal(lit)) {
+        srcShape[i] = kLiteral;
+      } else {
+        reportError(llvm::Twine("Unsupported dim type: ") +
+                    py::str(s).cast<std::string>());
+      }
+    }
+
+    return [argShape =
+                std::move(srcShape)](mlir::MLIRContext &ctx, py::handle obj,
+                                     llvm::SmallVectorImpl<mlir::Type> &ret,
+                                     llvm::SmallVectorImpl<PyObject *> &args) {
+      auto arrInterface = obj.attr("__array_interface__").cast<py::dict>();
+      auto shape = arrInterface["shape"].cast<py::tuple>();
+      if (argShape.size() != shape.size())
+        reportError("Invalid buffer rank");
+
+      llvm::SmallVector<int64_t> resShape(argShape.size());
+      for (auto &&[i, s] : llvm::enumerate(argShape)) {
+        if (s == kDynamic) {
+          resShape[i] = kDynamic;
+        } else if (s == kLiteral) {
+          resShape[i] = shape[i].cast<int64_t>();
+        } else {
+          resShape[i] = s;
+        }
+      }
+
+      // TODO: dtype
+      // TODO: layout
+      auto dtype = mlir::Float64Type::get(&ctx);
+      ret.emplace_back(mlir::MemRefType::get(resShape, dtype));
+      args.emplace_back(obj.ptr());
+    };
   }
 
-  reportError(llvm::Twine("Unsupported arg type") +
+  reportError(llvm::Twine("Unsupported arg type: ") +
               py::str(arg).cast<std::string>());
 }
 
