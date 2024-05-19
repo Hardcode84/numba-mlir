@@ -13,6 +13,6 @@ class Operation;
 }
 
 namespace hc {
-mlir::FailureOr<mlir::Operation *> importPyModule(llvm::StringRef str,
-                                                  mlir::Operation *module);
+mlir::FailureOr<mlir::Operation *>
+importPyModule(llvm::StringRef str, mlir::Operation *module, bool dumpAST);
 } // namespace hc

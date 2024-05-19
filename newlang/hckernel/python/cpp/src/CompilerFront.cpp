@@ -69,7 +69,7 @@ static mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
 static mlir::LogicalResult importAST(mlir::Operation *mod,
                                      llvm::StringRef source,
                                      llvm::StringRef funcName) {
-  auto res = hc::importPyModule(source, mod);
+  auto res = hc::importPyModule(source, mod, /*dumpAST*/ false);
   if (mlir::failed(res))
     return mlir::failure();
 

@@ -85,7 +85,8 @@ static mlir::LogicalResult pyfrontMain(llvm::StringRef inputFilename, Cmd cmd) {
   auto processBuffer = [&](std::unique_ptr<llvm::MemoryBuffer> chunkBuffer,
                            llvm::raw_ostream &os) -> mlir::LogicalResult {
     auto mod = mlir::ModuleOp::create(loc);
-    auto res = hc::importPyModule(chunkBuffer->getBuffer(), mod);
+    auto res =
+        hc::importPyModule(chunkBuffer->getBuffer(), mod, /*dumpAST*/ false);
     if (mlir::succeeded(res)) {
       if (mlir::failed(mlir::verify(mod)))
         res = mlir::failure();

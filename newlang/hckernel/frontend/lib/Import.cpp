@@ -881,22 +881,24 @@ static hc::py_ast::PyModuleOp parseModule(py::handle astMod, py::handle ast,
   return parser.rootModule;
 }
 
-static mlir::Operation *importPyModuleImpl(llvm::StringRef str,
-                                           mlir::ModuleOp module) {
+static mlir::Operation *
+importPyModuleImpl(llvm::StringRef str, mlir::ModuleOp module, bool dumpAST) {
   initPython();
   auto mod = py::module::import("ast");
   auto parse = mod.attr("parse");
   auto ast = parse(toStr(str));
-  llvm::outs() << mod.attr("dump")(ast, "indent"_a = 1).cast<std::string>()
-               << "\n";
+  if (dumpAST) {
+    llvm::outs() << mod.attr("dump")(ast, "indent"_a = 1).cast<std::string>()
+                 << "\n";
+  }
 
   return parseModule(mod, ast, module);
 }
 
-mlir::FailureOr<mlir::Operation *> hc::importPyModule(llvm::StringRef str,
-                                                      mlir::Operation *module) {
+mlir::FailureOr<mlir::Operation *>
+hc::importPyModule(llvm::StringRef str, mlir::Operation *module, bool dumpAST) {
   try {
-    return importPyModuleImpl(str, mlir::cast<mlir::ModuleOp>(module));
+    return importPyModuleImpl(str, mlir::cast<mlir::ModuleOp>(module), dumpAST);
   } catch (std::exception &e) {
     module->emitError(e.what());
     return mlir::failure();
