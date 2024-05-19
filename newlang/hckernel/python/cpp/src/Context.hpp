@@ -6,8 +6,13 @@
 
 #include <mlir/IR/MLIRContext.h>
 
+struct Settings {
+  bool dumpIR = false;
+};
+
 struct Context {
   mlir::MLIRContext context;
+  Settings settings;
 };
 
 pybind11::capsule createContext(pybind11::dict settings);

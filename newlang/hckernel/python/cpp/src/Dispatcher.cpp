@@ -38,7 +38,7 @@ void Dispatcher::call(py::args args, py::kwargs kwargs) {
     py::object desc = getFuncDesc();
     getFuncDesc = py::object();
     auto [src, funcName] = getSource(desc);
-    auto res = compileAST(context.context, src, funcName);
+    auto res = compileAST(context, src, funcName);
     if (mlir::failed(res))
       reportError("Compilation failed");
     std::swap(mod, *res);

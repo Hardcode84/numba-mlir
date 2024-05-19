@@ -20,6 +20,7 @@
 #include "hc/Utils.hpp"
 
 #include "CompilerFront.hpp"
+#include "Context.hpp"
 
 static void printDiag(llvm::raw_ostream &os, const mlir::Diagnostic &diag) {
   os << diag;
@@ -82,19 +83,21 @@ static mlir::LogicalResult importAST(mlir::Operation *mod,
 }
 
 mlir::FailureOr<mlir::OwningOpRef<mlir::Operation *>>
-compileAST(mlir::MLIRContext &ctx, llvm::StringRef source,
-           llvm::StringRef funcName) {
-  auto loc = mlir::OpBuilder(&ctx).getUnknownLoc();
+compileAST(Context &ctx, llvm::StringRef source, llvm::StringRef funcName) {
+  auto *mlirContext = &ctx.context;
+  auto loc = mlir::OpBuilder(mlirContext).getUnknownLoc();
 
   mlir::OwningOpRef<mlir::Operation *> mod(mlir::ModuleOp::create(loc));
 
   if (mlir::failed(importAST(*mod, source, funcName)))
     return mlir::failure();
 
-  mlir::PassManager pm(&ctx);
+  mlir::PassManager pm(mlirContext);
 
-  ctx.disableMultithreading();
-  pm.enableIRPrinting();
+  if (ctx.settings.dumpIR) {
+    mlirContext->disableMultithreading();
+    pm.enableIRPrinting();
+  }
 
   hc::populateFrontendPipeline(pm);
   if (mlir::failed(runUnderDiag(pm, *mod)))

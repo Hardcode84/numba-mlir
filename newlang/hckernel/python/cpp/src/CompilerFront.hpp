@@ -9,10 +9,7 @@ namespace llvm {
 class StringRef;
 }
 
-namespace mlir {
-class MLIRContext;
-}
+struct Context;
 
 mlir::FailureOr<mlir::OwningOpRef<mlir::Operation *>>
-compileAST(mlir::MLIRContext &ctx, llvm::StringRef source,
-           llvm::StringRef funcName);
+compileAST(Context &ctx, llvm::StringRef source, llvm::StringRef funcName);
