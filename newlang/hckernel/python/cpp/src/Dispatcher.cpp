@@ -60,20 +60,16 @@ void Dispatcher::call(py::args args, py::kwargs kwargs) {
     reportError(exc.message);
 }
 
-using typeHandlerT = std::function<void(mlir::MLIRContext &, pybind11::handle,
-                                        llvm::SmallVectorImpl<mlir::Type> &)>;
-using argHandlerT =
-    std::function<void(py::handle, llvm::SmallVectorImpl<PyObject *> &)>;
+using HandlerT = std::function<void(mlir::MLIRContext &, pybind11::handle,
+                                    llvm::SmallVectorImpl<mlir::Type> &,
+                                    llvm::SmallVectorImpl<PyObject *> &)>;
 
-static std::pair<typeHandlerT, argHandlerT> getArgHandlers(py::handle arg) {
-  auto simpleArgHandler = [](py::handle obj,
-                             llvm::SmallVectorImpl<PyObject *> &ret) {
-    ret.emplace_back(obj.ptr());
-  };
+static HandlerT getArgHandler(py::handle arg) {
   py::str sym("sym");
   if (arg.equal(sym)) {
-    auto typeHandler = [](mlir::MLIRContext &ctx, py::handle obj,
-                          llvm::SmallVectorImpl<mlir::Type> &ret) {
+    return [](mlir::MLIRContext &ctx, py::handle obj,
+              llvm::SmallVectorImpl<mlir::Type> &ret,
+              llvm::SmallVectorImpl<PyObject *> &args) {
       if (py::isinstance<py::int_>(obj)) {
         ret.emplace_back(mlir::IntegerType::get(&ctx, 64));
       } else if (py::isinstance<py::float_>(obj)) {
@@ -82,33 +78,23 @@ static std::pair<typeHandlerT, argHandlerT> getArgHandlers(py::handle arg) {
         reportError(llvm::Twine("Unsupported type") +
                     py::str(obj).cast<std::string>());
       }
+      args.emplace_back(obj.ptr());
     };
-    return {typeHandler, simpleArgHandler};
   }
   if (py::isinstance<py::tuple>(arg)) {
     auto count = py::len(arg);
-    llvm::SmallVector<typeHandlerT, 0> typeHandlers;
-    llvm::SmallVector<argHandlerT, 0> argHandlers;
-    typeHandlers.reserve(count);
-    argHandlers.reserve(count);
-    for (auto elem : arg) {
-      auto &&[typeHandler, argHandler] = getArgHandlers(elem);
-      typeHandlers.emplace_back(std::move(typeHandler));
-      argHandlers.emplace_back(std::move(argHandler));
-    }
-    auto typeHandler = [handlers = std::move(typeHandlers)](
-                           mlir::MLIRContext &ctx, py::handle obj,
-                           llvm::SmallVectorImpl<mlir::Type> &ret) {
-      for (auto &&[h, elem] : llvm::zip_equal(handlers, obj))
-        h(ctx, elem, ret);
+    llvm::SmallVector<HandlerT, 0> handlers;
+    handlers.reserve(count);
+    for (auto elem : arg)
+      handlers.emplace_back(getArgHandler(elem));
+
+    return [handlersCopy =
+                std::move(handlers)](mlir::MLIRContext &ctx, py::handle obj,
+                                     llvm::SmallVectorImpl<mlir::Type> &ret,
+                                     llvm::SmallVectorImpl<PyObject *> &args) {
+      for (auto &&[h, elem] : llvm::zip_equal(handlersCopy, obj))
+        h(ctx, elem, ret, args);
     };
-    auto argHandler = [handlers = std::move(argHandlers)](
-                          py::handle obj,
-                          llvm::SmallVectorImpl<PyObject *> &ret) {
-      for (auto &&[h, elem] : llvm::zip_equal(handlers, obj))
-        h(elem, ret);
-    };
-    return {std::move(typeHandler), std::move(argHandler)};
   }
   if (py::isinstance<py::list>(arg)) {
     reportError(llvm::Twine("TODO: handle buffer"));
@@ -124,9 +110,8 @@ void Dispatcher::populateArgsHandlers(pybind11::handle args) {
   argsHandlers.reserve(py::len(args));
   for (auto [name, elem] : args.cast<py::dict>()) {
     auto nameAttr = mlir::StringAttr::get(&ctx, name.cast<std::string>());
-    auto &&[typeHandler, argHandler] = getArgHandlers(elem);
-    argsHandlers.emplace_back(ArgDesc{
-        nameAttr.getValue(), std::move(typeHandler), std::move(argHandler)});
+    auto handler = getArgHandler(elem);
+    argsHandlers.emplace_back(ArgDesc{nameAttr.getValue(), std::move(handler)});
   }
 }
 
@@ -154,16 +139,14 @@ Dispatcher::processArgs(py::args &args, py::kwargs &kwargs,
   for (auto &arg : argsHandlers) {
     auto name = arg.name;
     if (auto kwarg = getKWArg(name)) {
-      arg.typeHandler(ctx, kwarg, types);
-      arg.argHandler(kwarg, retArgs);
+      arg.handler(ctx, kwarg, types, retArgs);
       continue;
     }
     if (idx >= srcNumArgs)
       reportError("Insufficient args");
 
     auto srcArg = args[idx++];
-    arg.typeHandler(context.context, srcArg, types);
-    arg.argHandler(srcArg, retArgs);
+    arg.handler(context.context, srcArg, types, retArgs);
   }
 
   if (types.empty())

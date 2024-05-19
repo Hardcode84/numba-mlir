@@ -29,10 +29,9 @@ private:
   struct ArgDesc {
     llvm::StringRef name;
     std::function<void(mlir::MLIRContext &, pybind11::handle,
-                       llvm::SmallVectorImpl<mlir::Type> &)>
-        typeHandler;
-    std::function<void(pybind11::handle, llvm::SmallVectorImpl<PyObject *> &)>
-        argHandler;
+                       llvm::SmallVectorImpl<mlir::Type> &,
+                       llvm::SmallVectorImpl<PyObject *> &)>
+        handler;
   };
   llvm::SmallVector<ArgDesc> argsHandlers;
 
