@@ -4,4 +4,6 @@ import inspect
 from types import FunctionType
 from hckernel._native.compiler import create_context, Dispatcher
 
-mlir_context = create_context()
+from .settings import settings as _settings
+
+mlir_context = create_context(_settings)

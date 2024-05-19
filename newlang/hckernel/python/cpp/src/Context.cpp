@@ -2,7 +2,7 @@
 
 #include "Context.hpp"
 
-pybind11::capsule createContext() {
+pybind11::capsule createContext(pybind11::dict settings) {
   auto ctx = std::make_unique<Context>();
   auto dtor = [](void *ptr) { delete static_cast<Context *>(ptr); };
   pybind11::capsule ret(ctx.get(), dtor);

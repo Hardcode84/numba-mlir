@@ -10,4 +10,4 @@ struct Context {
   mlir::MLIRContext context;
 };
 
-pybind11::capsule createContext();
+pybind11::capsule createContext(pybind11::dict settings);
