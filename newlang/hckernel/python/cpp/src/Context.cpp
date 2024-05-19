@@ -5,6 +5,7 @@
 namespace py = pybind11;
 
 static void readSettings(Settings &ret, py::dict &dict) {
+  ret.dumpAST = dict["DUMP_AST"].cast<bool>();
   ret.dumpIR = dict["DUMP_IR"].cast<bool>();
 }
 

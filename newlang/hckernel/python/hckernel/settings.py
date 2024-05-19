@@ -11,4 +11,5 @@ def _readenv(name, ctor, default):
     return res
 
 
+DUMP_AST = _readenv("HC_DUMP_AST", int, 0)
 DUMP_IR = _readenv("HC_DUMP_IR", int, 0)

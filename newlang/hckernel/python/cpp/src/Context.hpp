@@ -7,6 +7,7 @@
 #include <mlir/IR/MLIRContext.h>
 
 struct Settings {
+  bool dumpAST = false;
   bool dumpIR = false;
 };
 

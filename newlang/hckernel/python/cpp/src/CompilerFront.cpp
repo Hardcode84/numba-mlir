@@ -68,8 +68,8 @@ static mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
 
 static mlir::LogicalResult importAST(mlir::Operation *mod,
                                      llvm::StringRef source,
-                                     llvm::StringRef funcName) {
-  auto res = hc::importPyModule(source, mod, /*dumpAST*/ false);
+                                     llvm::StringRef funcName, bool dumpAST) {
+  auto res = hc::importPyModule(source, mod, dumpAST);
   if (mlir::failed(res))
     return mlir::failure();
 
@@ -89,12 +89,13 @@ compileAST(Context &ctx, llvm::StringRef source, llvm::StringRef funcName) {
 
   mlir::OwningOpRef<mlir::Operation *> mod(mlir::ModuleOp::create(loc));
 
-  if (mlir::failed(importAST(*mod, source, funcName)))
+  auto &settings = ctx.settings;
+  if (mlir::failed(importAST(*mod, source, funcName, settings.dumpAST)))
     return mlir::failure();
 
   mlir::PassManager pm(mlirContext);
 
-  if (ctx.settings.dumpIR) {
+  if (settings.dumpIR) {
     mlirContext->disableMultithreading();
     pm.enableIRPrinting();
   }
