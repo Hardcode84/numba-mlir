@@ -63,9 +63,10 @@ apply_llvm_compile_flags(${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME} PRIVATE
     MLIRComplexDialect
     MLIRControlFlowDialect
+    MLIRFuncDialect
     MLIRIR
-    MLIRTransforms
     MLIRTransformUtils
+    MLIRTransforms
     )
 
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE

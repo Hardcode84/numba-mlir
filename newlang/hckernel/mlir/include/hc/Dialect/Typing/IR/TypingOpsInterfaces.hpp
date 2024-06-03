@@ -26,6 +26,7 @@ struct InterpreterState {
   bool isCompleted() const { return completed; }
 
   llvm::DenseMap<mlir::Value, InterpreterValue> state;
+  llvm::SmallVector<mlir::Operation *, 4> callstack;
   mlir::TypeRange args;
   mlir::Block::iterator iter;
   bool completed = false;

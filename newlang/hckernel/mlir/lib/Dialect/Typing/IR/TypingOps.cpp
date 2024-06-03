@@ -5,6 +5,7 @@
 
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/ControlFlow/IR/ControlFlowOps.h>
+#include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/DialectImplementation.h>
 #include <mlir/IR/PatternMatch.h>
@@ -237,6 +238,75 @@ struct CmpOpInterpreterInterface final
   }
 };
 
+template <typename A, typename B> static bool compareRanges(A &&a, B &&b) {
+  if (std::size(a) != std::size(b))
+    return false;
+
+  for (auto &&[v1, v2] : llvm::zip_equal(a, b)) {
+    if (v1 != v1)
+      return false;
+  }
+  return true;
+}
+
+struct CallOpInterpreterInterface final
+    : public hc::typing::TypingInterpreterInterface::ExternalModel<
+          CallOpInterpreterInterface, mlir::func::CallOp> {
+  mlir::FailureOr<bool> interpret(mlir::Operation *o,
+                                  InterpreterState &state) const {
+    auto op = mlir::cast<mlir::func::CallOp>(o);
+    auto callee = op.getCalleeAttr();
+    auto func = mlir::SymbolTable::lookupNearestSymbolFrom<mlir::func::FuncOp>(
+        op->getParentOp(), callee);
+    if (!func)
+      return op->emitError("Function not found: ") << callee;
+
+    auto ftype = func.getFunctionType();
+    if (!compareRanges(ftype.getInputs(), op.getOperandTypes()) ||
+        !compareRanges(ftype.getResults(), op.getResultTypes()))
+      return op->emitError("Invalid  function type: ") << ftype;
+
+    if (func.isDeclaration())
+      return op->emitError("Function body is not available");
+
+    mlir::Block &body = func.getFunctionBody().front();
+    assert(body.getNumArguments() == op.getNumOperands());
+    for (auto &&[src, dst] :
+         llvm::zip_equal(op.getOperands(), body.getArguments())) {
+      auto it = state.state.find(src);
+      assert(it != state.state.end());
+      state.state[dst] = it->second;
+    }
+    state.callstack.emplace_back(op);
+    state.iter = body.begin();
+    return true;
+  }
+};
+
+struct ReturnOpInterpreterInterface final
+    : public hc::typing::TypingInterpreterInterface::ExternalModel<
+          ReturnOpInterpreterInterface, mlir::func::ReturnOp> {
+  mlir::FailureOr<bool> interpret(mlir::Operation *o,
+                                  InterpreterState &state) const {
+    auto op = mlir::cast<mlir::func::ReturnOp>(o);
+    if (state.callstack.empty())
+      return op->emitError("Callstack is empty");
+
+    mlir::Operation *ret = state.callstack.pop_back_val();
+    if (ret->getNumResults() != op.getNumOperands())
+      return op->emitError("Operand count mismatch");
+
+    for (auto &&[src, dst] :
+         llvm::zip_equal(op.getOperands(), ret->getResults())) {
+      auto it = state.state.find(src);
+      assert(it != state.state.end());
+      state.state[dst] = it->second;
+    }
+    state.iter = std::next(ret->getIterator());
+    return true;
+  }
+};
+
 struct SelectOpDataflowJoinInterface final
     : public hc::typing::DataflowJoinInterface::ExternalModel<
           SelectOpDataflowJoinInterface, mlir::arith::SelectOp> {
@@ -251,7 +321,8 @@ struct SelectOpDataflowJoinInterface final
 } // namespace
 
 void hc::typing::registerArithTypingInterpreter(mlir::MLIRContext &ctx) {
-  ctx.loadDialect<mlir::arith::ArithDialect, mlir::cf::ControlFlowDialect>();
+  ctx.loadDialect<mlir::arith::ArithDialect, mlir::cf::ControlFlowDialect,
+                  mlir::func::FuncDialect>();
 
   mlir::cf::BranchOp::attachInterface<BranchOpInterpreterInterface>(ctx);
   mlir::cf::CondBranchOp::attachInterface<CondBranchOpInterpreterInterface>(
@@ -260,6 +331,9 @@ void hc::typing::registerArithTypingInterpreter(mlir::MLIRContext &ctx) {
   mlir::arith::ConstantOp::attachInterface<ConstantOpInterpreterInterface>(ctx);
   mlir::arith::AddIOp::attachInterface<AddOpInterpreterInterface>(ctx);
   mlir::arith::CmpIOp::attachInterface<CmpOpInterpreterInterface>(ctx);
+
+  mlir::func::CallOp::attachInterface<CallOpInterpreterInterface>(ctx);
+  mlir::func::ReturnOp::attachInterface<ReturnOpInterpreterInterface>(ctx);
 
   mlir::arith::SelectOp::attachInterface<SelectOpDataflowJoinInterface>(ctx);
 }
