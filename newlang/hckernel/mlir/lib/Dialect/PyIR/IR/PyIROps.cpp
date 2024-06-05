@@ -65,8 +65,8 @@ public:
     rewriter.modifyOpInPlace(op, [&] {
       auto *entryBlock = op.getEntryBlock();
       auto allArgs = entryBlock->getArguments().size();
-      auto captNames = mlir::SmallVector<mlir::Attribute>(
-          op.getCaptureNames().getAsRange<mlir::Attribute>());
+      auto captNames =
+          llvm::to_vector(op.getCaptureNames().getAsRange<mlir::Attribute>());
 
       unsigned numArgs = op.getBlockArgs().size();
       mlir::BitVector toErase(allArgs);
