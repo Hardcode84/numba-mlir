@@ -44,8 +44,6 @@ public:
   matchAndRewrite(hc::py_ir::PyFuncOp op,
                   mlir::PatternRewriter &rewriter) const override {
     auto capturesBlockArgs = op.getCaptureBlockArgs();
-    auto captureNames = op.getCaptureNames();
-
     bool hasUnused = false;
     for (auto &&arg : capturesBlockArgs) {
       if (arg.use_empty()) {
@@ -58,29 +56,32 @@ public:
       return mlir::failure();
 
     mlir::SmallVector<unsigned> indexes;
-    for (int i = captureNames.size() - 1; i >= 0; --i) {
+    for (int i = capturesBlockArgs.size() - 1; i >= 0; --i) {
       auto capt = capturesBlockArgs[i];
-      if (capt.use_empty()) {
+      if (capt.use_empty())
         indexes.push_back(i);
-      }
     }
 
-    auto eraseCaptureByIndex = [&](unsigned idx) {
-      int blockArgIdx = idx + op.getBlockArgs().size();
+    rewriter.modifyOpInPlace(op, [&] {
       auto *entryBlock = op.getEntryBlock();
-      op.getCaptureArgsMutable().erase(idx);
+      auto allArgs = entryBlock->getArguments().size();
       auto captNames = mlir::SmallVector<mlir::Attribute>(
           op.getCaptureNames().getAsRange<mlir::Attribute>());
-      captNames.erase(captNames.begin() + idx);
+
+      unsigned numArgs = op.getBlockArgs().size();
+      mlir::BitVector toErase(allArgs);
+      for (auto &&idx : indexes) {
+        int blockArgIdx = idx + numArgs;
+        op.getCaptureArgsMutable().erase(idx);
+        toErase.set(blockArgIdx);
+        captNames.erase(captNames.begin() + idx);
+      }
+
       auto attr =
           rewriter.getArrayAttr(mlir::ArrayRef<mlir::Attribute>(captNames));
       op.setCaptureNamesAttr(attr);
-      entryBlock->eraseArgument(blockArgIdx);
-    };
-
-    for (auto &&idx : indexes) {
-      eraseCaptureByIndex(idx);
-    }
+      entryBlock->eraseArguments(toErase);
+    });
 
     return mlir::success();
   }
@@ -129,6 +130,11 @@ void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
       numArgs, UndefinedType::get(odsBuilder.getContext()));
   llvm::SmallVector<mlir::Location> locs(numArgs, odsBuilder.getUnknownLoc());
   odsBuilder.createBlock(region, {}, types, locs);
+}
+
+void hc::py_ir::PyFuncOp::getCanonicalizationPatterns(
+    ::mlir::RewritePatternSet &results, ::mlir::MLIRContext *context) {
+  results.insert<CleanupUnusedCaptures>(context);
 }
 
 mlir::FailureOr<bool>
@@ -201,11 +207,6 @@ static void printArgList(mlir::OpAsmPrinter &printer, Op /*op*/,
     printer.printOperand(arg);
   }
   printer << ')';
-}
-
-void hc::py_ir::PyFuncOp::getCanonicalizationPatterns(
-    ::mlir::RewritePatternSet &results, ::mlir::MLIRContext *context) {
-  results.insert<CleanupUnusedCaptures>(context);
 }
 
 #include "hc/Dialect/PyIR/IR/PyIROpsDialect.cpp.inc"

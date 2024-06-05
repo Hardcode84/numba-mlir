@@ -159,5 +159,3 @@ py_ir.module {
   }
   py_ir.module_end %4 : !py_ir.undefined
 }
-
-// -----
