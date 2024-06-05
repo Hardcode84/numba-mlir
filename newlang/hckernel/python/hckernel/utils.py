@@ -11,7 +11,7 @@ def readenv(name, ctor, default):
         return ctor(value)
     except Exception:
         warnings.warn(
-            "environ %s defined but failed to parse '%s'" % (name, value),
+            f"environ {name} defined but failed to parse '{value}'",
             RuntimeWarning,
         )
         return default
