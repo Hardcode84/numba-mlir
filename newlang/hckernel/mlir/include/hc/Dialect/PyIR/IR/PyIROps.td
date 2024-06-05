@@ -298,7 +298,7 @@ def PyIR_SetAttrOp : PyIR_OpBase<"setattr"> {
   let assemblyFormat = "attr-dict $target `:` type($target) `attr` $name `=` $value `:` type($value)";
 }
 
-def PyIR_GetAttrOp : PyIR_OpBase<"getattr"> {
+def PyIR_GetAttrOp : PyIR_OpBase<"getattr", [Pure]> {
   let arguments = (ins
     AnyType:$target,
     StrAttr:$name);
