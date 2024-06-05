@@ -28,6 +28,11 @@ void hc::py_ir::PyIRDialect::initialize() {
       >();
 }
 
+void hc::py_ir::LoadModuleOp::getTypingKeyArgs(
+    llvm::SmallVectorImpl<mlir::Attribute> &args) {
+  args.emplace_back(getNameAttr());
+}
+
 mlir::OpFoldResult hc::py_ir::ConstantOp::fold(FoldAdaptor /*adaptor*/) {
   return getValue();
 }

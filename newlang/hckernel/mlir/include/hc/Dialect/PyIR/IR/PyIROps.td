@@ -145,6 +145,16 @@ def PyIR_PyModuleEndOp : PyIR_OpBase<"module_end", [
   let assemblyFormat = "attr-dict ($results^ `:` type($results))?";
 }
 
+def PyIR_LoadModuleOp : PyIR_OpBase<"load_module", [
+  Pure,
+  DeclareOpInterfaceMethods<TypingKeyInterface, ["getTypingKeyArgs"]>
+]> {
+  let arguments = (ins StrAttr:$name);
+  let results = (outs AnyType:$result);
+
+  let assemblyFormat = "attr-dict $name `:` type($result)";
+}
+
 def PyIR_EmptyAnnotationOp : PyIR_OpBase<"empty_annotation", [Pure]> {
   let results = (outs PyIR_UndefinedType:$result);
 
