@@ -15,6 +15,7 @@
 #include <mlir/Tools/mlir-opt/MlirOptMain.h>
 
 #include "hc/Dialect/PyAST/IR/PyASTOps.hpp"
+#include "hc/Dialect/PyIR/IR/PyIROps.hpp"
 #include "hc/Pipelines/FrontendPipeline.hpp"
 #include "hc/PyFront/Import.hpp"
 #include "hc/Utils.hpp"
@@ -66,9 +67,29 @@ static mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
   });
 }
 
-static mlir::LogicalResult importAST(mlir::Operation *mod,
-                                     llvm::StringRef source,
-                                     llvm::StringRef funcName, bool dumpAST) {
+static void createModuleImport(mlir::OpBuilder &builder,
+                               const ImportedSym &sym) {
+  assert(!sym.modulePath.empty());
+  mlir::Value mod;
+
+  mlir::Location loc = builder.getUnknownLoc();
+  auto type = hc::py_ir::UndefinedType::get(builder.getContext());
+  for (auto &&path : sym.modulePath) {
+    if (!mod) {
+      mod = builder.create<hc::py_ir::LoadModuleOp>(loc, type, path);
+      continue;
+    }
+
+    mod = builder.create<hc::py_ir::GetAttrOp>(loc, type, mod, path);
+  }
+  assert(mod);
+  builder.create<hc::py_ir::StoreVarOp>(loc, sym.name, mod);
+}
+
+static mlir::LogicalResult
+importAST(mlir::Operation *mod, llvm::StringRef source,
+          llvm::StringRef funcName, llvm::ArrayRef<ImportedSym> importedSymbols,
+          bool dumpAST) {
   auto res = hc::importPyModule(source, mod, dumpAST);
   if (mlir::failed(res))
     return mlir::failure();
@@ -76,21 +97,30 @@ static mlir::LogicalResult importAST(mlir::Operation *mod,
   auto pyMod = mlir::cast<hc::py_ast::PyModuleOp>(*res);
 
   mlir::OpBuilder builder(mod->getContext());
-  auto term = pyMod.getBody()->getTerminator();
+  mlir::Block *body = pyMod.getBody();
+
+  builder.setInsertionPointToStart(body);
+  for (auto &&sym : importedSymbols)
+    createModuleImport(builder, sym);
+
+  auto term = body->getTerminator();
   builder.setInsertionPoint(term);
   builder.create<hc::py_ast::CaptureValOp>(term->getLoc(), funcName);
   return mlir::success();
 }
 
 mlir::FailureOr<mlir::OwningOpRef<mlir::Operation *>>
-compileAST(Context &ctx, llvm::StringRef source, llvm::StringRef funcName) {
+compileAST(Context &ctx, llvm::StringRef source, llvm::StringRef funcName,
+           llvm::ArrayRef<ImportedSym> importedSymbols) {
   auto *mlirContext = &ctx.context;
+  mlirContext->loadDialect<hc::py_ir::PyIRDialect>();
   auto loc = mlir::OpBuilder(mlirContext).getUnknownLoc();
 
   mlir::OwningOpRef<mlir::Operation *> mod(mlir::ModuleOp::create(loc));
 
   auto &settings = ctx.settings;
-  if (mlir::failed(importAST(*mod, source, funcName, settings.dumpAST)))
+  if (mlir::failed(
+          importAST(*mod, source, funcName, importedSymbols, settings.dumpAST)))
     return mlir::failure();
 
   mlir::PassManager pm(mlirContext);

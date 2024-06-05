@@ -38,7 +38,17 @@ void Dispatcher::call(py::args args, py::kwargs kwargs) {
     py::object desc = getFuncDesc();
     getFuncDesc = py::object();
     auto [src, funcName] = getSource(desc);
-    auto res = compileAST(context, src, funcName);
+    llvm::SmallVector<ImportedSym> symbols;
+    for (auto it : desc.attr("imported_symbols")) {
+      auto elem = it.cast<py::tuple>();
+      ImportedSym sym;
+      sym.name = elem[0].cast<std::string>();
+      for (auto path : elem[1])
+        sym.modulePath.emplace_back(path.cast<std::string>());
+
+      symbols.emplace_back(std::move(sym));
+    }
+    auto res = compileAST(context, src, funcName, symbols);
     if (mlir::failed(res))
       reportError("Compilation failed");
     std::swap(mod, *res);

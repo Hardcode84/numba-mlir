@@ -16,6 +16,7 @@ import functools
 import operator
 
 from .indexing import sym
+from .symbol_registry import register_symbol as _reg_symbol_impl
 
 
 def _verify_kernel_params(work_shape, group_shape, subgroup_size, literals, tunables):
@@ -385,3 +386,12 @@ class Buffer(typing.Generic[typing.ParamSpec("Args")]):
 
 def atomic_ref(a):
     return a
+
+
+def _register_symbol(sym):
+    _reg_symbol_impl(eval(sym), sym, __name__)
+
+
+_register_symbol("CurrentGroup")
+_register_symbol("CurrentSubGroup")
+_register_symbol("CurrentWorkitem")

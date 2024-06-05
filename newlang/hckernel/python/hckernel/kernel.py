@@ -7,9 +7,10 @@ from collections import namedtuple, OrderedDict
 from .kernel_api import _verify_kernel_params
 from .kernel_api import *
 from .compiler import mlir_context, Dispatcher
+from .symbol_registry import get_module_for_symbol
 
 
-FuncDesc = namedtuple("FuncDesc", ["source", "name", "args"])
+FuncDesc = namedtuple("FuncDesc", ["source", "name", "args", "imported_symbols"])
 
 
 def _process_annotation(ann):
@@ -58,8 +59,18 @@ def _get_desc(func):
 
             args_types[name] = annotation
 
+        imported_symbols = []
+        for name, obj in func.__globals__.items():
+            mod = get_module_for_symbol(obj)
+            if not mod:
+                continue
+            imported_symbols.append((name, mod))
+
         return FuncDesc(
-            source=inspect.getsource(func), name=func.__name__, args=args_types
+            source=inspect.getsource(func),
+            name=func.__name__,
+            args=args_types,
+            imported_symbols=imported_symbols,
         )
 
     return _wrapper
