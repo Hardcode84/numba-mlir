@@ -31,8 +31,8 @@ static void printDiag(llvm::raw_ostream &os, const mlir::Diagnostic &diag) {
   os << "\n";
 }
 
-static mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
-                                        mlir::Operation *module) {
+mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
+                                 mlir::Operation *module) {
   bool dumpDiag = true;
   std::string err;
   llvm::raw_string_ostream errStream(err);

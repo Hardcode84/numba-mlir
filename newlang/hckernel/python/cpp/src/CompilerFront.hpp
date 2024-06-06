@@ -12,6 +12,10 @@ namespace llvm {
 class StringRef;
 }
 
+namespace mlir {
+class PassManager;
+}
+
 struct Context;
 
 struct ImportedSym {
@@ -22,3 +26,6 @@ struct ImportedSym {
 mlir::FailureOr<mlir::OwningOpRef<mlir::Operation *>>
 compileAST(Context &ctx, llvm::StringRef source, llvm::StringRef funcName,
            llvm::ArrayRef<ImportedSym> importedSymbols);
+
+mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
+                                 mlir::Operation *module);
