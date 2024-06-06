@@ -16,7 +16,6 @@
 
 #include "hc/Dialect/PyAST/IR/PyASTOps.hpp"
 #include "hc/Dialect/PyIR/IR/PyIROps.hpp"
-#include "hc/Pipelines/FrontendPipeline.hpp"
 #include "hc/PyFront/Import.hpp"
 #include "hc/Utils.hpp"
 
@@ -121,17 +120,6 @@ compileAST(Context &ctx, llvm::StringRef source, llvm::StringRef funcName,
   auto &settings = ctx.settings;
   if (mlir::failed(
           importAST(*mod, source, funcName, importedSymbols, settings.dumpAST)))
-    return mlir::failure();
-
-  mlir::PassManager pm(mlirContext);
-
-  if (settings.dumpIR) {
-    mlirContext->disableMultithreading();
-    pm.enableIRPrinting();
-  }
-
-  hc::populateFrontendPipeline(pm);
-  if (mlir::failed(runUnderDiag(pm, *mod)))
     return mlir::failure();
 
   return mod;
