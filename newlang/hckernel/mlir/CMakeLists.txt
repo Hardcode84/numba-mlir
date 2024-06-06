@@ -39,6 +39,7 @@ set(SOURCES_LIST
     lib/Pipelines/FrontendPipeline.cpp
     lib/Transforms/ClenaupPySetVar.cpp
     lib/Transforms/ConvertPyASTToIR.cpp
+    lib/Transforms/ConvertPyIRToTyping.cpp
     lib/Transforms/PyTypeInference.cpp
     lib/Transforms/ReconstructPySSA.cpp
     lib/Transforms/SimplifyAST.cpp

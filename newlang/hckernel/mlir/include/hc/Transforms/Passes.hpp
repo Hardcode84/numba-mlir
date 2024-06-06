@@ -2,11 +2,15 @@
 
 #pragma once
 
+#include "hc/Utils.hpp"
 #include <mlir/Pass/Pass.h>
 
-namespace mlir::cf {
+namespace mlir {
+class Pass;
+namespace cf {
 class ControlFlowDialect;
 }
+} // namespace mlir
 
 namespace hc {
 #define GEN_PASS_DECL
@@ -17,4 +21,11 @@ namespace hc {
 
 void populateSimplifyASTPatterns(mlir::RewritePatternSet &patterns);
 void populateConvertPyASTToIRPatterns(mlir::RewritePatternSet &patterns);
+void populateConvertLoadvarTypingPatterns(
+    mlir::RewritePatternSet &patterns, const hc::OpConstructorMap &opConstrMap);
+void populateConvertFuncTypingPatterns(mlir::RewritePatternSet &patterns);
+void populateInlineForceInlinedPatterns(mlir::RewritePatternSet &patterns);
+
+std::unique_ptr<mlir::Pass>
+createConvertLoadvarTypingPass(const hc::OpConstructorMap &opConstrMap);
 } // namespace hc

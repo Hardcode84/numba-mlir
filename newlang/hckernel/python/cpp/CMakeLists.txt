@@ -19,6 +19,12 @@ pybind11_add_module(${python_module_name} MODULE
     src/Context.hpp
     src/Dispatcher.cpp
     src/Dispatcher.hpp
+    src/MlirWrappers.cpp
+    src/MlirWrappers.hpp
+    src/DecoratorPipeline.cpp
+    src/DecoratorPipeline.hpp
+    src/TypingDispatcher.cpp
+    src/TypingDispatcher.hpp
     src/PyModule.cpp
 )
 
@@ -29,6 +35,7 @@ target_link_libraries(${python_module_name} PRIVATE
     hc_core
     hc_frontend
     MLIRPass
+    MLIRIR
     )
 
 apply_llvm_compile_flags(${python_module_name})
