@@ -33,6 +33,62 @@ void hc::py_ir::LoadModuleOp::getTypingKeyArgs(
   args.emplace_back(getNameAttr());
 }
 
+namespace {
+
+struct CleanupUnusedCaptures final
+    : public mlir::OpRewritePattern<hc::py_ir::PyFuncOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hc::py_ir::PyFuncOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto capturesBlockArgs = op.getCaptureBlockArgs();
+    bool hasUnused = false;
+    for (auto &&arg : capturesBlockArgs) {
+      if (arg.use_empty()) {
+        hasUnused = true;
+        break;
+      }
+    }
+
+    if (!hasUnused)
+      return mlir::failure();
+
+    mlir::SmallVector<unsigned> indexes;
+    for (int i = capturesBlockArgs.size() - 1; i >= 0; --i) {
+      auto capt = capturesBlockArgs[i];
+      if (capt.use_empty())
+        indexes.push_back(i);
+    }
+
+    rewriter.modifyOpInPlace(op, [&] {
+      auto *entryBlock = op.getEntryBlock();
+      auto allArgs = entryBlock->getArguments().size();
+      auto captNames =
+          llvm::to_vector(op.getCaptureNames().getAsRange<mlir::Attribute>());
+
+      unsigned numArgs = op.getBlockArgs().size();
+      mlir::BitVector toErase(allArgs);
+      for (auto &&idx : indexes) {
+        int blockArgIdx = idx + numArgs;
+        op.getCaptureArgsMutable().erase(idx);
+        toErase.set(blockArgIdx);
+        captNames.erase(captNames.begin() + idx);
+      }
+
+      auto attr =
+          rewriter.getArrayAttr(mlir::ArrayRef<mlir::Attribute>(captNames));
+      op.setCaptureNamesAttr(attr);
+      entryBlock->eraseArguments(toErase);
+    });
+
+    return mlir::success();
+  }
+};
+
+} // namespace
+
 mlir::OpFoldResult hc::py_ir::ConstantOp::fold(FoldAdaptor /*adaptor*/) {
   return getValue();
 }
@@ -74,6 +130,11 @@ void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
       numArgs, UndefinedType::get(odsBuilder.getContext()));
   llvm::SmallVector<mlir::Location> locs(numArgs, odsBuilder.getUnknownLoc());
   odsBuilder.createBlock(region, {}, types, locs);
+}
+
+void hc::py_ir::PyFuncOp::getCanonicalizationPatterns(
+    ::mlir::RewritePatternSet &results, ::mlir::MLIRContext *context) {
+  results.insert<CleanupUnusedCaptures>(context);
 }
 
 mlir::FailureOr<bool>

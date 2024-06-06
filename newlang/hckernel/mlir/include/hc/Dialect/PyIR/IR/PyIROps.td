@@ -219,6 +219,7 @@ def PyIR_PyFuncOp : PyIR_OpBase<"func", [Pure, AttrSizedOperandSegments]> {
   }];
 
   let skipDefaultBuilders = 1;
+  let hasCanonicalizer = 1;
 
   let assemblyFormat = [{
     attr-dict $name
