@@ -44,23 +44,15 @@ public:
   matchAndRewrite(hc::py_ir::PyFuncOp op,
                   mlir::PatternRewriter &rewriter) const override {
     auto capturesBlockArgs = op.getCaptureBlockArgs();
-    bool hasUnused = false;
-    for (auto &&arg : capturesBlockArgs) {
-      if (arg.use_empty()) {
-        hasUnused = true;
-        break;
-      }
-    }
-
-    if (!hasUnused)
-      return mlir::failure();
-
     mlir::SmallVector<unsigned> indexes;
     for (int i = capturesBlockArgs.size() - 1; i >= 0; --i) {
       auto capt = capturesBlockArgs[i];
       if (capt.use_empty())
         indexes.push_back(i);
     }
+
+    if (indexes.empty())
+      return mlir::failure();
 
     rewriter.modifyOpInPlace(op, [&] {
       auto *entryBlock = op.getEntryBlock();
