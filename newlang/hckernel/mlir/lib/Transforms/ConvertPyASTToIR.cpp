@@ -62,6 +62,14 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
     return builder.create<hc::py_ir::GetAttrOp>(loc, type, tgt, name);
   }
 
+  if (auto tuple = val.getDefiningOp<hc::py_ast::ListOp>()) {
+    llvm::SmallVector<mlir::Value> args;
+    for (auto el : tuple.getElts())
+      args.emplace_back(getVar(builder, loc, el));
+
+    return builder.create<hc::py_ir::MakeListOp>(loc, type, args);
+  }
+
   if (auto tuple = val.getDefiningOp<hc::py_ast::TupleOp>()) {
     llvm::SmallVector<mlir::Value> args;
     for (auto el : tuple.getElts())

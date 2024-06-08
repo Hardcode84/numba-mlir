@@ -316,6 +316,20 @@ py_ast.module {
   %3 = py_ast.attribute %2 attr "D"
   py_ast.assign(%1) = %3
 }
+// -----
+
+// CHECK-LABEL: py_ir.module
+//       CHECK:  %[[A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
+//       CHECK:  %[[B:.*]] = py_ir.loadvar "B" : !py_ir.undefined
+//       CHECK:  %[[L:.*]] = py_ir.make_list %[[A]], %[[B]] : !py_ir.undefined, !py_ir.undefined -> !py_ir.undefined
+//       CHECK:  py_ir.storevar "C" %[[L]] : !py_ir.undefined
+py_ast.module {
+  %0 = py_ast.name "A"
+  %1 = py_ast.name "B"
+  %2 = py_ast.list %0, %1
+  %3 = py_ast.name "C"
+  py_ast.assign(%3) = %2
+}
 
 // -----
 
