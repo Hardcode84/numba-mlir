@@ -6,6 +6,8 @@
 
 #include "Context.hpp"
 #include "Dispatcher.hpp"
+#include "MlirWrappers.hpp"
+#include "TypingDispatcher.hpp"
 
 namespace py = pybind11;
 
@@ -13,4 +15,12 @@ PYBIND11_MODULE(compiler, m) {
   m.def("create_context", &createContext);
 
   Dispatcher::definePyClass(m);
+  TypingDispatcher::definePyClass(m);
+  MlirWrapperBase::definePyClass(m);
+  MlirOpWrapper::definePyClass(m);
+  MlirTypeWrapper::definePyClass(m);
+  MlirDecoratorWrapper::definePyClass(m);
+
+  addBuildinTypes(m);
+  addBuildinOps(m);
 }

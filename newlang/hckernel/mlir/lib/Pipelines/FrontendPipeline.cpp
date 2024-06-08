@@ -16,12 +16,23 @@ static void populatePyIROptPasses(mlir::PassManager &pm) {
       }));
 }
 
-void hc::populateFrontendPipeline(mlir::PassManager &pm) {
+void hc::populatePyIRPipeline(mlir::PassManager &pm) {
   pm.addPass(hc::createSimplifyASTPass());
   pm.addPass(hc::createConvertPyASTToIRPass());
   populatePyIROptPasses(pm);
   pm.addPass(hc::createReconstuctPySSAPass());
   populatePyIROptPasses(pm);
+  pm.addPass(mlir::createCanonicalizerPass());
+}
+
+void hc::populateFrontendPipeline(mlir::PassManager &pm) {
+  populatePyIRPipeline(pm);
   pm.addPass(hc::createPyTypeInferencePass());
   pm.addPass(mlir::createCanonicalizerPass());
+}
+
+void hc::populateDecoratorPipeline(mlir::PassManager &pm,
+                                   const OpConstructorMap &opConstr) {
+  pm.addPass(hc::createConvertLoadvarTypingPass(opConstr));
+  pm.addPass(hc::createInlineForceInlinedFuncsPass());
 }
