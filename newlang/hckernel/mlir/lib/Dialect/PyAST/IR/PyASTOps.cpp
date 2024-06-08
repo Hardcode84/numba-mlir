@@ -70,6 +70,13 @@ void hc::py_ast::SubscriptOp::build(::mlir::OpBuilder &odsBuilder,
   build(odsBuilder, odsState, type, value, slice);
 }
 
+void hc::py_ast::ListOp::build(::mlir::OpBuilder &odsBuilder,
+                               ::mlir::OperationState &odsState,
+                               mlir::ValueRange elts) {
+  auto type = NodeType::get(odsBuilder.getContext());
+  build(odsBuilder, odsState, type, elts);
+}
+
 void hc::py_ast::TupleOp::build(::mlir::OpBuilder &odsBuilder,
                                 ::mlir::OperationState &odsState,
                                 mlir::ValueRange elts) {

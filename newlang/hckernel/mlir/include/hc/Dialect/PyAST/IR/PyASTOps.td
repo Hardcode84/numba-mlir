@@ -205,6 +205,17 @@ def PyAST_ExprOp : PyAST_OpBase<"expr"> {
   let assemblyFormat = "attr-dict $value";
 }
 
+def PyAST_ListOp : PyAST_PureOpBase<"list"> {
+  let arguments = (ins Variadic<PyAST_ASTNodeType>:$elts);
+  let results = (outs PyAST_ASTNodeType:$result);
+
+  let builders = [
+    OpBuilder<(ins "::mlir::ValueRange":$elts)>
+  ];
+
+  let assemblyFormat = "attr-dict $elts";
+}
+
 def PyAST_TupleOp : PyAST_PureOpBase<"tuple"> {
   let arguments = (ins Variadic<PyAST_ASTNodeType>:$elts);
   let results = (outs PyAST_ASTNodeType:$result);

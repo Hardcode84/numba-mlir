@@ -75,6 +75,20 @@ def func():
 
 # CHECK-LABEL: py_ast.module
 #       CHECK: py_ast.func "func"()
+#       CHECK: %[[A1:.*]] = py_ast.name "Foo"
+#       CHECK: %[[A2:.*]] = py_ast.name "Bar"
+#       CHECK: %[[A3:.*]] = py_ast.name "Baz"
+#       CHECK: %[[T:.*]] = py_ast.list %[[A1]], %[[A2]], %[[A3]]
+#       CHECK: py_ast.expr %[[T]]
+def func():
+    [Foo, Bar, Baz]
+
+
+# -----
+
+
+# CHECK-LABEL: py_ast.module
+#       CHECK: py_ast.func "func"()
 #       CHECK: %[[F:.*]] = py_ast.name "Foo"
 #       CHECK: %[[A:.*]] = py_ast.attribute %[[F]] attr "Bar"
 #       CHECK: py_ast.expr %[[A]]

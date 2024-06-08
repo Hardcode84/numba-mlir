@@ -626,6 +626,26 @@ struct KeywordHandler {
   }
 };
 
+struct ListHandler {
+  static py::object getClass(py::handle astMod) { return astMod.attr("List"); }
+
+  static void parse(ParserState &state, py::handle node) {
+    state.pushHandler(node, &processArgs);
+    state.pushHandlers(node.attr("elts"));
+  }
+
+  static void processArgs(ParserState &state, py::handle node) {
+    auto &builder = state.builder;
+    auto nArgs = py::len(node.attr("elts"));
+    mlir::ValueRange args(state.argsStack);
+    args = args.take_back(nArgs);
+    mlir::Value res =
+        builder.create<hc::py_ast::ListOp>(state.getLoc(node), args);
+    state.argsStack.pop_back_n(nArgs);
+    state.argsStack.push_back(res);
+  }
+};
+
 struct ModuleHandler {
   static py::object getClass(py::handle astMod) {
     return astMod.attr("Module");
@@ -858,6 +878,7 @@ void fillHandlers(
   handlers.emplace_back(getHandler<IfExpOpHandler>(astMod));
   handlers.emplace_back(getHandler<IfHandler>(astMod));
   handlers.emplace_back(getHandler<KeywordHandler>(astMod));
+  handlers.emplace_back(getHandler<ListHandler>(astMod));
   handlers.emplace_back(getHandler<ModuleHandler>(astMod));
   handlers.emplace_back(getHandler<NameHandler>(astMod));
   handlers.emplace_back(getHandler<PassHandler>(astMod));
