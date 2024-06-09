@@ -212,7 +212,7 @@ struct ReconstuctPySSAPass final
 
   void runOnOperation() override {
     ReconstuctPySSA state;
-    getOperation()->walk<mlir::WalkOrder::PreOrder>(
+    getOperation()->walk<mlir::WalkOrder::PostOrder>(
         [&](mlir::Operation *op) { state.processOp(op); });
   }
 };
