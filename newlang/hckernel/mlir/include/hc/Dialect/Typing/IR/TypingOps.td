@@ -125,6 +125,26 @@ def Typing_UnionType : Typing_Type<"Union", "union", [], "::mlir::Type"> {
 }
 
 
+def Typing_TypeConstantOp : Typing_OpBase<"type_constant", [
+    ConstantLike, Pure,
+    DeclareOpInterfaceMethods<TypeInferenceInterface>
+]> {
+
+  let arguments = (ins TypedAttrInterface:$value);
+  let results = (outs Typing_ValueType:$result);
+
+  let builders = [
+    OpBuilder<(ins "::mlir::TypedAttr":$value), [{
+      build($_builder, $_state, value.getType(), value);
+    }]>
+  ];
+
+  let assemblyFormat = "attr-dict $value";
+
+  let hasFolder = 1;
+}
+
+
 def Typing_ResolveOp : Typing_OpBase<"resolve", [
   SingleBlockImplicitTerminator<"ResolveYieldOp">, RecursiveMemoryEffects,
   DeclareOpInterfaceMethods<TypingUpdateInplaceInterface>

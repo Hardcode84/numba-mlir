@@ -67,12 +67,24 @@ void hc::typing::TypingDialect::initialize() {
 mlir::Operation *hc::typing::TypingDialect::materializeConstant(
     mlir::OpBuilder &builder, mlir::Attribute value, mlir::Type type,
     mlir::Location loc) {
-  //  auto typeAttr = mlir::dyn_cast<TypeAttr>(value);
-  //  if (typeAttr && mlir::isa<ValueType>(type)) {
-
-  //  }
+  auto typeAttr = mlir::dyn_cast<TypeAttr>(value);
+  if (typeAttr && mlir::isa<ValueType>(type))
+    return builder.create<TypeConstantOp>(loc, typeAttr);
 
   return nullptr;
+}
+
+mlir::OpFoldResult hc::typing::TypeConstantOp::fold(FoldAdaptor /*adaptor*/) {
+  return getValue();
+}
+
+mlir::FailureOr<bool> hc::typing::TypeConstantOp::inferTypes(
+    mlir::TypeRange types, llvm::SmallVectorImpl<mlir::Type> &results) {
+  if (!types.empty())
+    return emitError("Invalid arg count");
+
+  results.emplace_back(ValueType::get(getContext()));
+  return true;
 }
 
 void hc::typing::ResolveOp::build(::mlir::OpBuilder &odsBuilder,
