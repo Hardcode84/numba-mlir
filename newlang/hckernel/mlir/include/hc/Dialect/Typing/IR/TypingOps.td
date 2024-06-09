@@ -152,7 +152,9 @@ def Typing_TypeConstantOp : Typing_OpBase<"type_constant", [
 
 
 def Typing_ResolveOp : Typing_OpBase<"resolve", [
-  SingleBlockImplicitTerminator<"ResolveYieldOp">, RecursiveMemoryEffects,
+  SingleBlockImplicitTerminator<"ResolveYieldOp">,
+  RecursiveMemoryEffects,
+  IsolatedFromAbove,
   DeclareOpInterfaceMethods<TypingUpdateInplaceInterface>
 ]> {
 
