@@ -38,6 +38,8 @@ set(SOURCES_LIST
   src/Dispatcher.cpp
   src/Dispatcher.hpp
   src/PyModule.cpp
+  src/PyWrappers.cpp
+  src/PyWrappers.hpp
   )
 
 pybind11_add_module(${python_module_name} MODULE
@@ -62,6 +64,7 @@ apply_llvm_compile_flags(${python_module_name})
 target_include_directories(${python_module_name} PRIVATE
     ${LLVM_INCLUDE_DIRS}
     ${MLIR_INCLUDE_DIRS}
+    ${_python_sources}/MLIRPythonExtension.Core
     )
 
 install(TARGETS ${python_module_name} DESTINATION ${CMAKE_INSTALL_PREFIX})

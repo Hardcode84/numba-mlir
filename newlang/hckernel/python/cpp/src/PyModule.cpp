@@ -6,6 +6,7 @@
 
 #include "Context.hpp"
 #include "Dispatcher.hpp"
+#include "PyWrappers.hpp"
 
 namespace py = pybind11;
 
@@ -13,4 +14,7 @@ PYBIND11_MODULE(compiler, m) {
   m.def("create_context", &createContext);
 
   Dispatcher::definePyClass(m);
+
+  auto mlir_mod = m.def_submodule("_mlir");
+  populateMlirModule(mlir_mod);
 }
