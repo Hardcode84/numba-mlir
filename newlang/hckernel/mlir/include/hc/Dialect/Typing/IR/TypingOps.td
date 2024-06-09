@@ -211,7 +211,8 @@ def Typing_CastOp : Typing_OpBase<"cast", [
   Pure,
   DeclareOpInterfaceMethods<CastOpInterface>,
   DeclareOpInterfaceMethods<TypingKeyInterface>,
-  DeclareOpInterfaceMethods<TypingUpdateInplaceInterface>
+  DeclareOpInterfaceMethods<TypingUpdateInplaceInterface>,
+  DeclareOpInterfaceMethods<TypeInferenceInterface>
 ]> {
   let arguments = (ins AnyType:$value);
   let results = (outs AnyType:$result);

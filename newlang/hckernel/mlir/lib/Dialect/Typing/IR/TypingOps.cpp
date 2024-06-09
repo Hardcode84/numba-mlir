@@ -112,6 +112,16 @@ bool hc::typing::CastOp::areCastCompatible(mlir::TypeRange inputs,
   return true;
 }
 
+mlir::FailureOr<bool>
+hc::typing::CastOp::inferTypes(mlir::TypeRange types,
+                               llvm::SmallVectorImpl<mlir::Type> &results) {
+  if (types.size() != 1)
+    return emitError("Invalid arg count");
+
+  results.emplace_back(types.front());
+  return true;
+}
+
 namespace {
 using namespace hc::typing;
 
