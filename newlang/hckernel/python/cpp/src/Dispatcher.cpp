@@ -3,6 +3,7 @@
 #include "Dispatcher.hpp"
 
 #include <llvm/ADT/Twine.h>
+#include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/Pass/PassManager.h>
 #include <mlir/Support/LogicalResult.h>
@@ -35,12 +36,26 @@ static std::pair<std::string, std::string> getSource(py::handle desc) {
           desc.attr("name").cast<std::string>()};
 }
 
+static mlir::Attribute translateLiteral(mlir::MLIRContext *ctx,
+                                        py::handle obj) {
+  mlir::OpBuilder builder(ctx);
+  if (py::isinstance<py::int_>(obj))
+    return builder.getI64IntegerAttr(obj.cast<int64_t>());
+
+  if (py::isinstance<py::float_>(obj))
+    return builder.getF64FloatAttr(obj.cast<double>());
+
+  reportError(llvm::Twine("Unsupported literal type: ") +
+              py::str(obj).cast<std::string>());
+}
+
 void Dispatcher::call(py::args args, py::kwargs kwargs) {
   if (!mod) {
     assert(getFuncDesc);
     py::object desc = getFuncDesc();
     getFuncDesc = py::object();
     auto [src, funcName] = getSource(desc);
+
     llvm::SmallVector<ImportedSym> symbols;
     for (auto it : desc.attr("imported_symbols")) {
       auto elem = it.cast<py::tuple>();
@@ -51,11 +66,21 @@ void Dispatcher::call(py::args args, py::kwargs kwargs) {
 
       symbols.emplace_back(std::move(sym));
     }
-    auto res = compileAST(context, src, funcName, symbols);
+
+    auto *mlirContext = &context.context;
+    llvm::SmallVector<Literal> literals;
+    for (auto it : desc.attr("literals")) {
+      auto elem = it.cast<py::tuple>();
+      Literal lit;
+      lit.name = elem[0].cast<std::string>();
+      lit.attr = translateLiteral(mlirContext, elem[1]);
+      literals.emplace_back(std::move(lit));
+    }
+
+    auto res = compileAST(context, src, funcName, symbols, literals);
     if (mlir::failed(res))
       reportError("AST import failed");
 
-    auto *mlirContext = &context.context;
     mlir::PassManager pm(mlirContext);
 
     if (context.settings.dumpIR) {

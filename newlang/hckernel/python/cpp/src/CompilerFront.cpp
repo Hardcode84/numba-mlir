@@ -5,6 +5,7 @@
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/SourceMgr.h>
 
+#include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/Verifier.h>
@@ -85,10 +86,28 @@ static void createModuleImport(mlir::OpBuilder &builder,
   builder.create<hc::py_ir::StoreVarOp>(loc, sym.name, mod);
 }
 
+static void createLiteral(mlir::OpBuilder &builder, const Literal &lit) {
+  auto attr = mlir::cast<mlir::TypedAttr>(lit.attr);
+  auto loc = builder.getUnknownLoc();
+  auto op =
+      attr.getDialect().materializeConstant(builder, attr, attr.getType(), loc);
+
+  if (!op) {
+    auto arith =
+        attr.getContext()->getLoadedDialect<mlir::arith::ArithDialect>();
+    op = arith->materializeConstant(builder, attr, attr.getType(), loc);
+  }
+
+  if (!op)
+    llvm_unreachable("Cannot materialize literal");
+
+  builder.create<hc::py_ir::StoreVarOp>(loc, lit.name, op->getResult(0));
+}
+
 static mlir::LogicalResult
 importAST(mlir::Operation *mod, llvm::StringRef source,
           llvm::StringRef funcName, llvm::ArrayRef<ImportedSym> importedSymbols,
-          bool dumpAST) {
+          llvm::ArrayRef<Literal> literals, bool dumpAST) {
   auto res = hc::importPyModule(source, mod, dumpAST);
   if (mlir::failed(res))
     return mlir::failure();
@@ -102,6 +121,9 @@ importAST(mlir::Operation *mod, llvm::StringRef source,
   for (auto &&sym : importedSymbols)
     createModuleImport(builder, sym);
 
+  for (auto &&lit : literals)
+    createLiteral(builder, lit);
+
   auto term = body->getTerminator();
   builder.setInsertionPoint(term);
   builder.create<hc::py_ast::CaptureValOp>(term->getLoc(), funcName);
@@ -110,7 +132,8 @@ importAST(mlir::Operation *mod, llvm::StringRef source,
 
 mlir::FailureOr<mlir::OwningOpRef<mlir::Operation *>>
 compileAST(Context &ctx, llvm::StringRef source, llvm::StringRef funcName,
-           llvm::ArrayRef<ImportedSym> importedSymbols) {
+           llvm::ArrayRef<ImportedSym> importedSymbols,
+           llvm::ArrayRef<Literal> literals) {
   auto *mlirContext = &ctx.context;
   mlirContext->loadDialect<hc::py_ir::PyIRDialect>();
   auto loc = mlir::OpBuilder(mlirContext).getUnknownLoc();
@@ -118,8 +141,8 @@ compileAST(Context &ctx, llvm::StringRef source, llvm::StringRef funcName,
   mlir::OwningOpRef<mlir::Operation *> mod(mlir::ModuleOp::create(loc));
 
   auto &settings = ctx.settings;
-  if (mlir::failed(
-          importAST(*mod, source, funcName, importedSymbols, settings.dumpAST)))
+  if (mlir::failed(importAST(*mod, source, funcName, importedSymbols, literals,
+                             settings.dumpAST)))
     return mlir::failure();
 
   return mod;

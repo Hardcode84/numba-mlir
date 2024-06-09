@@ -5,6 +5,7 @@
 #include <string>
 
 #include <llvm/ADT/SmallVector.h>
+#include <mlir/IR/Attributes.h>
 #include <mlir/IR/OwningOpRef.h>
 #include <mlir/Support/LogicalResult.h>
 
@@ -23,9 +24,15 @@ struct ImportedSym {
   llvm::SmallVector<std::string> modulePath;
 };
 
+struct Literal {
+  std::string name;
+  mlir::Attribute attr;
+};
+
 mlir::FailureOr<mlir::OwningOpRef<mlir::Operation *>>
 compileAST(Context &ctx, llvm::StringRef source, llvm::StringRef funcName,
-           llvm::ArrayRef<ImportedSym> importedSymbols);
+           llvm::ArrayRef<ImportedSym> importedSymbols,
+           llvm::ArrayRef<Literal> literals);
 
 mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
                                  mlir::Operation *module);
