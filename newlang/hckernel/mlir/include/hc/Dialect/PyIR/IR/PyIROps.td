@@ -167,8 +167,9 @@ def PyIR_EmptyAnnotationOp : PyIR_OpBase<"empty_annotation", [Pure]> {
   let assemblyFormat = "attr-dict";
 }
 
-def PyIR_PyFuncOp : PyIR_OpBase<"func", [Pure, AttrSizedOperandSegments]> {
-
+def PyIR_PyFuncOp : PyIR_OpBase<"func", [
+  Pure, IsolatedFromAbove, AttrSizedOperandSegments
+]> {
   let arguments = (ins
       StrAttr:$name,
       ArrayAttr:$arg_names,

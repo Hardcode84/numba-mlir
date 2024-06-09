@@ -129,8 +129,8 @@ py_ir.module {
 //       CHECK:  ^[[ELSEBR]]:
 //       CHECK:    py_ir.return
 py_ir.module {
-  %0 = py_ir.constant 1 : i64
   %1 = py_ir.func "func" () capture () -> !py_ir.undefined {
+    %0 = py_ir.constant 1 : i64
     cf.br ^bb1
   ^bb1:  // 2 preds: ^bb0, ^bb2
     %4 = py_ir.loadvar "A" : !py_ir.undefined

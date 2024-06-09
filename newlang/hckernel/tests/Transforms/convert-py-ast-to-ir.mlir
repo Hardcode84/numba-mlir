@@ -43,8 +43,8 @@ py_ast.module {
 // -----
 
 // CHECK-LABEL: py_ir.module
-//       CHECK:  %[[R:.*]] = py_ir.constant 42 : i64
 //       CHECK:  py_ir.func "func"
+//       CHECK:  %[[R:.*]] = py_ir.constant 42 : i64
 //       CHECK:  %[[R1:.*]] = typing.cast %[[R]] : i64 to !py_ir.undefined
 //       CHECK:  py_ir.return %[[R1]] : !py_ir.undefined
 py_ast.module {
@@ -440,8 +440,8 @@ py_ast.module {
 // -----
 
 // CHECK-LABEL: py_ir.module
-//       CHECK:  %[[C1_I:.*]] = py_ir.constant 1 : i64
 //       CHECK:  py_ir.func "func"
+//       CHECK:  %[[C1_I:.*]] = py_ir.constant 1 : i64
 //       CHECK:  cf.br ^[[CONDBR:.*]]
 //       CHECK:  ^[[CONDBR]]:
 //       CHECK:  %[[A1:.*]] = py_ir.loadvar "A" : [[A1T:.*]]
@@ -654,8 +654,8 @@ py_ast.module {
 // -----
 
 // CHECK-LABEL: py_ir.module
-//       CHECK: %[[CONST_I:.*]] = py_ir.constant 1 : i64
 //       CHECK: %[[FUNC:.*]] = py_ir.func "func"
+//       CHECK:   %[[CONST_I:.*]] = py_ir.constant 1 : i64
 //       CHECK:   cf.br ^[[BB1:.*]]
 //       CHECK: ^[[BB1]]:  // 3 preds: ^[[BB0:.*]], ^[[BB2:.*]], ^[[BB3:.*]]
 //       CHECK:   %[[LOAD_A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
@@ -698,8 +698,8 @@ py_ast.module {
 // -----
 
 // CHECK-LABEL: py_ir.module
-//       CHECK: %[[CONST_I:.*]] = py_ir.constant 1 : i64
 //       CHECK: %[[FUNC:.*]] = py_ir.func "func"
+//       CHECK:   %[[CONST_I:.*]] = py_ir.constant 1 : i64
 //       CHECK:   %[[LOAD_A:.*]] = py_ir.loadvar "A" : !py_ir.undefined
 //       CHECK:   %[[ITER:.*]] = py_ir.iter %[[LOAD_A]] : !py_ir.undefined -> !py_ir.undefined
 //       CHECK:   cf.br ^[[BB1:.*]](%[[ITER]] : !py_ir.undefined)
