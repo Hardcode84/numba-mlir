@@ -12,14 +12,37 @@ include(HandleLLVMOptions)
 
 set(python_module_name compiler)
 
+# TODO: something better
+set(_python_sources ${LLVM_MAIN_INCLUDE_DIR}/../src/python/)
+if(NOT EXISTS ${_python_sources})
+  message(FATAL_ERROR "MLIR python bindings not found")
+endif()
+
+set(BINDINGS_COMPONENTS
+  MLIRPythonCAPI.HeaderSources
+  MLIRPythonExtension.Core
+  )
+
+set(MLIR_BINDINGS_SOURCES)
+foreach(_component IN LISTS BINDINGS_COMPONENTS)
+   file(GLOB_RECURSE _tmp_src ${_python_sources}/${_component}/*.cpp ${_python_sources}/*.h )
+   list(APPEND MLIR_BINDINGS_SOURCES ${_tmp_src})
+endforeach()
+
+
+set(SOURCES_LIST
+  src/CompilerFront.cpp
+  src/CompilerFront.hpp
+  src/Context.cpp
+  src/Context.hpp
+  src/Dispatcher.cpp
+  src/Dispatcher.hpp
+  src/PyModule.cpp
+  )
+
 pybind11_add_module(${python_module_name} MODULE
-    src/CompilerFront.cpp
-    src/CompilerFront.hpp
-    src/Context.cpp
-    src/Context.hpp
-    src/Dispatcher.cpp
-    src/Dispatcher.hpp
-    src/PyModule.cpp
+  ${SOURCES_LIST}
+  ${MLIR_BINDINGS_SOURCES}
 )
 
 target_include_directories(${python_module_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -28,8 +51,11 @@ target_include_directories(${python_module_name} PRIVATE ${CMAKE_CURRENT_SOURCE_
 target_link_libraries(${python_module_name} PRIVATE
     hc_core
     hc_frontend
+    MLIRCAPIDebug
+    MLIRCAPIIR
+    MLIRCAPIInterfaces
     MLIRPass
-    )
+  )
 
 apply_llvm_compile_flags(${python_module_name})
 
