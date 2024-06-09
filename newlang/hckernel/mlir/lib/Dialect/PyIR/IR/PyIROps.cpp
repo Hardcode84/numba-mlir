@@ -43,27 +43,47 @@ public:
   mlir::LogicalResult
   matchAndRewrite(hc::py_ir::PyFuncOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    auto capturesBlockArgs = op.getCaptureBlockArgs();
+    mlir::ValueRange capturesArgs = op.getCaptureArgs();
+    mlir::ValueRange capturesBlockArgs = op.getCaptureBlockArgs();
     mlir::SmallVector<unsigned> indexes;
+    mlir::SmallVector<mlir::Operation *> constOps;
     for (int i = capturesBlockArgs.size() - 1; i >= 0; --i) {
-      auto capt = capturesBlockArgs[i];
-      if (capt.use_empty())
-        indexes.push_back(i);
+      if (capturesBlockArgs[i].use_empty()) {
+        indexes.emplace_back(i);
+        constOps.emplace_back(nullptr);
+        continue;
+      }
+
+      mlir::Operation *def = capturesArgs[i].getDefiningOp();
+      if (def && def->getNumOperands() == 0 && def->getNumResults() == 1 &&
+          def->hasTrait<mlir::OpTrait::ConstantLike>()) {
+        indexes.emplace_back(i);
+        constOps.emplace_back(def);
+        continue;
+      }
     }
 
     if (indexes.empty())
       return mlir::failure();
 
+    auto *entryBlock = op.getEntryBlock();
+    mlir::OpBuilder::InsertionGuard g(rewriter);
+    rewriter.setInsertionPointToStart(entryBlock);
+
     rewriter.modifyOpInPlace(op, [&] {
-      auto *entryBlock = op.getEntryBlock();
       auto allArgs = entryBlock->getArguments().size();
       auto captNames =
           llvm::to_vector(op.getCaptureNames().getAsRange<mlir::Attribute>());
 
       unsigned numArgs = op.getBlockArgs().size();
       mlir::BitVector toErase(allArgs);
-      for (auto &&idx : indexes) {
+      for (auto &&[i, idx] : llvm::enumerate(indexes)) {
         int blockArgIdx = idx + numArgs;
+        if (auto def = constOps[i]) {
+          mlir::Operation *newOp = rewriter.clone(*def);
+          rewriter.replaceAllUsesWith(entryBlock->getArgument(blockArgIdx),
+                                      newOp->getResult(0));
+        }
         op.getCaptureArgsMutable().erase(idx);
         toErase.set(blockArgIdx);
         captNames.erase(captNames.begin() + idx);

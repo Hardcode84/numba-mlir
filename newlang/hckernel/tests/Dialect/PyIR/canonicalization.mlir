@@ -1,4 +1,3 @@
-
 // RUN: hc-opt -allow-unregistered-dialect %s -pass-pipeline='builtin.module(py_ir.module(canonicalize{test-convergence}))' -split-input-file | FileCheck %s
 
 // CHECK-LABEL: py_ir.module {
@@ -158,4 +157,20 @@ py_ir.module {
     py_ir.return %5 : !py_ir.undefined
   }
   py_ir.module_end %4 : !py_ir.undefined
+}
+
+// -----
+
+// CHECK-LABEL: py_ir.module {
+//       CHECK: py_ir.func "func" () capture () -> !py_ir.undefined {
+//       CHECK:   %[[R:.*]] = typing.type_constant #typing.type_attr<i32> : !typing.value
+//       CHECK:   py_ir.return %[[R]] : !typing.value
+//       CHECK: py_ir.module_end
+py_ir.module {
+  %2 = typing.type_constant #typing.type_attr<i32> : !typing.value
+  %9 = py_ir.func "func" () capture (i32:%2) : !typing.value -> !py_ir.undefined {
+  ^bb0(%arg0: !typing.value):
+    py_ir.return %arg0 : !typing.value
+  }
+  py_ir.module_end %9 : !py_ir.undefined
 }
