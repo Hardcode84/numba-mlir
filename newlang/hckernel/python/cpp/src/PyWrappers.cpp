@@ -6,7 +6,21 @@
 #include "IRModule.h"
 #include "Pass.h"
 
+#include "Context.hpp"
+
 namespace py = pybind11;
+static mlir::python::PyMlirContextRef translateContext(mlir::MLIRContext *ctx) {
+  return mlir::python::PyMlirContext::forContext(MlirContext{ctx});
+}
+
+void pushContext(mlir::MLIRContext *ctx) {
+  translateContext(ctx)->contextEnter();
+}
+
+void popContext(mlir::MLIRContext *ctx) {
+  translateContext(ctx)->contextExit(py::none(), py::none(), py::none());
+}
+
 using namespace mlir;
 using namespace py::literals;
 using namespace mlir::python;

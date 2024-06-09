@@ -12,6 +12,9 @@ struct Settings {
 };
 
 struct Context {
+  Context();
+  ~Context();
+
   mlir::MLIRContext context;
   Settings settings;
 };

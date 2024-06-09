@@ -2,7 +2,13 @@
 
 #include "Context.hpp"
 
+#include "PyWrappers.hpp"
+
 namespace py = pybind11;
+
+Context::Context() { pushContext(&context); }
+
+Context::~Context() { popContext(&context); }
 
 static void readSettings(Settings &ret, py::dict &dict) {
   ret.dumpAST = dict["DUMP_AST"].cast<bool>();

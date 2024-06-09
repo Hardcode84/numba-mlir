@@ -4,4 +4,11 @@
 
 #include <pybind11/pybind11.h>
 
+namespace mlir {
+class MLIRContext;
+}
+
+void pushContext(mlir::MLIRContext *ctx);
+void popContext(mlir::MLIRContext *ctx);
+
 void populateMlirModule(pybind11::module &m);
