@@ -8,8 +8,13 @@ from .kernel_api import *
 from .compiler import mlir_context, Dispatcher
 from .symbol_registry import get_module_for_symbol
 
+FuncDesc = namedtuple(
+    "FuncDesc", ["source", "name", "args", "imported_symbols", "literals"]
+)
 
-FuncDesc = namedtuple("FuncDesc", ["source", "name", "args", "imported_symbols"])
+
+def _is_literal(val):
+    return isinstance(val, (int, float))
 
 
 def _process_annotation(ann):
@@ -59,17 +64,21 @@ def _get_desc(func):
             args_types[name] = annotation
 
         imported_symbols = []
+        literals = []
         for name, obj in func.__globals__.items():
             mod = get_module_for_symbol(obj)
-            if not mod:
-                continue
-            imported_symbols.append((name, mod))
+            if mod:
+                imported_symbols.append((name, mod))
+
+            if _is_literal(obj):
+                literals.append((name, obj))
 
         return FuncDesc(
             source=inspect.getsource(func),
             name=func.__name__,
             args=args_types,
             imported_symbols=imported_symbols,
+            literals=literals,
         )
 
     return _wrapper
