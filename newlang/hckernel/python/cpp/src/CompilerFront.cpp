@@ -135,7 +135,6 @@ compileAST(Context &ctx, llvm::StringRef source, llvm::StringRef funcName,
            llvm::ArrayRef<ImportedSym> importedSymbols,
            llvm::ArrayRef<Literal> literals) {
   auto *mlirContext = &ctx.context;
-  mlirContext->loadDialect<hc::py_ir::PyIRDialect>();
   auto loc = mlir::OpBuilder(mlirContext).getUnknownLoc();
 
   mlir::OwningOpRef<mlir::Operation *> mod(mlir::ModuleOp::create(loc));

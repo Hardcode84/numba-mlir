@@ -3,15 +3,20 @@
 #include "Dispatcher.hpp"
 
 #include <llvm/ADT/Twine.h>
+#include <mlir/CAPI/IR.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/Pass/PassManager.h>
 #include <mlir/Support/LogicalResult.h>
 
+#include "hc/Dialect/PyIR/IR/PyIROps.hpp"
+#include "hc/Dialect/Typing/IR/TypingOps.hpp"
 #include "hc/Pipelines/FrontendPipeline.hpp"
 
 #include "CompilerFront.hpp"
 #include "Context.hpp"
+
+#include "IRModule.h"
 
 namespace py = pybind11;
 
@@ -45,6 +50,11 @@ static mlir::Attribute translateLiteral(mlir::MLIRContext *ctx,
   if (py::isinstance<py::float_>(obj))
     return builder.getF64FloatAttr(obj.cast<double>());
 
+  if (py::isinstance<mlir::python::PyType>(obj)) {
+    auto t = py::cast<mlir::python::PyType>(obj);
+    return hc::typing::TypeAttr::get(unwrap(t.get()));
+  }
+
   reportError(llvm::Twine("Unsupported literal type: ") +
               py::str(obj).cast<std::string>());
 }
@@ -68,6 +78,8 @@ void Dispatcher::call(py::args args, py::kwargs kwargs) {
     }
 
     auto *mlirContext = &context.context;
+    mlirContext
+        ->loadDialect<hc::py_ir::PyIRDialect, hc::typing::TypingDialect>();
     llvm::SmallVector<Literal> literals;
     for (auto it : desc.attr("literals")) {
       auto elem = it.cast<py::tuple>();

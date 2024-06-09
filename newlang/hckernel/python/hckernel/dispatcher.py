@@ -7,6 +7,7 @@ from collections import namedtuple, OrderedDict
 from .kernel_api import *
 from .compiler import mlir_context, Dispatcher
 from .symbol_registry import get_module_for_symbol
+from .mlir import ir
 
 FuncDesc = namedtuple(
     "FuncDesc", ["source", "name", "args", "imported_symbols", "literals"]
@@ -14,7 +15,7 @@ FuncDesc = namedtuple(
 
 
 def _is_literal(val):
-    return isinstance(val, (int, float))
+    return isinstance(val, (int, float, ir.Type))
 
 
 def _process_annotation(ann):

@@ -41,7 +41,7 @@ class Typing_OpBase<string mnemonic, list<Trait> traits = []>
 
 def Typing_TypeAttr : Typing_Attr<"Type", "type_attr", [TypedAttrInterface]> {
   let parameters = (ins
-    "::mlir::Type":$type
+    "::mlir::Type":$type_val
   );
 
   let builders = [
@@ -50,7 +50,13 @@ def Typing_TypeAttr : Typing_Attr<"Type", "type_attr", [TypedAttrInterface]> {
     }]>
   ];
 
-  let assemblyFormat = "`<` $type `>`";
+  let assemblyFormat = "`<` $type_val `>`";
+
+  let extraClassDeclaration = [{
+    ::mlir::Type getType() {
+      return ::hc::typing::ValueType::get(getContext());
+    }
+  }];
 }
 
 def Typing_ValueType : Typing_Type<"Value", "value", [], "::mlir::Type">;
