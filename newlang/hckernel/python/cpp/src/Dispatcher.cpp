@@ -9,7 +9,6 @@
 #include <mlir/Pass/PassManager.h>
 #include <mlir/Support/LogicalResult.h>
 
-#include "hc/Dialect/PyIR/IR/PyIROps.hpp"
 #include "hc/Dialect/Typing/IR/TypingOps.hpp"
 #include "hc/Pipelines/FrontendPipeline.hpp"
 
@@ -78,8 +77,6 @@ void Dispatcher::call(py::args args, py::kwargs kwargs) {
     }
 
     auto *mlirContext = &context.context;
-    mlirContext
-        ->loadDialect<hc::py_ir::PyIRDialect, hc::typing::TypingDialect>();
     llvm::SmallVector<Literal> literals;
     for (auto it : desc.attr("literals")) {
       auto elem = it.cast<py::tuple>();

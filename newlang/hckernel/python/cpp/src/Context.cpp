@@ -2,11 +2,17 @@
 
 #include "Context.hpp"
 
+#include "hc/Dialect/PyIR/IR/PyIROps.hpp"
+#include "hc/Dialect/Typing/IR/TypingOps.hpp"
+
 #include "PyWrappers.hpp"
 
 namespace py = pybind11;
 
-Context::Context() { pushContext(&context); }
+Context::Context() {
+  context.loadDialect<hc::py_ir::PyIRDialect, hc::typing::TypingDialect>();
+  pushContext(&context);
+}
 
 Context::~Context() { popContext(&context); }
 
