@@ -20,8 +20,9 @@ def Typing_Dialect : Dialect {
     TBD
   }];
 
-//  let useDefaultAttributePrinterParser = 1;
+  let useDefaultAttributePrinterParser = 1;
   let useDefaultTypePrinterParser = 1;
+  let hasConstantMaterializer = 1;
 }
 
 class Typing_Type<string name, string typeMnemonic, list<Trait> traits = [],
@@ -38,6 +39,19 @@ class Typing_Attr<string name, string attrMnemonic, list<Trait> traits = []>
 class Typing_OpBase<string mnemonic, list<Trait> traits = []>
     : Op<Typing_Dialect, mnemonic, traits>;
 
+def Typing_TypeAttr : Typing_Attr<"Type", "type_attr", [TypedAttrInterface]> {
+  let parameters = (ins
+    "::mlir::Type":$type
+  );
+
+  let builders = [
+    AttrBuilderWithInferredContext<(ins "::mlir::Type":$type), [{
+      return $_get(type.getContext(), type);
+    }]>
+  ];
+
+  let assemblyFormat = "`<` $type `>`";
+}
 
 def Typing_ValueType : Typing_Type<"Value", "value", [], "::mlir::Type">;
 

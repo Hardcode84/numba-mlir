@@ -64,6 +64,17 @@ void hc::typing::TypingDialect::initialize() {
   registerArithTypingInterpreter(*getContext());
 }
 
+mlir::Operation *hc::typing::TypingDialect::materializeConstant(
+    mlir::OpBuilder &builder, mlir::Attribute value, mlir::Type type,
+    mlir::Location loc) {
+  //  auto typeAttr = mlir::dyn_cast<TypeAttr>(value);
+  //  if (typeAttr && mlir::isa<ValueType>(type)) {
+
+  //  }
+
+  return nullptr;
+}
+
 void hc::typing::ResolveOp::build(::mlir::OpBuilder &odsBuilder,
                                   ::mlir::OperationState &odsState,
                                   mlir::TypeRange resultTypes,
