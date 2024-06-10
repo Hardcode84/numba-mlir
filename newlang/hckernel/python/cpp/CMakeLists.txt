@@ -37,6 +37,8 @@ set(SOURCES_LIST
   src/Context.hpp
   src/Dispatcher.cpp
   src/Dispatcher.hpp
+  src/DispatcherBase.cpp
+  src/DispatcherBase.hpp
   src/PyModule.cpp
   src/PyWrappers.cpp
   src/PyWrappers.hpp
