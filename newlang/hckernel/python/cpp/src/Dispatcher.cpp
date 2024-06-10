@@ -59,6 +59,23 @@ static mlir::Attribute translateLiteral(mlir::MLIRContext *ctx,
 }
 
 void Dispatcher::call(py::args args, py::kwargs kwargs) {
+  importFunc();
+
+  llvm::SmallVector<PyObject *, 16> funcArgs;
+  mlir::Type key = processArgs(args, kwargs, funcArgs);
+  auto it = funcsCache.find(key);
+  if (it == funcsCache.end()) {
+    reportError("TODO: compile");
+    it = funcsCache.insert({key, nullptr}).first;
+  }
+
+  auto func = it->second;
+  ExceptionDesc exc;
+  if (func(&exc, funcArgs.data()) != 0)
+    reportError(exc.message);
+}
+
+mlir::Operation *Dispatcher::importFunc() {
   if (!mod) {
     assert(getFuncDesc);
     py::object desc = getFuncDesc();
@@ -105,19 +122,7 @@ void Dispatcher::call(py::args args, py::kwargs kwargs) {
 
     populateArgsHandlers(desc.attr("args"));
   }
-
-  llvm::SmallVector<PyObject *, 16> funcArgs;
-  mlir::Type key = processArgs(args, kwargs, funcArgs);
-  auto it = funcsCache.find(key);
-  if (it == funcsCache.end()) {
-    reportError("TODO: compile");
-    it = funcsCache.insert({key, nullptr}).first;
-  }
-
-  auto func = it->second;
-  ExceptionDesc exc;
-  if (func(&exc, funcArgs.data()) != 0)
-    reportError(exc.message);
+  return mod.get();
 }
 
 using HandlerT = std::function<void(mlir::MLIRContext &, pybind11::handle,

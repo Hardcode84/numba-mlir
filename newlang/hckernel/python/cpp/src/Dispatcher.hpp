@@ -20,6 +20,9 @@ public:
 
   void call(pybind11::args args, pybind11::kwargs kwargs);
 
+protected:
+  mlir::Operation *importFunc();
+
 private:
   Context &context;
   pybind11::object contextRef; // to keep context alive
