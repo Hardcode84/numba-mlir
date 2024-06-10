@@ -10,7 +10,7 @@ public:
 
   using DispatcherBase::DispatcherBase;
 
-  void compile();
+  pybind11::object compile();
 
 protected:
   virtual void populateImportPipeline(mlir::PassManager &pm) override;

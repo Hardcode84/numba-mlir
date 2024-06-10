@@ -9,9 +9,14 @@ def _register_symbol(sym):
     _reg_symbol_impl(eval(sym), sym, __name__)
 
 
+_typing_dispatchers = []
+
+
 def type_resolver(key):
     def _wrapper(func):
-        return create_dispatcher(func, TypingDispatcher)
+        disp = create_dispatcher(func, TypingDispatcher)
+        _typing_dispatchers.append(disp)
+        return disp
 
     return _wrapper
 
