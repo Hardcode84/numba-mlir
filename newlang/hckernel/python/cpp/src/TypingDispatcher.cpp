@@ -23,7 +23,7 @@ py::object TypingDispatcher::compile() {
   mlir::OwningOpRef op = mlir::cast<mlir::ModuleOp>(importFunc()->clone());
   auto res = mlir::python::PyModule::forModule(wrap(op.get()));
   op.release();
-  return py::cast(res);
+  return res.getObject();
 }
 
 void TypingDispatcher::populateImportPipeline(mlir::PassManager &pm) {
