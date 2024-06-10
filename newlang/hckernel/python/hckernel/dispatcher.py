@@ -85,5 +85,5 @@ def _get_desc(func):
     return _wrapper
 
 
-def create_dispatcher(func):
-    return Dispatcher(mlir_context, _get_desc(func))
+def create_dispatcher(func, dispatcher=Dispatcher):
+    return dispatcher(mlir_context, _get_desc(func))

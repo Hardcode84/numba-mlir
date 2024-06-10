@@ -1,0 +1,18 @@
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+#pragma once
+
+#include "DispatcherBase.hpp"
+
+class TypingDispatcher : public DispatcherBase {
+public:
+  static void definePyClass(pybind11::module_ &m);
+
+  using DispatcherBase::DispatcherBase;
+
+  void compile();
+
+protected:
+  virtual void populateImportPipeline(mlir::PassManager &pm) override;
+  virtual void populateInvokePipeline(mlir::PassManager &pm) override;
+};

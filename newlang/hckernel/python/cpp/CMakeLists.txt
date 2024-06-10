@@ -42,6 +42,8 @@ set(SOURCES_LIST
   src/PyModule.cpp
   src/PyWrappers.cpp
   src/PyWrappers.hpp
+  src/TypingDispatcher.cpp
+  src/TypingDispatcher.hpp
   src/Utils.cpp
   src/Utils.hpp
   )

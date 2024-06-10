@@ -7,6 +7,7 @@
 #include "Context.hpp"
 #include "Dispatcher.hpp"
 #include "PyWrappers.hpp"
+#include "TypingDispatcher.hpp"
 
 namespace py = pybind11;
 
@@ -15,6 +16,9 @@ PYBIND11_MODULE(compiler, m) {
 
   Dispatcher::definePyClass(m);
 
-  auto mlir_mod = m.def_submodule("_mlir");
-  populateMlirModule(mlir_mod);
+  auto mlirMod = m.def_submodule("_mlir");
+  populateMlirModule(mlirMod);
+
+  auto typingMod = m.def_submodule("_typing");
+  TypingDispatcher::definePyClass(typingMod);
 }

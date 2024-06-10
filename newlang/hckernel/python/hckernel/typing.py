@@ -2,6 +2,7 @@
 
 from .symbol_registry import register_symbol as _reg_symbol_impl
 from .dispatcher import create_dispatcher
+from ._native.compiler._typing import TypingDispatcher
 
 
 def _register_symbol(sym):
@@ -10,7 +11,7 @@ def _register_symbol(sym):
 
 def type_resolver(key):
     def _wrapper(func):
-        return create_dispatcher(func)
+        return create_dispatcher(func, TypingDispatcher)
 
     return _wrapper
 
