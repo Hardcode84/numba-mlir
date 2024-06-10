@@ -13,14 +13,11 @@
 
 #include "CompilerFront.hpp"
 #include "Context.hpp"
+#include "Utils.hpp"
 
 #include "IRModule.h"
 
 namespace py = pybind11;
-
-[[noreturn]] static void reportError(const llvm::Twine &msg) {
-  throw std::runtime_error(msg.str());
-}
 
 DispatcherBase::DispatcherBase(py::capsule ctx, py::object getDesc)
     : context(*ctx.get_pointer<Context>()), contextRef(std::move(ctx)),

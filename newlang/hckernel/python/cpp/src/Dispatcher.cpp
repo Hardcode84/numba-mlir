@@ -4,13 +4,11 @@
 
 #include <llvm/ADT/Twine.h>
 
+#include "Utils.hpp"
+
 #include "hc/Pipelines/FrontendPipeline.hpp"
 
 namespace py = pybind11;
-
-[[noreturn]] static void reportError(const llvm::Twine &msg) {
-  throw std::runtime_error(msg.str());
-}
 
 void Dispatcher::definePyClass(py::module_ &m) {
   py::class_<Dispatcher>(m, "Dispatcher")

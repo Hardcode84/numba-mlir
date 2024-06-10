@@ -22,6 +22,7 @@
 
 #include "CompilerFront.hpp"
 #include "Context.hpp"
+#include "Utils.hpp"
 
 static void printDiag(llvm::raw_ostream &os, const mlir::Diagnostic &diag) {
   os << diag;
@@ -86,6 +87,14 @@ static void createModuleImport(mlir::OpBuilder &builder,
   builder.create<hc::py_ir::StoreVarOp>(loc, sym.name, mod);
 }
 
+template <typename T> static std::string toStr(T &&val) {
+  std::string ret;
+  llvm::raw_string_ostream os(ret);
+  os << val;
+  os.flush();
+  return ret;
+}
+
 static void createLiteral(mlir::OpBuilder &builder, const Literal &lit) {
   auto attr = mlir::cast<mlir::TypedAttr>(lit.attr);
   auto loc = builder.getUnknownLoc();
@@ -99,7 +108,7 @@ static void createLiteral(mlir::OpBuilder &builder, const Literal &lit) {
   }
 
   if (!op)
-    llvm_unreachable("Cannot materialize literal");
+    reportError(llvm::Twine("Cannot materialize literal: ") + toStr(lit.attr));
 
   builder.create<hc::py_ir::StoreVarOp>(loc, lit.name, op->getResult(0));
 }

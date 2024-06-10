@@ -42,6 +42,8 @@ set(SOURCES_LIST
   src/PyModule.cpp
   src/PyWrappers.cpp
   src/PyWrappers.hpp
+  src/Utils.cpp
+  src/Utils.hpp
   )
 
 pybind11_add_module(${python_module_name} MODULE
