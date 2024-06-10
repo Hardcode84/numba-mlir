@@ -11,4 +11,8 @@ public:
   using DispatcherBase::DispatcherBase;
 
   void call(pybind11::args args, pybind11::kwargs kwargs);
+
+protected:
+  virtual void populateImportPipeline(mlir::PassManager &pm) override;
+  virtual void populateInvokePipeline(mlir::PassManager &pm) override;
 };

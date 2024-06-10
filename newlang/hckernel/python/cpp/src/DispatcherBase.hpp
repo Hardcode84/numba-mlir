@@ -9,6 +9,10 @@
 
 #include <pybind11/pybind11.h>
 
+namespace mlir {
+class PassManager;
+}
+
 struct Context;
 
 class DispatcherBase {
@@ -17,14 +21,19 @@ public:
   virtual ~DispatcherBase();
 
 protected:
+  virtual void populateImportPipeline(mlir::PassManager &pm) = 0;
+  virtual void populateInvokePipeline(mlir::PassManager &pm) = 0;
+
   mlir::Operation *importFunc();
-  mlir::Type processArgs(pybind11::args &args, pybind11::kwargs &kwargs,
-                         llvm::SmallVectorImpl<PyObject *> &retArgs) const;
+  void invokeFunc(const pybind11::args &args, const pybind11::kwargs &kwargs);
+
+private:
+  using OpRef = mlir::OwningOpRef<mlir::Operation *>;
 
   Context &context;
   pybind11::object contextRef; // to keep context alive
   pybind11::object getFuncDesc;
-  mlir::OwningOpRef<mlir::Operation *> mod;
+  OpRef mod;
 
   struct ArgDesc {
     llvm::StringRef name;
@@ -44,4 +53,7 @@ protected:
   llvm::DenseMap<mlir::Type, FuncT> funcsCache;
 
   void populateArgsHandlers(pybind11::handle args);
+  mlir::Type processArgs(const pybind11::args &args,
+                         const pybind11::kwargs &kwargs,
+                         llvm::SmallVectorImpl<PyObject *> &retArgs) const;
 };

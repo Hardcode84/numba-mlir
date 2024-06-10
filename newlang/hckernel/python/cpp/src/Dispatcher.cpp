@@ -4,6 +4,8 @@
 
 #include <llvm/ADT/Twine.h>
 
+#include "hc/Pipelines/FrontendPipeline.hpp"
+
 namespace py = pybind11;
 
 [[noreturn]] static void reportError(const llvm::Twine &msg) {
@@ -18,17 +20,13 @@ void Dispatcher::definePyClass(py::module_ &m) {
 
 void Dispatcher::call(py::args args, py::kwargs kwargs) {
   importFunc();
+  invokeFunc(args, kwargs);
+}
 
-  llvm::SmallVector<PyObject *, 16> funcArgs;
-  mlir::Type key = processArgs(args, kwargs, funcArgs);
-  auto it = funcsCache.find(key);
-  if (it == funcsCache.end()) {
-    reportError("TODO: compile");
-    it = funcsCache.insert({key, nullptr}).first;
-  }
+void Dispatcher::populateImportPipeline(mlir::PassManager &pm) {
+  hc::populateFrontendPipeline(pm);
+}
 
-  auto func = it->second;
-  ExceptionDesc exc;
-  if (func(&exc, funcArgs.data()) != 0)
-    reportError(exc.message);
+void Dispatcher::populateInvokePipeline(mlir::PassManager &pm) {
+  reportError("TODO: compile");
 }

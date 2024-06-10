@@ -10,7 +10,6 @@
 #include <mlir/Support/LogicalResult.h>
 
 #include "hc/Dialect/Typing/IR/TypingOps.hpp"
-#include "hc/Pipelines/FrontendPipeline.hpp"
 
 #include "CompilerFront.hpp"
 #include "Context.hpp"
@@ -85,13 +84,12 @@ mlir::Operation *DispatcherBase::importFunc() {
       reportError("AST import failed");
 
     mlir::PassManager pm(mlirContext);
-
     if (context.settings.dumpIR) {
       mlirContext->disableMultithreading();
       pm.enableIRPrinting();
     }
 
-    hc::populateFrontendPipeline(pm);
+    populateImportPipeline(pm);
     if (mlir::failed(runUnderDiag(pm, **res)))
       reportError("Compilation failed");
 
@@ -100,6 +98,35 @@ mlir::Operation *DispatcherBase::importFunc() {
     populateArgsHandlers(desc.attr("args"));
   }
   return mod.get();
+}
+
+void DispatcherBase::invokeFunc(const py::args &args,
+                                const py::kwargs &kwargs) {
+  llvm::SmallVector<PyObject *, 16> funcArgs;
+  mlir::Type key = processArgs(args, kwargs, funcArgs);
+  auto it = funcsCache.find(key);
+  if (it == funcsCache.end()) {
+    auto *mlirContext = &context.context;
+    mlir::PassManager pm(mlirContext);
+    if (context.settings.dumpIR) {
+      mlirContext->disableMultithreading();
+      pm.enableIRPrinting();
+    }
+
+    populateInvokePipeline(pm);
+
+    OpRef newMod = mod->clone();
+    if (mlir::failed(runUnderDiag(pm, *newMod)))
+      reportError("Compilation failed");
+
+    // TODO: codegen
+    it = funcsCache.insert({key, nullptr}).first;
+  }
+
+  auto func = it->second;
+  ExceptionDesc exc;
+  if (func(&exc, funcArgs.data()) != 0)
+    reportError(exc.message);
 }
 
 using HandlerT = std::function<void(mlir::MLIRContext &, pybind11::handle,
@@ -201,7 +228,8 @@ void DispatcherBase::populateArgsHandlers(pybind11::handle args) {
 }
 
 mlir::Type
-DispatcherBase::processArgs(py::args &args, py::kwargs &kwargs,
+DispatcherBase::processArgs(const pybind11::args &args,
+                            const pybind11::kwargs &kwargs,
                             llvm::SmallVectorImpl<PyObject *> &retArgs) const {
   auto srcNumArgs = args.size();
   bool hasKWArgs = kwargs.size() > 0;
