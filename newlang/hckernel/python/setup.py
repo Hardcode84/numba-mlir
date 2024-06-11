@@ -62,7 +62,7 @@ invoke_cmake(
         "-DLLVM_DIR=" + LLVM_DIR,
         "-DMLIR_DIR=" + MLIR_DIR,
         "-DHC_ENABLE_PYTHON=ON",
-        "-DHC_ENABLE_TOOLS=OFF",
+        "-DHC_ENABLE_TOOLS=ON",  # need hc-opt to convert mlir files to bytecode
         "-DHC_ENABLE_TESTS=OFF",
     ]
 )

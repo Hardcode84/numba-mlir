@@ -10,8 +10,6 @@ include(AddLLVM)
 include(AddMLIR)
 include(HandleLLVMOptions)
 
-set(python_module_name compiler)
-
 # TODO: something better
 set(_python_sources ${LLVM_MAIN_INCLUDE_DIR}/../src/python/)
 if(NOT EXISTS ${_python_sources})
@@ -71,6 +69,6 @@ target_include_directories(${python_module_name} PRIVATE
     ${LLVM_INCLUDE_DIRS}
     ${MLIR_INCLUDE_DIRS}
     ${_python_sources}/MLIRPythonExtension.Core
-    )
+  )
 
 install(TARGETS ${python_module_name} DESTINATION ${CMAKE_INSTALL_PREFIX})
