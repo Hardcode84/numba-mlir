@@ -8,15 +8,26 @@
 #include "Utils.hpp"
 
 #include "hc/Pipelines/FrontendPipeline.hpp"
+#include "hc/Transforms/ModuleLinker.hpp"
 
 #include "IRModule.h"
 
 namespace py = pybind11;
 
+static void linkModules(mlir::python::PyModule &dest,
+                        mlir::python::PyModule &toLink) {
+  mlir::ModuleOp destMod = unwrap(dest.get());
+  mlir::ModuleOp toLinkMod = unwrap(toLink.get());
+  if (mlir::failed(hc::linkModules(destMod, toLinkMod)))
+    reportError("Failed to link modules");
+}
+
 void TypingDispatcher::definePyClass(py::module_ &m) {
   py::class_<TypingDispatcher>(m, "TypingDispatcher")
       .def(py::init<py::capsule, py::object>())
       .def("compile", &TypingDispatcher::compile);
+
+  m.def("link_modules", &linkModules);
 }
 
 py::object TypingDispatcher::compile() {
