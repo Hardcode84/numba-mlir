@@ -14,10 +14,9 @@
 
 namespace py = pybind11;
 
-static void linkModules(mlir::python::PyModule &dest,
-                        mlir::python::PyModule &toLink) {
-  mlir::ModuleOp destMod = unwrap(dest.get());
-  mlir::ModuleOp toLinkMod = unwrap(toLink.get());
+static void linkModules(MlirModule dest, MlirModule toLink) {
+  mlir::ModuleOp destMod = unwrap(dest);
+  mlir::ModuleOp toLinkMod = unwrap(toLink);
   if (mlir::failed(hc::linkModules(destMod, toLinkMod)))
     reportError("Failed to link modules");
 }
