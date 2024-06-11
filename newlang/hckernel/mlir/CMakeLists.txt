@@ -39,10 +39,11 @@ set(SOURCES_LIST
     lib/Pipelines/FrontendPipeline.cpp
     lib/Transforms/ClenaupPySetVar.cpp
     lib/Transforms/ConvertPyASTToIR.cpp
+    lib/Transforms/ModuleLinker.cpp
     lib/Transforms/PyTypeInference.cpp
     lib/Transforms/ReconstructPySSA.cpp
     lib/Transforms/SimplifyAST.cpp
-    )
+  )
 set(HEADERS_LIST
     include/hc/Dialect/PyAST/IR/PyASTOps.hpp
     include/hc/Dialect/PyIR/IR/PyIROps.hpp
@@ -52,9 +53,10 @@ set(HEADERS_LIST
     include/hc/InitHCDialects.hpp
     include/hc/InitHCPasses.hpp
     include/hc/Pipelines/FrontendPipeline.hpp
+    include/hc/Transforms/ModuleLinker.hpp
     include/hc/Transforms/Passes.hpp
     include/hc/Utils.hpp
-    )
+  )
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES_LIST} ${HEADERS_LIST})
 
