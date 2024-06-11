@@ -14,7 +14,7 @@ _typing_dispatchers = []
 
 def type_resolver(key):
     def _wrapper(func):
-        disp = create_dispatcher(func, TypingDispatcher)
+        disp = create_dispatcher(func, dispatcher=TypingDispatcher)
         _typing_dispatchers.append(disp)
         return disp
 
