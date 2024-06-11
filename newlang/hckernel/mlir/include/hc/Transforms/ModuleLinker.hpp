@@ -3,8 +3,8 @@
 #pragma once
 
 namespace mlir {
-class LogicalResult;
 class ModuleOp;
+struct LogicalResult;
 } // namespace mlir
 
 namespace hc {
