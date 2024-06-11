@@ -10,6 +10,7 @@
 #include <mlir/Support/LogicalResult.h>
 
 #include "hc/Dialect/Typing/IR/TypingOps.hpp"
+#include "hc/Transforms/ModuleLinker.hpp"
 
 #include "CompilerFront.hpp"
 #include "Context.hpp"
@@ -80,6 +81,18 @@ mlir::Operation *DispatcherBase::importFunc() {
     if (mlir::failed(res))
       reportError("AST import failed");
 
+    mlir::OwningOpRef newMod = mlir::cast<mlir::ModuleOp>(res->release());
+    auto prelink = desc.attr("prelink_module");
+    if (!prelink.is_none()) {
+      auto prelinkMod = unwrap(py::cast<MlirModule>(prelink));
+      mlir::OwningOpRef preMod =
+          mlir::cast<mlir::ModuleOp>(prelinkMod->clone());
+      if (mlir::failed(hc::linkModules(preMod.get(), newMod.get())))
+        reportError("Module linking failed");
+
+      newMod = std::move(preMod);
+    }
+
     mlir::PassManager pm(mlirContext);
     if (context.settings.dumpIR) {
       mlirContext->disableMultithreading();
@@ -87,10 +100,10 @@ mlir::Operation *DispatcherBase::importFunc() {
     }
 
     populateImportPipeline(pm);
-    if (mlir::failed(runUnderDiag(pm, **res)))
+    if (mlir::failed(runUnderDiag(pm, newMod.get())))
       reportError("Compilation failed");
 
-    std::swap(mod, *res);
+    mod = std::move(newMod);
 
     populateArgsHandlers(desc.attr("args"));
   }

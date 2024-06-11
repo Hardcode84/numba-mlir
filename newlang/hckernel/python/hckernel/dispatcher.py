@@ -10,7 +10,8 @@ from .symbol_registry import get_module_for_symbol
 from .mlir import ir
 
 FuncDesc = namedtuple(
-    "FuncDesc", ["source", "name", "args", "imported_symbols", "literals"]
+    "FuncDesc",
+    ["source", "name", "args", "imported_symbols", "literals", "prelink_module"],
 )
 
 
@@ -48,7 +49,7 @@ def _process_annotation(ann):
         assert False, f"Unsupported annotation: {type(ann)} {ann}"
 
 
-def _get_desc(func):
+def _get_desc(func, prelink_module):
     if not isinstance(func, FunctionType):
         raise RuntimeError(f"Unsupported object {type(func)}")
 
@@ -80,10 +81,11 @@ def _get_desc(func):
             args=args_types,
             imported_symbols=imported_symbols,
             literals=literals,
+            prelink_module=prelink_module,
         )
 
     return _wrapper
 
 
-def create_dispatcher(func, dispatcher=Dispatcher):
-    return dispatcher(mlir_context, _get_desc(func))
+def create_dispatcher(func, prelink_module=None, dispatcher=Dispatcher):
+    return dispatcher(mlir_context, _get_desc(func, prelink_module))
