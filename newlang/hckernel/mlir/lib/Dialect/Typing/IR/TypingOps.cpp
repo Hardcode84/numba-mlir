@@ -433,6 +433,13 @@ hc::typing::getTypes(const hc::typing::InterpreterState &state,
 }
 
 mlir::FailureOr<bool>
+hc::typing::TypeConstantOp::interpret(InterpreterState &state) {
+  mlir::Type type = mlir::cast<TypeAttr>(getValue()).getTypeVal();
+  state.state[getResult()] = type;
+  return true;
+}
+
+mlir::FailureOr<bool>
 hc::typing::TypeResolverReturnOp::interpret(InterpreterState &state) {
   state.setCompleted();
   return true;

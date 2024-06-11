@@ -25,6 +25,29 @@ py_ir.module {
 
 // -----
 
+typing.type_resolver ["py_ir.loadvar", "i64"] {
+  %0 = typing.type_constant #typing.type_attr<i64> : !typing.value
+  typing.type_resolver_return %0
+}
+
+// CHECK-LABEL: py_ir.module
+//       CHECK:  py_ir.func "func"
+//       CHECK:  ^bb0(%[[ARG:.*]]: i64):
+//       CHECK:  %[[R:.*]] = py_ir.getattr %[[ARG]] : i64 attr "foo" -> !py_ir.undefined
+//       CHECK:  py_ir.return %[[R]] : !py_ir.undefined
+
+py_ir.module {
+  %0 = py_ir.loadvar "i64" : !py_ir.undefined
+  %1 = py_ir.func "func" (group:%0) : !py_ir.undefined capture () -> !py_ir.undefined {
+  ^bb0(%arg0: !py_ir.undefined):
+    %2 = py_ir.getattr %arg0 : !py_ir.undefined attr "foo" -> !py_ir.undefined
+    py_ir.return %2 : !py_ir.undefined
+  }
+  %3 = py_ir.call %1 : !py_ir.undefined  () -> !py_ir.undefined
+}
+
+// -----
+
 func.func @test_func(%0: !typing.value) -> (!typing.value) {
   return %0 : !typing.value
 }

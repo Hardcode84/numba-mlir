@@ -133,7 +133,8 @@ def Typing_UnionType : Typing_Type<"Union", "union", [], "::mlir::Type"> {
 
 def Typing_TypeConstantOp : Typing_OpBase<"type_constant", [
     ConstantLike, Pure,
-    DeclareOpInterfaceMethods<TypeInferenceInterface>
+    DeclareOpInterfaceMethods<TypeInferenceInterface>,
+    DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {
 
   let arguments = (ins TypedAttrInterface:$value);
