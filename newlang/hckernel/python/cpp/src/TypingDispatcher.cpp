@@ -4,6 +4,7 @@
 
 #include <mlir/CAPI/IR.h>
 #include <mlir/IR/Operation.h>
+#include <mlir/Parser/Parser.h>
 
 #include "Utils.hpp"
 
@@ -21,12 +22,22 @@ static void linkModules(MlirModule dest, MlirModule toLink) {
     reportError("Failed to link modules");
 }
 
+static py::object loadMLIRModule(MlirContext ctx, py::str path) {
+  mlir::ParserConfig config(unwrap(ctx));
+  auto mod =
+      mlir::parseSourceFile<mlir::ModuleOp>(path.cast<std::string>(), config);
+  auto res = mlir::python::PyModule::forModule(wrap(mod.get()));
+  mod.release();
+  return res.getObject();
+}
+
 void TypingDispatcher::definePyClass(py::module_ &m) {
   py::class_<TypingDispatcher>(m, "TypingDispatcher")
       .def(py::init<py::capsule, py::object>())
       .def("compile", &TypingDispatcher::compile);
 
   m.def("link_modules", &linkModules);
+  m.def("load_mlir_module", &loadMLIRModule);
 }
 
 py::object TypingDispatcher::compile() {

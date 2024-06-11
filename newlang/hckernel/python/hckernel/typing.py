@@ -2,19 +2,25 @@
 
 from .symbol_registry import register_symbol as _reg_symbol_impl
 from .dispatcher import create_dispatcher
-from ._native.compiler._typing import TypingDispatcher, link_modules
+from ._native.compiler._typing import TypingDispatcher, link_modules, load_mlir_module
+from .bitcode_storage import get_bitcode_file
+from .mlir import ir
 
 
 def _register_symbol(sym):
     _reg_symbol_impl(eval(sym), sym, __name__)
 
 
+_typing_prelink = load_mlir_module(ir._BaseContext.current, get_bitcode_file("typing"))
+
 _typing_dispatchers = []
 
 
 def type_resolver(key):
     def _wrapper(func):
-        disp = create_dispatcher(func, dispatcher=TypingDispatcher)
+        disp = create_dispatcher(
+            func, prelink_module=_typing_prelink, dispatcher=TypingDispatcher
+        )
         _typing_dispatchers.append(disp)
         return disp
 
