@@ -239,7 +239,9 @@ def PyIR_ReturnOp : PyIR_OpBase<"return", [Pure, HasParent<"PyFuncOp">,
   let assemblyFormat = "attr-dict $operand `:` type($operand)";
 }
 
-def PyIR_CallOp : PyIR_OpBase<"call"> {
+def PyIR_CallOp : PyIR_OpBase<"call", [
+  DeclareOpInterfaceMethods<TypingKeyInterface>
+]> {
   let arguments = (ins
     AnyType:$func,
     Variadic<AnyType>:$args,

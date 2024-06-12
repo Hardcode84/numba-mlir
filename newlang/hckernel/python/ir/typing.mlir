@@ -43,3 +43,21 @@ typing.type_resolver ["py_ir.make_list"] {
   %0 = typing.make_ident "List" ["Elements"] : %s2
   typing.type_resolver_return %0
 }
+
+typing.type_resolver ["py_ir.call"] {
+  %c0 = arith.constant 0: index
+  %0 = typing.make_ident "hckernel.typing.type_resolver" []
+  %1 = typing.get_arg %c0
+  %2 = typing.is_same %0 %1
+  typing.check %2
+
+  %c1 = arith.constant 1: index
+  %3 = typing.get_arg %c1
+  %4 = typing.get_ident_name %3
+  %5 = typing.make_literal "List"
+  %6 = typing.is_same %4 %5
+  typing.check %6
+
+  %7 = typing.make_ident "type_resolver_type" ["type"] : %3
+  typing.type_resolver_return %7
+}
