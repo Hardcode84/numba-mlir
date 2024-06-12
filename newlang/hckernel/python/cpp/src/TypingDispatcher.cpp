@@ -6,9 +6,9 @@
 #include <mlir/IR/Operation.h>
 #include <mlir/Parser/Parser.h>
 
+#include "TypingPipeline.hpp"
 #include "Utils.hpp"
 
-#include "hc/Pipelines/FrontendPipeline.hpp"
 #include "hc/Transforms/ModuleLinker.hpp"
 
 #include "IRModule.h"
@@ -48,7 +48,7 @@ py::object TypingDispatcher::compile() {
 }
 
 void TypingDispatcher::populateImportPipeline(mlir::PassManager &pm) {
-  hc::populateFrontendPipeline(pm);
+  populateTypingPipeline(pm);
 }
 
 void TypingDispatcher::populateInvokePipeline(mlir::PassManager &pm) {

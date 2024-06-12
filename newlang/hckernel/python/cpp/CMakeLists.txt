@@ -29,21 +29,23 @@ endforeach()
 
 
 set(SOURCES_LIST
-  src/CompilerFront.cpp
-  src/CompilerFront.hpp
-  src/Context.cpp
-  src/Context.hpp
-  src/Dispatcher.cpp
-  src/Dispatcher.hpp
-  src/DispatcherBase.cpp
-  src/DispatcherBase.hpp
-  src/PyModule.cpp
-  src/PyWrappers.cpp
-  src/PyWrappers.hpp
-  src/TypingDispatcher.cpp
-  src/TypingDispatcher.hpp
-  src/Utils.cpp
-  src/Utils.hpp
+    src/CompilerFront.cpp
+    src/CompilerFront.hpp
+    src/Context.cpp
+    src/Context.hpp
+    src/Dispatcher.cpp
+    src/Dispatcher.hpp
+    src/DispatcherBase.cpp
+    src/DispatcherBase.hpp
+    src/PyModule.cpp
+    src/PyWrappers.cpp
+    src/PyWrappers.hpp
+    src/TypingDispatcher.cpp
+    src/TypingDispatcher.hpp
+    src/TypingPipeline.cpp
+    src/TypingPipeline.hpp
+    src/Utils.cpp
+    src/Utils.hpp
   )
 
 pybind11_add_module(${python_module_name} MODULE
