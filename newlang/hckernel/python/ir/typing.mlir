@@ -58,6 +58,7 @@ typing.type_resolver ["py_ir.call"] {
   %6 = typing.is_same %4 %5
   typing.check %6
 
-  %7 = typing.make_ident "type_resolver_type" ["type"] : %3
-  typing.type_resolver_return %7
+  %7 = typing.get_ident_param %3 "Elements"
+  %8 = typing.make_ident "type_resolver_type" ["key"] : %7
+  typing.type_resolver_return %8
 }
