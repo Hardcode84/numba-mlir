@@ -4,9 +4,9 @@ typing.type_resolver ["py_ir.load_module", "hckernel"] {
 }
 
 typing.type_resolver ["py_ir.getattr", "typing"] {
-  %c1 = arith.constant 0: index
+  %c0 = arith.constant 0: index
   %0 = typing.make_ident "hckernel" []
-  %1 = typing.get_arg %c1
+  %1 = typing.get_arg %c0
   %2 = typing.is_same %0 %1
   typing.check %2
 
