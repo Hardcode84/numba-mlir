@@ -54,5 +54,16 @@ def PyTypeInferencePass : Pass<"hc-py-type-inference-pass"> {
   ];
 }
 
+def DropTypeResolversPass : Pass<"hc-drop-type-resolvers-pass"> {
+  let summary = "TBD";
+  let description = [{
+    TBD
+  }];
+
+  let dependentDialects = [
+    "::hc::typing::TypingDialect"
+  ];
+}
+
 
 #endif // _HC_TRANSFORMS_PASSES_TD_INCLUDED_

@@ -23,5 +23,6 @@ void hc::populateFrontendPipeline(mlir::PassManager &pm) {
   pm.addPass(hc::createReconstuctPySSAPass());
   populatePyIROptPasses(pm);
   pm.addPass(hc::createPyTypeInferencePass());
+  pm.addPass(hc::createDropTypeResolversPass());
   pm.addPass(mlir::createCanonicalizerPass());
 }
