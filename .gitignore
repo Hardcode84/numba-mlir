@@ -188,3 +188,8 @@ _install
 
 # airspeed velocity cache
 .asv
+
+
+# LLVM/MLIR
+*.bc
+*.mlirbc
