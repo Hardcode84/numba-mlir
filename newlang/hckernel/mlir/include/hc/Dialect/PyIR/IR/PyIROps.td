@@ -300,7 +300,9 @@ def PyIR_SetAttrOp : PyIR_OpBase<"setattr"> {
   let assemblyFormat = "attr-dict $target `:` type($target) `attr` $name `=` $value `:` type($value)";
 }
 
-def PyIR_GetAttrOp : PyIR_OpBase<"getattr", [Pure]> {
+def PyIR_GetAttrOp : PyIR_OpBase<"getattr", [
+  Pure, DeclareOpInterfaceMethods<TypingKeyInterface, ["getTypingKeyArgs"]>
+]> {
   let arguments = (ins
     AnyType:$target,
     StrAttr:$name);

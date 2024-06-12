@@ -164,6 +164,11 @@ void hc::py_ir::LoadVarOp::getTypingKeyArgs(
   args.emplace_back(getNameAttr());
 }
 
+void hc::py_ir::GetAttrOp::getTypingKeyArgs(
+    llvm::SmallVectorImpl<mlir::Attribute> &args) {
+  args.emplace_back(getNameAttr());
+}
+
 static bool parseArgList(
     mlir::OpAsmParser &parser,
     llvm::SmallVectorImpl<mlir::OpAsmParser::UnresolvedOperand> &argsOperands,
