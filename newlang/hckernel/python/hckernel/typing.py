@@ -11,6 +11,10 @@ def _register_symbol(sym):
     _reg_symbol_impl(eval(sym), sym, __name__)
 
 
+def _stub_error():
+    raise NotImplementedError("This is a stub")
+
+
 _typing_prelink = load_mlir_module(ir._BaseContext.current, get_bitcode_file("typing"))
 
 _typing_dispatchers = []
@@ -46,4 +50,14 @@ def compile_type_resolvers():
         _typing_dispatchers.clear()
 
 
+def is_same(a, b):
+    _stub_error()
+
+
+def check(cond):
+    _stub_error()
+
+
 _register_symbol("type_resolver")
+_register_symbol("is_same")
+_register_symbol("check")
