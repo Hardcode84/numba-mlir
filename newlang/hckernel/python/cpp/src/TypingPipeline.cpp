@@ -12,6 +12,70 @@
 #include "hc/Dialect/Typing/IR/TypingOps.hpp"
 #include "hc/Pipelines/FrontendPipeline.hpp"
 
+static void convertCall(mlir::IRRewriter &builder, hc::py_ir::CallOp call,
+                        llvm::StringRef name) {
+  builder.setInsertionPoint(call);
+  mlir::Type callResType = call.getResult().getType();
+  mlir::ValueRange args = call.getArgs();
+  mlir::TypeRange callArgTypes = args.getTypes();
+  auto checkCall = [&](llvm::StringRef funcName, mlir::Type resType,
+                       mlir::TypeRange argTypes) -> bool {
+    if (funcName != name)
+      return false;
+
+    if (callResType != resType)
+      return false;
+
+    return llvm::equal(callArgTypes, argTypes);
+  };
+
+  auto i1 = builder.getIntegerType(1);
+  auto none = builder.getNoneType();
+  auto vt = hc::typing::ValueType::get(builder.getContext());
+  if (checkCall("is_same", i1, {vt, vt})) {
+    builder.replaceOpWithNewOp<hc::typing::IsSameOp>(call, callResType, args[0],
+                                                     args[1]);
+    return;
+  }
+  if (checkCall("check", none, {i1})) {
+    builder.create<hc::typing::CheckOp>(call.getLoc(), args[0]);
+    builder.replaceOpWithNewOp<hc::py_ir::NoneOp>(call);
+    return;
+  }
+}
+
+namespace {
+struct GenResolversFuncsPass
+    : public mlir::PassWrapper<GenResolversFuncsPass,
+                               mlir::OperationPass<void>> {
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(GenResolversFuncsPass)
+
+  virtual void
+  getDependentDialects(mlir::DialectRegistry &registry) const override {
+    registry.insert<hc::typing::TypingDialect>();
+    registry.insert<mlir::arith::ArithDialect>();
+  }
+
+  void runOnOperation() override {
+    mlir::IRRewriter builder(&getContext());
+    auto visitor = [&](hc::py_ir::CallOp op) {
+      auto funcType =
+          mlir::dyn_cast<hc::typing::IdentType>(op.getFunc().getType());
+      if (!funcType)
+        return;
+
+      llvm::StringRef funcName = funcType.getName().getValue();
+      if (!funcName.consume_front("hckernel.typing."))
+        return;
+
+      convertCall(builder, op, funcName);
+    };
+
+    getOperation()->walk<mlir::WalkOrder::PostOrder>(visitor);
+  }
+};
+} // namespace
+
 static std::optional<mlir::ArrayAttr>
 processDecorators(mlir::ValueRange decorators) {
   if (decorators.size() != 1)
@@ -118,6 +182,8 @@ struct GenResolversPass
 
 void populateTypingPipeline(mlir::PassManager &pm) {
   hc::populateFrontendPipeline(pm);
+  pm.addPass(std::make_unique<GenResolversFuncsPass>());
+  pm.addPass(mlir::createCanonicalizerPass());
   pm.addPass(std::make_unique<GenResolversPass>());
   pm.addPass(mlir::createCanonicalizerPass());
 }
