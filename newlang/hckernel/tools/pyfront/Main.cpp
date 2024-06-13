@@ -99,6 +99,7 @@ static mlir::LogicalResult pyfrontMain(llvm::StringRef inputFilename, Cmd cmd) {
         ctx.disableMultithreading();
         pm.enableIRPrinting();
 
+        hc::populateImportPipeline(pm);
         hc::populateFrontendPipeline(pm);
         if (mlir::failed(runUnderDiag(pm, mod)))
           return mlir::failure();
