@@ -49,48 +49,54 @@ static mlir::Attribute translateLiteral(mlir::MLIRContext *ctx,
               py::str(obj).cast<std::string>());
 }
 
-mlir::Operation *DispatcherBase::importFunc() {
+static mlir::OwningOpRef<mlir::Operation *> importImpl(Context &context,
+                                                       py::handle desc) {
+  auto [src, funcName] = getSource(desc);
+
+  llvm::SmallVector<ImportedSym> symbols;
+  for (auto &&[name, val] : desc.attr("imported_symbols").cast<py::dict>()) {
+    ImportedSym sym;
+    sym.name = name.cast<std::string>();
+    for (auto path : val)
+      sym.modulePath.emplace_back(path.cast<std::string>());
+
+    symbols.emplace_back(std::move(sym));
+  }
+
+  auto *mlirContext = &context.context;
+  llvm::SmallVector<Literal> literals;
+  for (auto &&[name, val] : desc.attr("literals").cast<py::dict>()) {
+    Literal lit;
+    lit.name = name.cast<std::string>();
+    lit.attr = translateLiteral(mlirContext, val);
+    literals.emplace_back(std::move(lit));
+  }
+
+  auto res = compileAST(context, src, funcName, symbols, literals);
+  if (mlir::failed(res))
+    reportError("AST import failed");
+
+  mlir::OwningOpRef newMod = res->release();
+  auto prelink = desc.attr("prelink_module");
+  if (!prelink.is_none()) {
+    auto prelinkMod = unwrap(py::cast<MlirModule>(prelink));
+    mlir::OwningOpRef preMod = mlir::cast<mlir::ModuleOp>(prelinkMod->clone());
+    if (mlir::failed(hc::linkModules(preMod.get(),
+                                     mlir::cast<mlir::ModuleOp>(newMod.get()))))
+      reportError("Module linking failed");
+
+    newMod = std::move(preMod);
+  }
+  return newMod;
+}
+
+mlir::Operation *DispatcherBase::runFrontend() {
   if (!mod) {
     assert(getFuncDesc);
     py::object desc = getFuncDesc();
-    getFuncDesc = py::object();
-    auto [src, funcName] = getSource(desc);
-
-    llvm::SmallVector<ImportedSym> symbols;
-    for (auto &&[name, val] : desc.attr("imported_symbols").cast<py::dict>()) {
-      ImportedSym sym;
-      sym.name = name.cast<std::string>();
-      for (auto path : val)
-        sym.modulePath.emplace_back(path.cast<std::string>());
-
-      symbols.emplace_back(std::move(sym));
-    }
+    auto newMod = importImpl(context, desc);
 
     auto *mlirContext = &context.context;
-    llvm::SmallVector<Literal> literals;
-    for (auto &&[name, val] : desc.attr("literals").cast<py::dict>()) {
-      Literal lit;
-      lit.name = name.cast<std::string>();
-      lit.attr = translateLiteral(mlirContext, val);
-      literals.emplace_back(std::move(lit));
-    }
-
-    auto res = compileAST(context, src, funcName, symbols, literals);
-    if (mlir::failed(res))
-      reportError("AST import failed");
-
-    mlir::OwningOpRef newMod = mlir::cast<mlir::ModuleOp>(res->release());
-    auto prelink = desc.attr("prelink_module");
-    if (!prelink.is_none()) {
-      auto prelinkMod = unwrap(py::cast<MlirModule>(prelink));
-      mlir::OwningOpRef preMod =
-          mlir::cast<mlir::ModuleOp>(prelinkMod->clone());
-      if (mlir::failed(hc::linkModules(preMod.get(), newMod.get())))
-        reportError("Module linking failed");
-
-      newMod = std::move(preMod);
-    }
-
     mlir::PassManager pm(mlirContext);
     if (context.settings.dumpIR) {
       mlirContext->disableMultithreading();
@@ -277,4 +283,9 @@ DispatcherBase::processArgs(const pybind11::args &args,
     return types.front();
 
   return mlir::TupleType::get(&ctx);
+}
+
+DispatcherBase::OpRef DispatcherBase::importFunc() {
+  assert(getFuncDesc);
+  return importImpl(context, getFuncDesc());
 }

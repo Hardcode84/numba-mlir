@@ -41,7 +41,7 @@ void TypingDispatcher::definePyClass(py::module_ &m) {
 }
 
 py::object TypingDispatcher::compile() {
-  mlir::OwningOpRef op = mlir::cast<mlir::ModuleOp>(importFunc()->clone());
+  mlir::OwningOpRef op = mlir::cast<mlir::ModuleOp>(runFrontend()->clone());
   auto res = mlir::python::PyModule::forModule(wrap(op.get()));
   op.release();
   return res.getObject();

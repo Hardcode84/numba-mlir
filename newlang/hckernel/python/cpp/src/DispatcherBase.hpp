@@ -24,7 +24,7 @@ protected:
   virtual void populateImportPipeline(mlir::PassManager &pm) = 0;
   virtual void populateInvokePipeline(mlir::PassManager &pm) = 0;
 
-  mlir::Operation *importFunc();
+  mlir::Operation *runFrontend();
   void invokeFunc(const pybind11::args &args, const pybind11::kwargs &kwargs);
 
 private:
@@ -56,4 +56,6 @@ private:
   mlir::Type processArgs(const pybind11::args &args,
                          const pybind11::kwargs &kwargs,
                          llvm::SmallVectorImpl<PyObject *> &retArgs) const;
+
+  OpRef importFunc();
 };
