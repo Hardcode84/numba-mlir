@@ -11,7 +11,15 @@ from .mlir import ir
 
 FuncDesc = namedtuple(
     "FuncDesc",
-    ["source", "name", "args", "imported_symbols", "literals", "prelink_module"],
+    [
+        "source",
+        "name",
+        "args",
+        "imported_symbols",
+        "literals",
+        "dispatcher_deps",
+        "prelink_module",
+    ],
 )
 
 
@@ -49,7 +57,7 @@ def _process_annotation(ann):
         assert False, f"Unsupported annotation: {type(ann)} {ann}"
 
 
-def _get_desc(func, prelink_module):
+def _get_desc(func, dispatcher_cls, prelink_module):
     if not isinstance(func, FunctionType):
         raise RuntimeError(f"Unsupported object {type(func)}")
 
@@ -67,6 +75,7 @@ def _get_desc(func, prelink_module):
 
         imported_symbols = {}
         literals = {}
+        dispatcher_deps = {}
         for name, obj in func.__globals__.items():
             mod = get_module_for_symbol(obj)
             if mod:
@@ -75,12 +84,16 @@ def _get_desc(func, prelink_module):
             if _is_literal(obj):
                 literals[name] = obj
 
+            if isinstance(obj, dispatcher_cls):
+                dispatcher_deps[name] = obj
+
         return FuncDesc(
             source=inspect.getsource(func),
             name=func.__name__,
             args=args_types,
             imported_symbols=imported_symbols,
             literals=literals,
+            dispatcher_deps=dispatcher_deps,
             prelink_module=prelink_module,
         )
 
@@ -88,4 +101,7 @@ def _get_desc(func, prelink_module):
 
 
 def create_dispatcher(func, prelink_module=None, dispatcher=Dispatcher):
-    return dispatcher(mlir_context, _get_desc(func, prelink_module))
+    return dispatcher(
+        mlir_context,
+        _get_desc(func, dispatcher_cls=dispatcher, prelink_module=prelink_module),
+    )
