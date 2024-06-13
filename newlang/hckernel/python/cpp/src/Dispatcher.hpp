@@ -13,6 +13,7 @@ public:
   void call(pybind11::args args, pybind11::kwargs kwargs);
 
 protected:
+  virtual void populateFrontendPipeline(mlir::PassManager &pm) override;
   virtual void populateImportPipeline(mlir::PassManager &pm) override;
   virtual void populateInvokePipeline(mlir::PassManager &pm) override;
 };

@@ -7,5 +7,6 @@ class PassManager;
 }
 
 namespace hc {
+void populateImportPipeline(mlir::PassManager &pm);
 void populateFrontendPipeline(mlir::PassManager &pm);
-}
+} // namespace hc

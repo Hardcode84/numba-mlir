@@ -10,8 +10,9 @@
 #include <pybind11/pybind11.h>
 
 namespace mlir {
+class Operation;
 class PassManager;
-}
+} // namespace mlir
 
 struct Context;
 
@@ -24,6 +25,7 @@ public:
 
 protected:
   virtual void populateImportPipeline(mlir::PassManager &pm) = 0;
+  virtual void populateFrontendPipeline(mlir::PassManager &pm) = 0;
   virtual void populateInvokePipeline(mlir::PassManager &pm) = 0;
 
   mlir::Operation *runFrontend();
@@ -54,10 +56,15 @@ private:
 
   llvm::DenseMap<mlir::Type, FuncT> funcsCache;
 
+  void initPassManager(mlir::PassManager &pm);
   void populateArgsHandlers(pybind11::handle args);
   mlir::Type processArgs(const pybind11::args &args,
                          const pybind11::kwargs &kwargs,
                          llvm::SmallVectorImpl<PyObject *> &retArgs) const;
 
-  OpRef importFunc();
+  void linkModules(mlir::Operation *rootModule,
+                   const pybind11::dict &currentDeps);
+  OpRef importFuncForLinking(
+      llvm::SmallVectorImpl<std::pair<DispatcherBase *, mlir::Operation *>>
+          &unresolved);
 };

@@ -6,9 +6,12 @@
 #include <mlir/CAPI/IR.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
+#include <mlir/IR/Dominance.h>
+#include <mlir/IR/PatternMatch.h>
 #include <mlir/Pass/PassManager.h>
 #include <mlir/Support/LogicalResult.h>
 
+#include "hc/Dialect/PyIR/IR/PyIROps.hpp"
 #include "hc/Dialect/Typing/IR/TypingOps.hpp"
 #include "hc/Transforms/ModuleLinker.hpp"
 
@@ -93,20 +96,121 @@ static mlir::OwningOpRef<mlir::Operation *> importImpl(Context &context,
   return newMod;
 }
 
+static hc::py_ir::PyModuleOp getIRModImpl(mlir::Operation *op) {
+  if (op->getNumRegions() != 1)
+    return nullptr;
+
+  mlir::Region &reg = op->getRegion(0);
+  if (!llvm::hasSingleElement(reg))
+    return nullptr;
+
+  mlir::Block &block = reg.front();
+  auto ops = block.getOps<hc::py_ir::PyModuleOp>();
+  if (ops.empty())
+    return nullptr;
+
+  return *ops.begin();
+}
+
+static hc::py_ir::PyModuleOp getIRMod(mlir::Operation *op) {
+  auto ret = getIRModImpl(op);
+  if (!ret)
+    reportError("no python IR module");
+
+  return ret;
+}
+
+static mlir::Value getModResult(hc::py_ir::PyModuleOp mod) {
+  auto term =
+      mlir::cast<hc::py_ir::PyModuleEndOp>(mod.getBody()->getTerminator());
+  mlir::ValueRange results = term.getResults();
+  if (results.size() != 1)
+    reportError("Invalid results count");
+
+  return results.front();
+}
+
+static void getModuleDeps(
+    hc::py_ir::PyModuleOp irMod, const py::dict &deps,
+    llvm::SmallVectorImpl<std::pair<DispatcherBase *, mlir::Operation *>>
+        &unresolved) {
+  for (mlir::Operation &op : irMod.getBody()->without_terminator()) {
+    auto loadVar = mlir::dyn_cast<hc::py_ir::LoadVarOp>(op);
+    if (!loadVar)
+      continue;
+
+    auto name = loadVar.getName();
+    py::str pyName(name.data(), name.size());
+    if (deps.contains(pyName)) {
+      auto &disp = deps[pyName].cast<DispatcherBase &>();
+      unresolved.emplace_back(&disp, &op);
+    }
+  }
+}
+
+void DispatcherBase::linkModules(mlir::Operation *rootModule,
+                                 const py::dict &currentDeps) {
+  auto irMod = getIRMod(rootModule);
+
+  llvm::SmallVector<mlir::OwningOpRef<mlir::Operation *>> modules;
+  llvm::SmallDenseMap<DispatcherBase *, mlir::Value> modMap;
+  modMap.try_emplace(this, getModResult(irMod));
+
+  llvm::SmallVector<std::pair<DispatcherBase *, mlir::Operation *>> deps;
+  getModuleDeps(irMod, currentDeps, deps);
+  size_t currentDep = 0;
+  while (currentDep < deps.size()) {
+    auto &&[dispatcher, op] = deps[currentDep++];
+    if (!modMap.contains(dispatcher)) {
+      auto mod = dispatcher->importFuncForLinking(deps);
+      modMap.try_emplace(dispatcher, getModResult(getIRMod(mod.get())));
+      modules.emplace_back(std::move(mod));
+    }
+  }
+
+  mlir::IRRewriter builder(rootModule->getContext());
+  mlir::Block *dstBlock = irMod.getBody();
+  for (auto &mod : modules) {
+    auto pyIr = getIRMod(mod.get());
+    mlir::Block *srcBlock = pyIr.getBody();
+    builder.eraseOp(srcBlock->getTerminator());
+    builder.inlineBlockBefore(srcBlock, dstBlock, dstBlock->begin());
+  }
+
+  mlir::DominanceInfo dom;
+  for (auto &&[disp, op] : deps) {
+    auto it = modMap.find(disp);
+    assert(it != modMap.end());
+    mlir::Value resolvedSym = it->second;
+    if (!dom.properlyDominates(resolvedSym, op))
+      reportError("Circular module dependency");
+
+    assert(op->getNumResults() == 1);
+    op->replaceAllUsesWith(mlir::ValueRange(resolvedSym));
+  }
+}
+
 mlir::Operation *DispatcherBase::runFrontend() {
   if (!mod) {
     assert(getFuncDesc);
     py::object desc = getFuncDesc();
     auto newMod = importImpl(context, desc);
-
     auto *mlirContext = &context.context;
-    mlir::PassManager pm(mlirContext);
-    if (context.settings.dumpIR) {
-      mlirContext->disableMultithreading();
-      pm.enableIRPrinting();
+    {
+      mlir::PassManager pm(mlirContext);
+      initPassManager(pm);
+
+      populateImportPipeline(pm);
+      if (mlir::failed(runUnderDiag(pm, newMod.get())))
+        reportError("Compilation failed");
     }
 
-    populateImportPipeline(pm);
+    linkModules(newMod.get(), desc.attr("dispatcher_deps").cast<py::dict>());
+
+    mlir::PassManager pm(mlirContext);
+    initPassManager(pm);
+
+    populateFrontendPipeline(pm);
     if (mlir::failed(runUnderDiag(pm, newMod.get())))
       reportError("Compilation failed");
 
@@ -125,10 +229,7 @@ void DispatcherBase::invokeFunc(const py::args &args,
   if (it == funcsCache.end()) {
     auto *mlirContext = &context.context;
     mlir::PassManager pm(mlirContext);
-    if (context.settings.dumpIR) {
-      mlirContext->disableMultithreading();
-      pm.enableIRPrinting();
-    }
+    initPassManager(pm);
 
     populateInvokePipeline(pm);
 
@@ -144,6 +245,13 @@ void DispatcherBase::invokeFunc(const py::args &args,
   ExceptionDesc exc;
   if (func(&exc, funcArgs.data()) != 0)
     reportError(exc.message);
+}
+
+void DispatcherBase::initPassManager(mlir::PassManager &pm) {
+  if (context.settings.dumpIR) {
+    context.context.disableMultithreading();
+    pm.enableIRPrinting();
+  }
 }
 
 using HandlerT = std::function<void(mlir::MLIRContext &, pybind11::handle,
@@ -288,7 +396,23 @@ DispatcherBase::processArgs(const pybind11::args &args,
   return mlir::TupleType::get(&ctx);
 }
 
-DispatcherBase::OpRef DispatcherBase::importFunc() {
+DispatcherBase::OpRef DispatcherBase::importFuncForLinking(
+    llvm::SmallVectorImpl<std::pair<DispatcherBase *, mlir::Operation *>>
+        &unresolved) {
   assert(getFuncDesc);
-  return importImpl(context, getFuncDesc());
+  py::object desc = getFuncDesc();
+  auto ret = importImpl(context, desc);
+
+  auto *mlirContext = &context.context;
+  mlir::PassManager pm(mlirContext);
+  initPassManager(pm);
+
+  populateImportPipeline(pm);
+  if (mlir::failed(runUnderDiag(pm, ret.get())))
+    reportError("Compilation failed");
+
+  auto deps = desc.attr("dispatcher_deps").cast<py::dict>();
+  auto irMod = getIRMod(ret.get());
+  getModuleDeps(irMod, deps, unresolved);
+  return ret;
 }

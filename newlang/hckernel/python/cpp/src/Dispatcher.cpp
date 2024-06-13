@@ -22,6 +22,10 @@ void Dispatcher::call(py::args args, py::kwargs kwargs) {
 }
 
 void Dispatcher::populateImportPipeline(mlir::PassManager &pm) {
+  hc::populateImportPipeline(pm);
+}
+
+void Dispatcher::populateFrontendPipeline(mlir::PassManager &pm) {
   hc::populateFrontendPipeline(pm);
 }
 

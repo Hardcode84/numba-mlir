@@ -13,6 +13,7 @@ public:
   pybind11::object compile();
 
 protected:
+  virtual void populateFrontendPipeline(mlir::PassManager &pm) override;
   virtual void populateImportPipeline(mlir::PassManager &pm) override;
   virtual void populateInvokePipeline(mlir::PassManager &pm) override;
 };

@@ -9,6 +9,7 @@
 #include "TypingPipeline.hpp"
 #include "Utils.hpp"
 
+#include "hc/Pipelines/FrontendPipeline.hpp"
 #include "hc/Transforms/ModuleLinker.hpp"
 
 #include "IRModule.h"
@@ -48,6 +49,10 @@ py::object TypingDispatcher::compile() {
 }
 
 void TypingDispatcher::populateImportPipeline(mlir::PassManager &pm) {
+  hc::populateImportPipeline(pm);
+}
+
+void TypingDispatcher::populateFrontendPipeline(mlir::PassManager &pm) {
   populateTypingPipeline(pm);
 }
 
