@@ -11,7 +11,7 @@
 namespace py = pybind11;
 
 void Dispatcher::definePyClass(py::module_ &m) {
-  py::class_<Dispatcher>(m, "Dispatcher")
+  py::class_<Dispatcher, DispatcherBase>(m, "Dispatcher")
       .def(py::init<py::capsule, py::object>())
       .def("__call__", &Dispatcher::call);
 }

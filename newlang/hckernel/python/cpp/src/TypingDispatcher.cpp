@@ -32,7 +32,7 @@ static py::object loadMLIRModule(MlirContext ctx, py::str path) {
 }
 
 void TypingDispatcher::definePyClass(py::module_ &m) {
-  py::class_<TypingDispatcher>(m, "TypingDispatcher")
+  py::class_<TypingDispatcher, DispatcherBase>(m, "TypingDispatcher")
       .def(py::init<py::capsule, py::object>())
       .def("compile", &TypingDispatcher::compile);
 

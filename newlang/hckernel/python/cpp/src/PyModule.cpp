@@ -14,6 +14,7 @@ namespace py = pybind11;
 PYBIND11_MODULE(compiler, m) {
   m.def("create_context", &createContext);
 
+  DispatcherBase::definePyClass(m);
   Dispatcher::definePyClass(m);
 
   auto mlirMod = m.def_submodule("_mlir");

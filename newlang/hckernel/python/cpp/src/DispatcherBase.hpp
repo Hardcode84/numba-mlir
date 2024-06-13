@@ -20,6 +20,8 @@ public:
   DispatcherBase(pybind11::capsule ctx, pybind11::object getDesc);
   virtual ~DispatcherBase();
 
+  static void definePyClass(pybind11::module_ &m);
+
 protected:
   virtual void populateImportPipeline(mlir::PassManager &pm) = 0;
   virtual void populateInvokePipeline(mlir::PassManager &pm) = 0;

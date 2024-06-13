@@ -26,6 +26,10 @@ DispatcherBase::DispatcherBase(py::capsule ctx, py::object getDesc)
 
 DispatcherBase::~DispatcherBase() {}
 
+void DispatcherBase::definePyClass(py::module_ &m) {
+  py::class_<DispatcherBase>(m, "DispatcherBase");
+}
+
 static std::pair<std::string, std::string> getSource(py::handle desc) {
   return {desc.attr("source").cast<std::string>(),
           desc.attr("name").cast<std::string>()};
