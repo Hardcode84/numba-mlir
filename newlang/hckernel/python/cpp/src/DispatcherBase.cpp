@@ -57,11 +57,10 @@ mlir::Operation *DispatcherBase::importFunc() {
     auto [src, funcName] = getSource(desc);
 
     llvm::SmallVector<ImportedSym> symbols;
-    for (auto it : desc.attr("imported_symbols")) {
-      auto elem = it.cast<py::tuple>();
+    for (auto &&[name, val] : desc.attr("imported_symbols").cast<py::dict>()) {
       ImportedSym sym;
-      sym.name = elem[0].cast<std::string>();
-      for (auto path : elem[1])
+      sym.name = name.cast<std::string>();
+      for (auto path : val)
         sym.modulePath.emplace_back(path.cast<std::string>());
 
       symbols.emplace_back(std::move(sym));
@@ -69,11 +68,10 @@ mlir::Operation *DispatcherBase::importFunc() {
 
     auto *mlirContext = &context.context;
     llvm::SmallVector<Literal> literals;
-    for (auto it : desc.attr("literals")) {
-      auto elem = it.cast<py::tuple>();
+    for (auto &&[name, val] : desc.attr("literals").cast<py::dict>()) {
       Literal lit;
-      lit.name = elem[0].cast<std::string>();
-      lit.attr = translateLiteral(mlirContext, elem[1]);
+      lit.name = name.cast<std::string>();
+      lit.attr = translateLiteral(mlirContext, val);
       literals.emplace_back(std::move(lit));
     }
 

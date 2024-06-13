@@ -65,15 +65,15 @@ def _get_desc(func, prelink_module):
 
             args_types[name] = annotation
 
-        imported_symbols = []
-        literals = []
+        imported_symbols = {}
+        literals = {}
         for name, obj in func.__globals__.items():
             mod = get_module_for_symbol(obj)
             if mod:
-                imported_symbols.append((name, mod))
+                imported_symbols[name] = mod
 
             if _is_literal(obj):
-                literals.append((name, obj))
+                literals[name] = obj
 
         return FuncDesc(
             source=inspect.getsource(func),
