@@ -66,7 +66,9 @@ def _get_desc(func, dispatcher_cls, prelink_module):
         args_types = OrderedDict()
         for name, param in sig.parameters.items():
             annotation = param.annotation
-            assert annotation != param.empty
+            if annotation == param.empty:
+                continue
+
             annotation = _process_annotation(annotation)
             if annotation is None:
                 continue
