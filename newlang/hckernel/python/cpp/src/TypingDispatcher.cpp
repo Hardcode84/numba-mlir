@@ -36,8 +36,8 @@ void TypingDispatcher::definePyClass(py::module_ &m) {
       .def(py::init<py::capsule, py::object>())
       .def("compile", &TypingDispatcher::compile);
 
-  m.def("link_modules", &linkModules);
-  m.def("load_mlir_module", &loadMLIRModule);
+  m.def("link_modules", &::linkModules);
+  m.def("load_mlir_module", &::loadMLIRModule);
 }
 
 py::object TypingDispatcher::compile() {
