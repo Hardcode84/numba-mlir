@@ -56,7 +56,6 @@ private:
 
   llvm::DenseMap<mlir::Type, FuncT> funcsCache;
 
-  void initPassManager(mlir::PassManager &pm);
   void populateArgsHandlers(pybind11::handle args);
   mlir::Type processArgs(const pybind11::args &args,
                          const pybind11::kwargs &kwargs,
@@ -67,4 +66,6 @@ private:
   OpRef importFuncForLinking(
       llvm::SmallVectorImpl<std::pair<DispatcherBase *, mlir::Operation *>>
           &unresolved);
+  void runPipeline(mlir::Operation *op,
+                   llvm::function_ref<void(mlir::PassManager &)> populateFunc);
 };

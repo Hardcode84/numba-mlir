@@ -195,24 +195,14 @@ mlir::Operation *DispatcherBase::runFrontend() {
     assert(getFuncDesc);
     py::object desc = getFuncDesc();
     auto newMod = importImpl(context, desc);
-    auto *mlirContext = &context.context;
-    {
-      mlir::PassManager pm(mlirContext);
-      initPassManager(pm);
-
-      populateImportPipeline(pm);
-      if (mlir::failed(runUnderDiag(pm, newMod.get())))
-        reportError("Compilation failed");
-    }
+    runPipeline(newMod.get(),
+                [this](mlir::PassManager &pm) { populateImportPipeline(pm); });
 
     linkModules(newMod.get(), desc.attr("dispatcher_deps").cast<py::dict>());
 
-    mlir::PassManager pm(mlirContext);
-    initPassManager(pm);
-
-    populateFrontendPipeline(pm);
-    if (mlir::failed(runUnderDiag(pm, newMod.get())))
-      reportError("Compilation failed");
+    runPipeline(newMod.get(), [this](mlir::PassManager &pm) {
+      populateFrontendPipeline(pm);
+    });
 
     mod = std::move(newMod);
 
@@ -227,15 +217,9 @@ void DispatcherBase::invokeFunc(const py::args &args,
   mlir::Type key = processArgs(args, kwargs, funcArgs);
   auto it = funcsCache.find(key);
   if (it == funcsCache.end()) {
-    auto *mlirContext = &context.context;
-    mlir::PassManager pm(mlirContext);
-    initPassManager(pm);
-
-    populateInvokePipeline(pm);
-
     OpRef newMod = mod->clone();
-    if (mlir::failed(runUnderDiag(pm, *newMod)))
-      reportError("Compilation failed");
+    runPipeline(newMod.get(),
+                [this](mlir::PassManager &pm) { populateInvokePipeline(pm); });
 
     // TODO: codegen
     it = funcsCache.insert({key, nullptr}).first;
@@ -245,13 +229,6 @@ void DispatcherBase::invokeFunc(const py::args &args,
   ExceptionDesc exc;
   if (func(&exc, funcArgs.data()) != 0)
     reportError(exc.message);
-}
-
-void DispatcherBase::initPassManager(mlir::PassManager &pm) {
-  if (context.settings.dumpIR) {
-    context.context.disableMultithreading();
-    pm.enableIRPrinting();
-  }
 }
 
 using HandlerT = std::function<void(mlir::MLIRContext &, pybind11::handle,
@@ -403,16 +380,24 @@ DispatcherBase::OpRef DispatcherBase::importFuncForLinking(
   py::object desc = getFuncDesc();
   auto ret = importImpl(context, desc);
 
-  auto *mlirContext = &context.context;
-  mlir::PassManager pm(mlirContext);
-  initPassManager(pm);
-
-  populateImportPipeline(pm);
-  if (mlir::failed(runUnderDiag(pm, ret.get())))
-    reportError("Compilation failed");
+  runPipeline(ret.get(),
+              [this](mlir::PassManager &pm) { populateImportPipeline(pm); });
 
   auto deps = desc.attr("dispatcher_deps").cast<py::dict>();
   auto irMod = getIRMod(ret.get());
   getModuleDeps(irMod, deps, unresolved);
   return ret;
+}
+
+void DispatcherBase::runPipeline(
+    mlir::Operation *op,
+    llvm::function_ref<void(mlir::PassManager &)> populateFunc) {
+  mlir::PassManager pm(&context.context);
+  if (context.settings.dumpIR) {
+    context.context.disableMultithreading();
+    pm.enableIRPrinting();
+  }
+  populateFunc(pm);
+  if (mlir::failed(runUnderDiag(pm, op)))
+    reportError("pipeline failed");
 }
