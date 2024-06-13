@@ -80,9 +80,8 @@ static mlir::OwningOpRef<mlir::Operation *> importImpl(Context &context,
   auto prelink = desc.attr("prelink_module");
   if (!prelink.is_none()) {
     auto prelinkMod = unwrap(py::cast<MlirModule>(prelink));
-    mlir::OwningOpRef preMod = mlir::cast<mlir::ModuleOp>(prelinkMod->clone());
-    if (mlir::failed(hc::linkModules(preMod.get(),
-                                     mlir::cast<mlir::ModuleOp>(newMod.get()))))
+    mlir::OwningOpRef preMod = prelinkMod->clone();
+    if (mlir::failed(hc::linkModules(preMod.get(), newMod.get())))
       reportError("Module linking failed");
 
     newMod = std::move(preMod);

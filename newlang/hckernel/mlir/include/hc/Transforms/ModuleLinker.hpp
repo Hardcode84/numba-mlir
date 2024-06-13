@@ -3,10 +3,10 @@
 #pragma once
 
 namespace mlir {
-class ModuleOp;
+class Operation;
 struct LogicalResult;
 } // namespace mlir
 
 namespace hc {
-mlir::LogicalResult linkModules(mlir::ModuleOp dest, mlir::ModuleOp toLink);
+mlir::LogicalResult linkModules(mlir::Operation *dest, mlir::Operation *toLink);
 }
