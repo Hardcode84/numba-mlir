@@ -66,6 +66,4 @@ private:
   OpRef importFuncForLinking(
       llvm::SmallVectorImpl<std::pair<DispatcherBase *, mlir::Operation *>>
           &unresolved);
-  void runPipeline(mlir::Operation *op,
-                   llvm::function_ref<void(mlir::PassManager &)> populateFunc);
 };

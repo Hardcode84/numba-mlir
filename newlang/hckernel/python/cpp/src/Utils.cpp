@@ -13,6 +13,8 @@
 
 #include "hc/Utils.hpp"
 
+#include "Context.hpp"
+
 [[noreturn]] void reportError(const llvm::Twine &msg) {
   throw std::runtime_error(msg.str());
 }
@@ -59,4 +61,16 @@ mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
 
     return mlir::success();
   });
+}
+
+void runPipeline(Context &context, mlir::Operation *op,
+                 llvm::function_ref<void(mlir::PassManager &)> populateFunc) {
+  mlir::PassManager pm(&context.context);
+  if (context.settings.dumpIR) {
+    context.context.disableMultithreading();
+    pm.enableIRPrinting();
+  }
+  populateFunc(pm);
+  if (mlir::failed(runUnderDiag(pm, op)))
+    reportError("pipeline failed");
 }

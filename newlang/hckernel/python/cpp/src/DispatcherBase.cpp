@@ -195,12 +195,12 @@ mlir::Operation *DispatcherBase::runFrontend() {
     assert(getFuncDesc);
     py::object desc = getFuncDesc();
     auto newMod = importImpl(context, desc);
-    runPipeline(newMod.get(),
+    runPipeline(context, newMod.get(),
                 [this](mlir::PassManager &pm) { populateImportPipeline(pm); });
 
     linkModules(newMod.get(), desc.attr("dispatcher_deps").cast<py::dict>());
 
-    runPipeline(newMod.get(), [this](mlir::PassManager &pm) {
+    runPipeline(context, newMod.get(), [this](mlir::PassManager &pm) {
       populateFrontendPipeline(pm);
     });
 
@@ -218,7 +218,7 @@ void DispatcherBase::invokeFunc(const py::args &args,
   auto it = funcsCache.find(key);
   if (it == funcsCache.end()) {
     OpRef newMod = mod->clone();
-    runPipeline(newMod.get(),
+    runPipeline(context, newMod.get(),
                 [this](mlir::PassManager &pm) { populateInvokePipeline(pm); });
 
     // TODO: codegen
@@ -380,24 +380,11 @@ DispatcherBase::OpRef DispatcherBase::importFuncForLinking(
   py::object desc = getFuncDesc();
   auto ret = importImpl(context, desc);
 
-  runPipeline(ret.get(),
+  runPipeline(context, ret.get(),
               [this](mlir::PassManager &pm) { populateImportPipeline(pm); });
 
   auto deps = desc.attr("dispatcher_deps").cast<py::dict>();
   auto irMod = getIRMod(ret.get());
   getModuleDeps(irMod, deps, unresolved);
   return ret;
-}
-
-void DispatcherBase::runPipeline(
-    mlir::Operation *op,
-    llvm::function_ref<void(mlir::PassManager &)> populateFunc) {
-  mlir::PassManager pm(&context.context);
-  if (context.settings.dumpIR) {
-    context.context.disableMultithreading();
-    pm.enableIRPrinting();
-  }
-  populateFunc(pm);
-  if (mlir::failed(runUnderDiag(pm, op)))
-    reportError("pipeline failed");
 }
