@@ -18,55 +18,10 @@
 #include "hc/Dialect/PyAST/IR/PyASTOps.hpp"
 #include "hc/Dialect/PyIR/IR/PyIROps.hpp"
 #include "hc/PyFront/Import.hpp"
-#include "hc/Utils.hpp"
 
 #include "CompilerFront.hpp"
 #include "Context.hpp"
 #include "Utils.hpp"
-
-static void printDiag(llvm::raw_ostream &os, const mlir::Diagnostic &diag) {
-  os << diag;
-  for (auto &note : diag.getNotes())
-    os << "\n" << note;
-
-  os << "\n";
-}
-
-mlir::LogicalResult runUnderDiag(mlir::PassManager &pm,
-                                 mlir::Operation *module) {
-  bool dumpDiag = true;
-  std::string err;
-  llvm::raw_string_ostream errStream(err);
-  auto diagHandler = [&](const mlir::Diagnostic &diag) {
-    if (dumpDiag)
-      printDiag(llvm::errs(), diag);
-
-    if (diag.getSeverity() == mlir::DiagnosticSeverity::Error)
-      printDiag(errStream, diag);
-  };
-
-  auto getErr = [&]() -> const std::string & {
-    errStream << "\n";
-    module->print(errStream);
-    errStream.flush();
-    return err;
-  };
-
-  bool verify = true;
-  return hc::scopedDiagHandler(*module->getContext(), diagHandler, [&]() {
-    if (verify && mlir::failed(mlir::verify(module))) {
-      llvm::errs() << "MLIR broken module\n" << getErr();
-      return mlir::failure();
-    }
-
-    if (mlir::failed(pm.run(module))) {
-      llvm::errs() << "MLIR pipeline failed\n" << getErr();
-      return mlir::failure();
-    }
-
-    return mlir::success();
-  });
-}
 
 static void createModuleImport(mlir::OpBuilder &builder,
                                const ImportedSym &sym) {
