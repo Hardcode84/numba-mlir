@@ -11,6 +11,7 @@ include "mlir/IR/BuiltinTypeInterfaces.td"
 include "mlir/IR/EnumAttr.td"
 include "mlir/IR/OpAsmInterface.td"
 include "mlir/IR/OpBase.td"
+include "mlir/IR/SymbolInterfaces.td"
 
 include "hc/Dialect/Typing/IR/TypingOpsInterfaces.td"
 
@@ -128,7 +129,8 @@ def PyIR_ConstantOp : PyIR_OpBaseNoTypeUpdate<"constant", [
 }
 
 def PyIR_PyModuleOp : PyIR_OpBase<"module", [
-  IsolatedFromAbove, SingleBlockImplicitTerminator<"PyModuleEndOp">
+  IsolatedFromAbove, SymbolTable,
+  SingleBlockImplicitTerminator<"PyModuleEndOp">
 ]> {
 
   let regions = (region SizedRegion<1>:$bodyRegion);
