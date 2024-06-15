@@ -127,7 +127,7 @@ public:
       return mlir::failure();
 
     mlir::OpBuilder::InsertionGuard g(rewriter);
-    rewriter.setInsertionPointToStart(&op.getBodyRegion().front());
+    rewriter.setInsertionPointToStart(op.getEntryBlock());
 
     mlir::IRMapping mapper;
     rewriter.modifyOpInPlace(op, [&]() {
