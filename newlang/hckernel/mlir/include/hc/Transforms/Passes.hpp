@@ -4,9 +4,14 @@
 
 #include <mlir/Pass/Pass.h>
 
-namespace mlir::cf {
+namespace mlir {
+namespace cf {
 class ControlFlowDialect;
 }
+namespace func {
+class FuncDialect;
+}
+} // namespace mlir
 
 namespace hc {
 #define GEN_PASS_DECL
@@ -17,4 +22,6 @@ namespace hc {
 
 void populateSimplifyASTPatterns(mlir::RewritePatternSet &patterns);
 void populateConvertPyASTToIRPatterns(mlir::RewritePatternSet &patterns);
+void populatePyIRPromoteFuncsToStaticPatterns(
+    mlir::RewritePatternSet &patterns);
 } // namespace hc

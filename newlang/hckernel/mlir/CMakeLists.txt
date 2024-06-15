@@ -41,6 +41,7 @@ set(SOURCES_LIST
     lib/Transforms/ConvertPyASTToIR.cpp
     lib/Transforms/DropTypeResolvers.cpp
     lib/Transforms/ModuleLinker.cpp
+    lib/Transforms/PyIRPromoteFuncsToStatic.cpp
     lib/Transforms/PyTypeInference.cpp
     lib/Transforms/ReconstructPySSA.cpp
     lib/Transforms/SimplifyAST.cpp
