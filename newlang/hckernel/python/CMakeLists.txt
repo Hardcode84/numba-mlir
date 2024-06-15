@@ -4,6 +4,10 @@ set(python_module_name compiler)
 
 add_subdirectory(cpp)
 
+add_custom_target(python-all ALL
+    DEPENDS ${python_module_name}
+  )
+
 set(_opt_path ${CMAKE_BINARY_DIR}/tools/hc-opt/hc-opt)
 
 function(process_mlir_file filename)
@@ -20,7 +24,7 @@ function(process_mlir_file filename)
   add_custom_target(${_tgt_name} DEPENDS ${_res_file})
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${_res_file} DESTINATION ${CMAKE_INSTALL_PREFIX})
 
-  add_dependencies(${python_module_name} ${_tgt_name})
+  add_dependencies(python-all ${_tgt_name})
 endfunction()
 
 process_mlir_file("typing")
