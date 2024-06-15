@@ -116,8 +116,8 @@ public:
     llvm::SmallBitVector pull(captures.size(), false);
     for (auto &&[i, capt, arg] : llvm::enumerate(captures, blockArgs)) {
       auto cast = capt.getDefiningOp<mlir::CastOpInterface>();
-      if (!arg.use_empty() && cast && cast->getNumOperands() == 1 &&
-          cast->getNumResults() == 1) {
+      if (!arg.use_empty() && cast && mlir::isPure(cast) &&
+          cast->getNumOperands() == 1 && cast->getNumResults() == 1) {
         pull[i] = true;
         needPull = true;
       }
