@@ -6,6 +6,7 @@
 
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/DialectImplementation.h>
+#include <mlir/IR/IRMapping.h>
 #include <mlir/IR/PatternMatch.h>
 #include <mlir/IR/TypeUtilities.h>
 
@@ -34,7 +35,6 @@ void hc::py_ir::LoadModuleOp::getTypingKeyArgs(
 }
 
 namespace {
-
 struct CleanupUnusedCaptures final
     : public mlir::OpRewritePattern<hc::py_ir::PyFuncOp> {
 public:
@@ -99,6 +99,59 @@ public:
   }
 };
 
+struct PullCastCapture final
+    : public mlir::OpRewritePattern<hc::py_ir::PyFuncOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hc::py_ir::PyFuncOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    mlir::ValueRange captures = op.getCaptureArgs();
+    if (captures.empty())
+      return mlir::failure();
+
+    mlir::ValueRange blockArgs = op.getCaptureBlockArgs();
+    bool needPull = false;
+    llvm::SmallBitVector pull(captures.size(), false);
+    for (auto &&[i, capt, arg] : llvm::enumerate(captures, blockArgs)) {
+      auto cast = capt.getDefiningOp<mlir::CastOpInterface>();
+      if (!arg.use_empty() && cast && cast->getNumOperands() == 1 &&
+          cast->getNumResults() == 1) {
+        pull[i] = true;
+        needPull = true;
+      }
+    }
+
+    if (!needPull)
+      return mlir::failure();
+
+    mlir::OpBuilder::InsertionGuard g(rewriter);
+    rewriter.setInsertionPointToStart(&op.getBodyRegion().front());
+
+    mlir::IRMapping mapper;
+    rewriter.modifyOpInPlace(op, [&]() {
+      for (auto &&[i, capt, arg] : llvm::enumerate(captures, blockArgs)) {
+        if (!pull[i])
+          continue;
+
+        mlir::Operation *cast = capt.getDefiningOp();
+        mlir::Value newArg = cast->getOperand(0);
+        mapper.map(newArg, arg);
+        mlir::Type newType = newArg.getType();
+        rewriter.replaceUsesWithIf(capt, newArg, [&](mlir::OpOperand &o) {
+          return o.getOwner() == op;
+        });
+        mlir::Operation *cloned = rewriter.clone(*cast, mapper);
+        rewriter.replaceAllUsesExcept(arg, cloned->getResult(0), cloned);
+        arg.setType(newType);
+      }
+    });
+
+    return mlir::success();
+  }
+};
+
 } // namespace
 
 mlir::OpFoldResult hc::py_ir::ConstantOp::fold(FoldAdaptor /*adaptor*/) {
@@ -146,7 +199,7 @@ void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
 
 void hc::py_ir::PyFuncOp::getCanonicalizationPatterns(
     ::mlir::RewritePatternSet &results, ::mlir::MLIRContext *context) {
-  results.insert<CleanupUnusedCaptures>(context);
+  results.insert<CleanupUnusedCaptures, PullCastCapture>(context);
 }
 
 mlir::FailureOr<bool>

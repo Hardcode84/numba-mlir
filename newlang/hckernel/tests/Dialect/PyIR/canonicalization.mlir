@@ -174,3 +174,21 @@ py_ir.module {
   }
   py_ir.module_end %9 : !py_ir.undefined
 }
+
+// -----
+
+// CHECK-LABEL: py_ir.module {
+//       CHECK: py_ir.func "func" () capture () -> !py_ir.undefined {
+//       CHECK:   %[[R:.*]] = typing.type_constant #typing.type_attr<i32> : !typing.value
+//       CHECK:   %[[C:.*]] = typing.cast %[[R]] : !typing.value to none
+//       CHECK:   py_ir.return %[[C]] : none
+//       CHECK: py_ir.module_end
+py_ir.module {
+  %2 = typing.type_constant #typing.type_attr<i32> : !typing.value
+  %3 = typing.cast %2 : !typing.value to none
+  %9 = py_ir.func "func" () capture (i32:%3) : none -> !py_ir.undefined {
+  ^bb0(%arg0: none):
+    py_ir.return %arg0 : none
+  }
+  py_ir.module_end %9 : !py_ir.undefined
+}
