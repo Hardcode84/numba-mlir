@@ -114,7 +114,6 @@ def PyIR_ConstantOp : PyIR_OpBaseNoTypeUpdate<"constant", [
     ConstantLike, Pure, AllTypesMatch<["value", "result"]>,
     DeclareOpInterfaceMethods<TypeInferenceInterface>
 ]> {
-
   let arguments = (ins TypedAttrInterface:$value);
   let results = (outs AnyType:$result);
 
@@ -125,6 +124,17 @@ def PyIR_ConstantOp : PyIR_OpBaseNoTypeUpdate<"constant", [
   ];
 
   let assemblyFormat = "attr-dict $value";
+
+  let hasFolder = 1;
+}
+
+def PyIR_SymbolConstantOp : PyIR_OpBaseNoTypeUpdate<"sym_constant", [
+    ConstantLike, Pure
+]> {
+  let arguments = (ins FlatSymbolRefAttr:$value);
+  let results = (outs AnyType:$result);
+
+  let assemblyFormat = "attr-dict $value `:` type(results)";
 
   let hasFolder = 1;
 }
@@ -282,12 +292,13 @@ def PyIR_PyStaticFuncOp : PyIR_OpBase<"static_func", [
     attr-dict $sym_name
     custom<ArgList>($annotations, $arg_names) (`:` type($annotations)^)?
     ( `decorators` $decorators^ `:` type($decorators) )?
+    `type` $function_type
     $bodyRegion
   }];
 }
 
 def PyIR_ReturnOp : PyIR_OpBase<"return", [
-  Pure, HasParent<"PyFuncOp">, ReturnLike, Terminator
+  Pure, ParentOneOf<["PyFuncOp", "PyStaticFuncOp"]>, ReturnLike, Terminator
 ]> {
   let arguments = (ins AnyType:$operand);
 
