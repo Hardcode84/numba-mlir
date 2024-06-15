@@ -158,6 +158,16 @@ mlir::OpFoldResult hc::py_ir::ConstantOp::fold(FoldAdaptor /*adaptor*/) {
   return getValue();
 }
 
+mlir::FailureOr<bool>
+hc::py_ir::ConstantOp::inferTypes(mlir::TypeRange types,
+                                  llvm::SmallVectorImpl<mlir::Type> &results) {
+  if (!types.empty())
+    return emitError("Invalid arg count");
+
+  results.emplace_back(hc::typing::LiteralType::get(this->getValue()));
+  return true;
+}
+
 void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,
                                 ::mlir::OperationState &odsState,
                                 mlir::Type resultType, llvm::StringRef name,
@@ -202,14 +212,39 @@ void hc::py_ir::PyFuncOp::getCanonicalizationPatterns(
   results.insert<CleanupUnusedCaptures, PullCastCapture>(context);
 }
 
-mlir::FailureOr<bool>
-hc::py_ir::ConstantOp::inferTypes(mlir::TypeRange types,
-                                  llvm::SmallVectorImpl<mlir::Type> &results) {
-  if (!types.empty())
-    return emitError("Invalid arg count");
+void hc::py_ir::PyStaticFuncOp::build(::mlir::OpBuilder &odsBuilder,
+                                      ::mlir::OperationState &odsState,
+                                      llvm::StringRef symName,
+                                      mlir::FunctionType functionType,
+                                      llvm::ArrayRef<llvm::StringRef> argNames,
+                                      mlir::ValueRange annotations,
+                                      mlir::ValueRange decorators) {
+  assert(argNames.size() == annotations.size());
+  odsState.addAttribute(
+      getSymNameAttrName(odsState.name),
+      mlir::SymbolRefAttr::get(odsBuilder.getContext(), symName));
+  odsState.addAttribute(getFunctionTypeAttrName(odsState.name),
+                        mlir::TypeAttr::get(functionType));
+  odsState.addAttribute(getArgNamesAttrName(odsState.name),
+                        odsBuilder.getStrArrayAttr(argNames));
+  odsState.addOperands(annotations);
+  odsState.addOperands(decorators);
 
-  results.emplace_back(hc::typing::LiteralType::get(this->getValue()));
-  return true;
+  int32_t segmentSizes[2] = {};
+  segmentSizes[0] = static_cast<int32_t>(annotations.size());
+  segmentSizes[1] = static_cast<int32_t>(decorators.size());
+  odsState.addAttribute(getOperandSegmentSizeAttr(),
+                        odsBuilder.getDenseI32ArrayAttr(segmentSizes));
+
+  mlir::Region *region = odsState.addRegion();
+
+  mlir::OpBuilder::InsertionGuard g(odsBuilder);
+
+  auto numArgs = argNames.size();
+  llvm::SmallVector<mlir::Type> types(
+      numArgs, UndefinedType::get(odsBuilder.getContext()));
+  llvm::SmallVector<mlir::Location> locs(numArgs, odsBuilder.getUnknownLoc());
+  odsBuilder.createBlock(region, {}, types, locs);
 }
 
 void hc::py_ir::LoadVarOp::getTypingKeyArgs(

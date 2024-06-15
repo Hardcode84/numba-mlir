@@ -4,6 +4,7 @@
 #define PYIR_OPS
 
 include "mlir/Interfaces/ControlFlowInterfaces.td"
+include "mlir/Interfaces/FunctionInterfaces.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/IR/AttrTypeBase.td"
 include "mlir/IR/BuiltinAttributeInterfaces.td"
@@ -233,9 +234,61 @@ def PyIR_PyFuncOp : PyIR_OpBase<"func", [
   }];
 }
 
-def PyIR_ReturnOp : PyIR_OpBase<"return", [Pure, HasParent<"PyFuncOp">,
-                                      ReturnLike, Terminator]> {
+def PyIR_PyStaticFuncOp : PyIR_OpBase<"static_func", [
+  FunctionOpInterface, IsolatedFromAbove, AttrSizedOperandSegments
+]> {
+  let arguments = (ins
+      SymbolNameAttr:$sym_name,
+      TypeAttrOf<FunctionType>:$function_type,
+      ArrayAttr:$arg_names,
+      Variadic<AnyType>:$annotations,
+      Variadic<AnyType>:$decorators);
 
+  let regions = (region AnyRegion:$bodyRegion);
+
+  let builders = [
+    OpBuilder<(ins
+        "::llvm::StringRef":$symName,
+        "::mlir::FunctionType":$functionType,
+        "::llvm::ArrayRef<::llvm::StringRef>":$argNames,
+        "::mlir::ValueRange":$annotations,
+        "::mlir::ValueRange":$decorators)>
+  ];
+
+  let extraClassDeclaration = [{
+    ::mlir::Block *getEntryBlock() { return &getBodyRegion().front(); }
+
+    ::mlir::ValueRange getBlockArgs() {
+      return getEntryBlock()->getArguments().take_front(getArgNames().size());
+    }
+
+    auto getArgsNamesArray() {
+      return ::llvm::to_vector(getArgNames().getAsValueRange<mlir::StringAttr>());
+    }
+
+    /// Returns the region on the current operation that is callable.
+    ::mlir::Region *getCallableRegion() { return &getBodyRegion(); }
+
+    /// Returns the argument types of this function.
+    ::llvm::ArrayRef<::mlir::Type> getArgumentTypes() { return getFunctionType().getInputs(); }
+
+    /// Returns the result types of this function.
+    ::llvm::ArrayRef<::mlir::Type> getResultTypes() { return getFunctionType().getResults(); }
+  }];
+
+  let skipDefaultBuilders = 1;
+
+  let assemblyFormat = [{
+    attr-dict $sym_name
+    custom<ArgList>($annotations, $arg_names) (`:` type($annotations)^)?
+    ( `decorators` $decorators^ `:` type($decorators) )?
+    $bodyRegion
+  }];
+}
+
+def PyIR_ReturnOp : PyIR_OpBase<"return", [
+  Pure, HasParent<"PyFuncOp">, ReturnLike, Terminator
+]> {
   let arguments = (ins AnyType:$operand);
 
   let assemblyFormat = "attr-dict $operand `:` type($operand)";
