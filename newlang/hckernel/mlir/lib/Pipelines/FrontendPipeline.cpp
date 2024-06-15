@@ -22,6 +22,7 @@ void hc::populateImportPipeline(mlir::PassManager &pm) {
   populatePyIROptPasses(pm);
   pm.addPass(hc::createReconstuctPySSAPass());
   populatePyIROptPasses(pm);
+  pm.addPass(hc::createPyIRPromoteFuncsToStaticPass());
 }
 
 void hc::populateFrontendPipeline(mlir::PassManager &pm) {
