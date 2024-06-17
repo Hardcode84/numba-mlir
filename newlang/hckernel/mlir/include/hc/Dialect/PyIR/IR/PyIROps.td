@@ -245,14 +245,13 @@ def PyIR_PyFuncOp : PyIR_OpBase<"func", [
 }
 
 def PyIR_PyStaticFuncOp : PyIR_OpBase<"static_func", [
-  FunctionOpInterface, IsolatedFromAbove, AttrSizedOperandSegments
+  FunctionOpInterface, IsolatedFromAbove
 ]> {
   let arguments = (ins
       SymbolNameAttr:$sym_name,
       TypeAttrOf<FunctionType>:$function_type,
       ArrayAttr:$arg_names,
-      Variadic<AnyType>:$annotations,
-      Variadic<AnyType>:$decorators);
+      Variadic<AnyType>:$annotations);
 
   let regions = (region AnyRegion:$bodyRegion);
 
@@ -261,8 +260,7 @@ def PyIR_PyStaticFuncOp : PyIR_OpBase<"static_func", [
         "::llvm::StringRef":$symName,
         "::mlir::FunctionType":$functionType,
         "::llvm::ArrayRef<::llvm::StringRef>":$argNames,
-        "::mlir::ValueRange":$annotations,
-        "::mlir::ValueRange":$decorators)>
+        "::mlir::ValueRange":$annotations)>
   ];
 
   let extraClassDeclaration = [{
@@ -291,7 +289,6 @@ def PyIR_PyStaticFuncOp : PyIR_OpBase<"static_func", [
   let assemblyFormat = [{
     attr-dict $sym_name
     custom<ArgList>($annotations, $arg_names) (`:` type($annotations)^)?
-    ( `decorators` $decorators^ `:` type($decorators) )?
     `type` $function_type
     $bodyRegion
   }];

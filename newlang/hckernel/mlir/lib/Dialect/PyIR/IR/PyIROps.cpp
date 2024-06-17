@@ -221,8 +221,7 @@ void hc::py_ir::PyStaticFuncOp::build(::mlir::OpBuilder &odsBuilder,
                                       llvm::StringRef symName,
                                       mlir::FunctionType functionType,
                                       llvm::ArrayRef<llvm::StringRef> argNames,
-                                      mlir::ValueRange annotations,
-                                      mlir::ValueRange decorators) {
+                                      mlir::ValueRange annotations) {
   assert(argNames.size() == annotations.size());
   odsState.addAttribute(mlir::SymbolTable::getSymbolAttrName(),
                         odsBuilder.getStringAttr(symName));
@@ -231,13 +230,6 @@ void hc::py_ir::PyStaticFuncOp::build(::mlir::OpBuilder &odsBuilder,
   odsState.addAttribute(getArgNamesAttrName(odsState.name),
                         odsBuilder.getStrArrayAttr(argNames));
   odsState.addOperands(annotations);
-  odsState.addOperands(decorators);
-
-  int32_t segmentSizes[2] = {};
-  segmentSizes[0] = static_cast<int32_t>(annotations.size());
-  segmentSizes[1] = static_cast<int32_t>(decorators.size());
-  odsState.addAttribute(getOperandSegmentSizeAttr(),
-                        odsBuilder.getDenseI32ArrayAttr(segmentSizes));
 
   mlir::Region *region = odsState.addRegion();
 

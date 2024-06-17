@@ -39,7 +39,7 @@ public:
   mlir::LogicalResult
   matchAndRewrite(hc::py_ir::PyFuncOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    if (!op.getCaptureArgs().empty())
+    if (!op.getCaptureArgs().empty() || !op.getDecorators().empty())
       return mlir::failure();
 
     auto pyMod =
@@ -72,8 +72,7 @@ public:
     mlir::Location loc = op.getLoc();
 
     auto newFunc = rewriter.create<hc::py_ir::PyStaticFuncOp>(
-        loc, symName, funcType, op.getArgsNamesArray(), op.getAnnotations(),
-        op.getDecorators());
+        loc, symName, funcType, op.getArgsNamesArray(), op.getAnnotations());
     rewriter.eraseBlock(newFunc.getEntryBlock());
     mlir::Region &newRegion = newFunc.getBodyRegion();
     rewriter.inlineRegionBefore(op.getBodyRegion(), newRegion,
