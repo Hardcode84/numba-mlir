@@ -242,6 +242,48 @@ void hc::py_ir::PyStaticFuncOp::build(::mlir::OpBuilder &odsBuilder,
   odsBuilder.createBlock(region, {}, types, locs);
 }
 
+mlir::LogicalResult hc::py_ir::StaticCallOp::verifySymbolUses(
+    mlir::SymbolTableCollection &symbolTable) {
+  // Check that the callee attribute was specified.
+  auto fnAttr = (*this)->getAttrOfType<mlir::FlatSymbolRefAttr>("callee");
+  if (!fnAttr)
+    return emitOpError("requires a 'callee' symbol reference attribute");
+  auto fn = symbolTable.lookupNearestSymbolFrom<PyStaticFuncOp>(*this, fnAttr);
+  if (!fn)
+    return emitOpError() << "'" << fnAttr.getValue()
+                         << "' does not reference a valid function";
+
+  // Verify that the operand and result types match the callee.
+  auto fnType = fn.getFunctionType();
+  if (fnType.getNumInputs() != getNumOperands())
+    return emitOpError("incorrect number of operands for callee");
+
+  for (unsigned i = 0, e = fnType.getNumInputs(); i != e; ++i)
+    if (getOperand(i).getType() != fnType.getInput(i))
+      return emitOpError("operand type mismatch: expected operand type ")
+             << fnType.getInput(i) << ", but provided "
+             << getOperand(i).getType() << " for operand number " << i;
+
+  mlir::TypeRange resultTypes = getResult().getType();
+  if (fnType.getNumResults() != resultTypes.size())
+    return emitOpError("incorrect number of results for callee");
+
+  for (unsigned i = 0, e = fnType.getNumResults(); i != e; ++i)
+    if (resultTypes[i] != fnType.getResult(i)) {
+      auto diag = emitOpError("result type mismatch at index ") << i;
+      diag.attachNote() << "      op result types: " << resultTypes;
+      diag.attachNote() << "function result types: " << fnType.getResults();
+      return diag;
+    }
+
+  return mlir::success();
+}
+
+mlir::FunctionType hc::py_ir::StaticCallOp::getCalleeType() {
+  return mlir::FunctionType::get(getContext(), getOperandTypes(),
+                                 getResult().getType());
+}
+
 void hc::py_ir::LoadVarOp::getTypingKeyArgs(
     llvm::SmallVectorImpl<mlir::Attribute> &args) {
   args.emplace_back(getNameAttr());

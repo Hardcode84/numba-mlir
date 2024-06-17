@@ -318,6 +318,49 @@ def PyIR_CallOp : PyIR_OpBase<"call", [
   }];
 }
 
+def PyIR_StaticCallOp : PyIR_OpBase<"static_call", [
+  CallOpInterface, DeclareOpInterfaceMethods<SymbolUserOpInterface>,
+  DeclareOpInterfaceMethods<TypingKeyInterface>
+]> {
+  let arguments = (ins
+    FlatSymbolRefAttr:$callee,
+    Variadic<AnyType>:$args,
+    ArrayAttr:$args_names);
+
+  let results = (outs AnyType:$result);
+
+  let extraClassDeclaration = [{
+    ::mlir::FunctionType getCalleeType();
+
+    /// Get the argument operands to the called function.
+    operand_range getArgOperands() {
+      return {arg_operand_begin(), arg_operand_end()};
+    }
+
+    ::mlir::MutableOperandRange getArgOperandsMutable() {
+      return getArgsMutable();
+    }
+
+    operand_iterator arg_operand_begin() { return operand_begin(); }
+    operand_iterator arg_operand_end() { return operand_end(); }
+
+    /// Return the callee of this operation.
+    ::mlir::CallInterfaceCallable getCallableForCallee() {
+      return (*this)->getAttrOfType<::mlir::SymbolRefAttr>("callee");
+    }
+
+    /// Set the callee for this operation.
+    void setCalleeFromCallable(::mlir::CallInterfaceCallable callee) {
+      (*this)->setAttr("callee", callee.get<::mlir::SymbolRefAttr>());
+    }
+  }];
+
+  let assemblyFormat = [{
+    attr-dict $callee `:` custom<ArgList>($args, $args_names)
+    (`:` type($args)^)? `->` type($result)
+  }];
+}
+
 def PyIR_StoreVarOp : PyIR_OpBase<"storevar", [MemoryEffects<[MemWrite]>]> {
   let arguments = (ins
     StrAttr:$name,
