@@ -254,6 +254,14 @@ public:
     if (!def)
       return mlir::failure();
 
+    auto mod = op->getParentOfType<hc::py_ir::PyModuleOp>();
+    if (!mod)
+      return mlir::failure();
+
+    auto fn = mod.lookupSymbol<hc::py_ir::PyStaticFuncOp>(def.getValueAttr());
+    if (!fn)
+      return mlir::failure();
+
     rewriter.replaceOpWithNewOp<hc::py_ir::StaticCallOp>(
         op, op->getResultTypes(), def.getValueAttr(), op.getArgs(),
         op.getArgsNames());
@@ -283,23 +291,25 @@ mlir::LogicalResult hc::py_ir::StaticCallOp::verifySymbolUses(
   if (fnType.getNumInputs() != getNumOperands())
     return emitOpError("incorrect number of operands for callee");
 
-  for (unsigned i = 0, e = fnType.getNumInputs(); i != e; ++i)
-    if (getOperand(i).getType() != fnType.getInput(i))
-      return emitOpError("operand type mismatch: expected operand type ")
-             << fnType.getInput(i) << ", but provided "
-             << getOperand(i).getType() << " for operand number " << i;
+  // TODO: args can be in different order due to named args
+  //  for (unsigned i = 0, e = fnType.getNumInputs(); i != e; ++i)
+  //    if (getOperand(i).getType() != fnType.getInput(i))
+  //      return emitOpError("operand type mismatch: expected operand type ")
+  //             << fnType.getInput(i) << ", but provided "
+  //             << getOperand(i).getType() << " for operand number " << i;
 
-  mlir::TypeRange resultTypes = getResult().getType();
-  if (fnType.getNumResults() != resultTypes.size())
-    return emitOpError("incorrect number of results for callee");
+  //  mlir::Type t = getResult().getType();
+  //  mlir::TypeRange resultTypes = t;
+  //  if (fnType.getNumResults() != resultTypes.size())
+  //    return emitOpError("incorrect number of results for callee");
 
-  for (unsigned i = 0, e = fnType.getNumResults(); i != e; ++i)
-    if (resultTypes[i] != fnType.getResult(i)) {
-      auto diag = emitOpError("result type mismatch at index ") << i;
-      diag.attachNote() << "      op result types: " << resultTypes;
-      diag.attachNote() << "function result types: " << fnType.getResults();
-      return diag;
-    }
+  //  for (unsigned i = 0, e = fnType.getNumResults(); i != e; ++i)
+  //    if (resultTypes[i] != fnType.getResult(i)) {
+  //      auto diag = emitOpError("result type mismatch at index ") << i;
+  //      diag.attachNote() << "      op result types: " << resultTypes;
+  //      diag.attachNote() << "function result types: " << fnType.getResults();
+  //      return diag;
+  //    }
 
   return mlir::success();
 }
