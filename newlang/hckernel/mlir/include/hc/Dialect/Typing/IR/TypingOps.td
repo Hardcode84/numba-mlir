@@ -72,8 +72,8 @@ def Typing_IdentType : Typing_Type<"Ident", "ident", [], "::mlir::Type"> {
     TypeBuilderWithInferredContext<(ins
       "::mlir::MLIRContext*":$ctx,
       "::llvm::StringRef":$name,
-      "::llvm::ArrayRef<::llvm::StringRef>":$paramNames,
-      "::llvm::ArrayRef<::mlir::Type>":$params
+      CArg<"::llvm::ArrayRef<::llvm::StringRef>", "{}">:$paramNames,
+      CArg<"::llvm::ArrayRef<::mlir::Type>", "{}">:$params
     ), [{
       ::llvm::SmallVector<::mlir::StringAttr> arr;
       for (auto str : paramNames)
