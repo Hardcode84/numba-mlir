@@ -168,6 +168,16 @@ struct GenResolversPass
           return mlir::WalkResult::interrupt();
         }
 
+        auto funcVisitor = [&](mlir::Operation *op) -> mlir::WalkResult {
+          if (!mlir::isa<hc::typing::TypingInterpreterInterface>(op)) {
+            op->emitOpError("unsupported typing op");
+            return mlir::WalkResult::interrupt();
+          }
+          return mlir::WalkResult::advance();
+        };
+        if (func.walk(funcVisitor).wasInterrupted())
+          return mlir::WalkResult::interrupt();
+
         mlir::Location loc = func.getLoc();
         auto resolver =
             builder.create<hc::typing::TypeResolverOp>(loc, *decorator);
