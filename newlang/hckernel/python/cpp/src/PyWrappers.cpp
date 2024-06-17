@@ -2,11 +2,13 @@
 
 #include "PyWrappers.hpp"
 
+#include <mlir/CAPI/IR.h>
+
 #include "Globals.h"
 #include "IRModule.h"
 #include "Pass.h"
 
-#include "Context.hpp"
+#include "hc/Dialect/Typing/IR/TypingOps.hpp"
 
 namespace py = pybind11;
 static mlir::python::PyMlirContextRef translateContext(mlir::MLIRContext *ctx) {
@@ -21,9 +23,40 @@ void popContext(mlir::MLIRContext *ctx) {
   translateContext(ctx)->contextExit(py::none(), py::none(), py::none());
 }
 
+static bool mlirTypeIsATypingValue(MlirType type) {
+  return mlir::isa<hc::typing::ValueType>(unwrap(type));
+}
+
+static MlirTypeID mlirTypingValueTypeGetTypeID() {
+  return wrap(hc::typing::ValueType::getTypeID());
+}
+
 using namespace mlir;
 using namespace py::literals;
 using namespace mlir::python;
+
+namespace {
+class PyValueType : public PyConcreteType<PyValueType> {
+public:
+  static constexpr IsAFunctionTy isaFunction = mlirTypeIsATypingValue;
+  static constexpr GetTypeIDFunctionTy getTypeIdFunction =
+      mlirTypingValueTypeGetTypeID;
+  static constexpr const char *pyClassName = "ValueType";
+  using PyConcreteType::PyConcreteType;
+
+  static void bindDerived(ClassTy &c) {
+    c.def_static(
+        "get",
+        [](DefaultingPyMlirContext context) {
+          MlirType t = wrap(hc::typing::ValueType::get(unwrap(context->get())));
+          return PyValueType(context->getRef(), t);
+        },
+        py::arg("context") = py::none(), "Create typing.value type");
+  }
+};
+} // namespace
+
+static void populateTypingTypes(py::module &m) { PyValueType::bind(m); }
 
 void populateMlirModule(py::module &m) {
   // TODO: refactor upstream
@@ -125,4 +158,7 @@ void populateMlirModule(py::module &m) {
   auto passModule =
       m.def_submodule("passmanager", "MLIR Pass Management Bindings");
   populatePassManagerSubmodule(passModule);
+
+  auto typingModule = m.def_submodule("typing", "hc typing module");
+  populateTypingTypes(typingModule);
 }
