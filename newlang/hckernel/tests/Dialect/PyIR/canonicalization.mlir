@@ -192,3 +192,20 @@ py_ir.module {
   }
   py_ir.module_end %9 : !py_ir.undefined
 }
+
+// -----
+
+// CHECK-LABEL: py_ir.module {
+//       CHECK: py_ir.static_func @func () type () -> none {
+//       CHECK: %[[R:.*]] = py_ir.none
+//       CHECK: py_ir.return %[[R]] : none
+//       CHECK: }
+//       CHECK: %{{.*}} = py_ir.static_call @func : () -> none
+py_ir.module {
+  py_ir.static_func @func () type () -> none {
+    %0 = py_ir.none
+    py_ir.return %0 : none
+  }
+  %1 = py_ir.sym_constant @func : !py_ir.undefined
+  %2 = py_ir.call %1 : !py_ir.undefined () -> none
+}

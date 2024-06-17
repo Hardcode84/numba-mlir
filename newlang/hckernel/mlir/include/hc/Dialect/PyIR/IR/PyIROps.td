@@ -312,6 +312,8 @@ def PyIR_CallOp : PyIR_OpBase<"call", [
 
   let results = (outs AnyType:$result);
 
+  let hasCanonicalizer = 1;
+
   let assemblyFormat = [{
     attr-dict $func `:` type($func) ` ` custom<ArgList>($args, $args_names)
     (`:` type($args)^)? `->` type($result)

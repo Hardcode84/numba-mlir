@@ -242,6 +242,31 @@ void hc::py_ir::PyStaticFuncOp::build(::mlir::OpBuilder &odsBuilder,
   odsBuilder.createBlock(region, {}, types, locs);
 }
 
+namespace {
+struct MakeStaticCall final : public mlir::OpRewritePattern<hc::py_ir::CallOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hc::py_ir::CallOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto def = op.getFunc().getDefiningOp<hc::py_ir::SymbolConstantOp>();
+    if (!def)
+      return mlir::failure();
+
+    rewriter.replaceOpWithNewOp<hc::py_ir::StaticCallOp>(
+        op, op->getResultTypes(), def.getValueAttr(), op.getArgs(),
+        op.getArgsNames());
+    return mlir::success();
+  }
+};
+} // namespace
+
+void hc::py_ir::CallOp::getCanonicalizationPatterns(
+    ::mlir::RewritePatternSet &results, ::mlir::MLIRContext *context) {
+  results.insert<MakeStaticCall>(context);
+}
+
 mlir::LogicalResult hc::py_ir::StaticCallOp::verifySymbolUses(
     mlir::SymbolTableCollection &symbolTable) {
   // Check that the callee attribute was specified.

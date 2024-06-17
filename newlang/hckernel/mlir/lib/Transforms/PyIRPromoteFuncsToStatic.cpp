@@ -94,6 +94,7 @@ struct PyIRPromoteFuncsToStaticPass final
     mlir::RewritePatternSet patterns(ctx);
     hc::populatePyIRPromoteFuncsToStaticPatterns(patterns);
     hc::py_ir::PyFuncOp::getCanonicalizationPatterns(patterns, ctx);
+    hc::py_ir::CallOp::getCanonicalizationPatterns(patterns, ctx);
 
     if (mlir::failed(
             applyPatternsAndFoldGreedily(getOperation(), std::move(patterns))))
