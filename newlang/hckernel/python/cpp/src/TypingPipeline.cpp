@@ -11,6 +11,7 @@
 #include "hc/Dialect/PyIR/IR/PyIROps.hpp"
 #include "hc/Dialect/Typing/IR/TypingOps.hpp"
 #include "hc/Pipelines/FrontendPipeline.hpp"
+#include "hc/Transforms/Passes.hpp"
 
 static void convertCall(mlir::IRRewriter &builder, hc::py_ir::CallOp call,
                         llvm::StringRef name) {
@@ -69,6 +70,36 @@ struct GenResolversFuncsPass
         return;
 
       convertCall(builder, op, funcName);
+    };
+
+    getOperation()->walk(visitor);
+  }
+};
+
+struct DropFuncDecoratorPass
+    : public mlir::PassWrapper<DropFuncDecoratorPass,
+                               mlir::OperationPass<void>> {
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(DropFuncDecoratorPass)
+
+  virtual void
+  getDependentDialects(mlir::DialectRegistry &registry) const override {
+    registry.insert<hc::typing::TypingDialect>();
+    registry.insert<mlir::arith::ArithDialect>();
+  }
+
+  void runOnOperation() override {
+    auto type =
+        hc::typing::IdentType::get(&getContext(), "hckernel.typing.func");
+    llvm::SmallVector<mlir::Value> decorators;
+    auto visitor = [&](hc::py_ir::PyFuncOp op) {
+      auto filter = [&](mlir::Value val) -> bool {
+        return val.getType() != type;
+      };
+
+      decorators.clear();
+      llvm::append_range(decorators,
+                         llvm::make_filter_range(op.getDecorators(), filter));
+      op.getDecoratorsMutable().assign(decorators);
     };
 
     getOperation()->walk<mlir::WalkOrder::PostOrder>(visitor);
@@ -183,6 +214,9 @@ struct GenResolversPass
 void populateTypingPipeline(mlir::PassManager &pm) {
   hc::populateFrontendPipeline(pm);
   pm.addPass(std::make_unique<GenResolversFuncsPass>());
+  pm.addPass(std::make_unique<DropFuncDecoratorPass>());
+  pm.addPass(mlir::createCanonicalizerPass());
+  pm.addPass(hc::createPyIRPromoteFuncsToStaticPass());
   pm.addPass(mlir::createCanonicalizerPass());
   pm.addPass(std::make_unique<GenResolversPass>());
   pm.addPass(mlir::createCanonicalizerPass());
