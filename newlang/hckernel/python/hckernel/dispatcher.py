@@ -8,6 +8,7 @@ from .kernel_api import *
 from .compiler import mlir_context, Dispatcher
 from .symbol_registry import get_module_for_symbol
 from .mlir import ir
+from .mlir import typing as hc_typing
 
 FuncDesc = namedtuple(
     "FuncDesc",
@@ -41,6 +42,10 @@ def _process_annotation(ann):
         assert False
 
     if ann in (CurrentGroup, CurrentSubGroup, CurrentWorkitem):
+        # nothing
+        return
+
+    if isinstance(ann, hc_typing.ValueType):
         # nothing
         return
 
