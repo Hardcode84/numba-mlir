@@ -154,12 +154,18 @@ public:
 
 } // namespace
 
-mlir::OpFoldResult hc::py_ir::ConstantOp::fold(FoldAdaptor /*adaptor*/) {
-  return getValue();
+mlir::FailureOr<bool>
+hc::py_ir::NoneOp::inferTypes(mlir::TypeRange types,
+                              llvm::SmallVectorImpl<mlir::Type> &results) {
+  if (!types.empty())
+    return emitError("Invalid arg count");
+
+  results.emplace_back(mlir::NoneType::get(getContext()));
+  return true;
 }
 
-mlir::OpFoldResult hc::py_ir::SymbolConstantOp::fold(FoldAdaptor /*adaptor*/) {
-  return getValueAttr();
+mlir::OpFoldResult hc::py_ir::ConstantOp::fold(FoldAdaptor /*adaptor*/) {
+  return getValue();
 }
 
 mlir::FailureOr<bool>
@@ -170,6 +176,10 @@ hc::py_ir::ConstantOp::inferTypes(mlir::TypeRange types,
 
   results.emplace_back(hc::typing::LiteralType::get(this->getValue()));
   return true;
+}
+
+mlir::OpFoldResult hc::py_ir::SymbolConstantOp::fold(FoldAdaptor /*adaptor*/) {
+  return getValueAttr();
 }
 
 void hc::py_ir::PyFuncOp::build(::mlir::OpBuilder &odsBuilder,

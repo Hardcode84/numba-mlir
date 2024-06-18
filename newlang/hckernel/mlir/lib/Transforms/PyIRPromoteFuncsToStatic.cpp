@@ -73,6 +73,7 @@ public:
 
     auto newFunc = rewriter.create<hc::py_ir::PyStaticFuncOp>(
         loc, symName, funcType, op.getArgsNamesArray(), op.getAnnotations());
+    newFunc.setPrivate();
     rewriter.eraseBlock(newFunc.getEntryBlock());
     mlir::Region &newRegion = newFunc.getBodyRegion();
     rewriter.inlineRegionBefore(op.getBodyRegion(), newRegion,

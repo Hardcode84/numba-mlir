@@ -98,7 +98,9 @@ def PyIR_ConstType : PyIR_Type<"Const", "const", [], "::mlir::Type"> {
   let assemblyFormat = "$value";
 }
 
-def PyIR_NoneOp : PyIR_OpBase<"none", [Pure]> {
+def PyIR_NoneOp : PyIR_OpBase<"none", [
+  Pure, DeclareOpInterfaceMethods<TypeInferenceInterface>
+]> {
   let results = (outs NoneType:$result);
 
   let builders = [
@@ -249,6 +251,7 @@ def PyIR_PyStaticFuncOp : PyIR_OpBase<"static_func", [
 ]> {
   let arguments = (ins
       SymbolNameAttr:$sym_name,
+      OptionalAttr<StrAttr>:$sym_visibility,
       TypeAttrOf<FunctionType>:$function_type,
       ArrayAttr:$arg_names,
       Variadic<AnyType>:$annotations);
@@ -287,7 +290,7 @@ def PyIR_PyStaticFuncOp : PyIR_OpBase<"static_func", [
   let skipDefaultBuilders = 1;
 
   let assemblyFormat = [{
-    attr-dict $sym_name
+    attr-dict ($sym_visibility^)? $sym_name
     custom<ArgList>($annotations, $arg_names) (`:` type($annotations)^)?
     `type` $function_type
     $bodyRegion
