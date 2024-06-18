@@ -10,7 +10,6 @@
 
 #include "hc/Dialect/PyIR/IR/PyIROps.hpp"
 #include "hc/Dialect/Typing/IR/TypingOps.hpp"
-#include "hc/Pipelines/FrontendPipeline.hpp"
 #include "hc/Transforms/Passes.hpp"
 
 static void convertCall(mlir::IRRewriter &builder, hc::py_ir::CallOp call,
@@ -149,7 +148,17 @@ struct GenResolversPass
     mlir::IRRewriter builder(&getContext());
     auto visitor = [&](hc::py_ir::PyModuleOp mod) -> mlir::WalkResult {
       builder.setInsertionPoint(mod);
-      for (auto func : mod.getBody()->getOps<hc::py_ir::PyFuncOp>()) {
+      for (mlir::Operation &nestedOp :
+           llvm::make_early_inc_range(mod.getBody()->getOperations())) {
+        auto func = mlir::dyn_cast<hc::py_ir::PyFuncOp>(nestedOp);
+        if (!func) {
+          if (auto funcLike =
+                  mlir::dyn_cast<mlir::FunctionOpInterface>(nestedOp))
+            funcLike->moveBefore(mod);
+
+          continue;
+        }
+
         if (!func.getCaptureArgs().empty()) {
           func->emitOpError("Cannot convert function with captures");
           return mlir::WalkResult::interrupt();
@@ -169,7 +178,8 @@ struct GenResolversPass
         }
 
         auto funcVisitor = [&](mlir::Operation *op) -> mlir::WalkResult {
-          if (!mlir::isa<hc::typing::TypingInterpreterInterface>(op)) {
+          if (!mlir::isa<hc::typing::TypingInterpreterInterface>(op) &&
+              !mlir::isa<hc::py_ir::ReturnOp, hc::py_ir::PyFuncOp>(op)) {
             op->emitOpError("unsupported typing op");
             return mlir::WalkResult::interrupt();
           }
@@ -222,11 +232,15 @@ struct GenResolversPass
 } // namespace
 
 void populateTypingPipeline(mlir::PassManager &pm) {
-  hc::populateFrontendPipeline(pm);
+  pm.addPass(hc::createPyTypeInferencePass());
+  pm.addPass(mlir::createCanonicalizerPass());
   pm.addPass(std::make_unique<GenResolversFuncsPass>());
   pm.addPass(std::make_unique<DropFuncDecoratorPass>());
   pm.addPass(mlir::createCanonicalizerPass());
   pm.addPass(hc::createPyIRPromoteFuncsToStaticPass());
+  pm.addPass(hc::createPyTypeInferencePass());
+  pm.addPass(hc::createDropTypeResolversPass());
+  pm.addPass(hc::createConverPyFuncToFuncPass());
   pm.addPass(mlir::createCanonicalizerPass());
   pm.addPass(std::make_unique<GenResolversPass>());
   pm.addPass(mlir::createCanonicalizerPass());
