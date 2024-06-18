@@ -77,6 +77,18 @@ def PyIRPromoteFuncsToStaticPass : Pass<"hc-pyir-promote-funcs-to-static-pass"> 
   ];
 }
 
+def ConverPyFuncToFuncPass : Pass<"hc-convert-py-func-to-func-pass"> {
+  let summary = "TBD";
+  let description = [{
+    TBD
+  }];
+
+  let dependentDialects = [
+    "::hc::py_ir::PyIRDialect",
+    "::mlir::func::FuncDialect",
+  ];
+}
+
 
 
 #endif // _HC_TRANSFORMS_PASSES_TD_INCLUDED_

@@ -39,6 +39,7 @@ set(SOURCES_LIST
     lib/Pipelines/FrontendPipeline.cpp
     lib/Transforms/ClenaupPySetVar.cpp
     lib/Transforms/ConvertPyASTToIR.cpp
+    lib/Transforms/ConvertPyFuncToFunc.cpp
     lib/Transforms/DropTypeResolvers.cpp
     lib/Transforms/ModuleLinker.cpp
     lib/Transforms/PyIRPromoteFuncsToStatic.cpp
