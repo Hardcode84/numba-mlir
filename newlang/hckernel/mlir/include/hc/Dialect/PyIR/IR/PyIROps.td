@@ -503,7 +503,9 @@ def PyIR_UnaryOpAttr : I64EnumAttr<
   let cppNamespace = "::hc::py_ir";
 }
 
-def PyIR_BinOp : PyIR_OpBase<"binop"> {
+def PyIR_BinOp : PyIR_OpBase<"binop", [
+  DeclareOpInterfaceMethods<TypingKeyInterface>
+]> {
   let arguments = (ins
       AnyType:$left,
       PyIR_BinOpAttr:$op,
