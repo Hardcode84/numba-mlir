@@ -38,6 +38,13 @@ struct ConverPyFuncToFuncPass final
         builder.setInsertionPointToStart(mod.getBody());
         auto symName = func.getSymName();
         auto funcType = func.getFunctionType();
+
+        bool retNone = false;
+        if (mlir::isa<mlir::NoneType>(funcType.getResult(0))) {
+          retNone = true;
+          funcType = funcType.clone(funcType.getInputs(), {});
+        }
+
         auto visibility = func.getSymVisibilityAttr();
         auto loc = op->getLoc();
 
@@ -55,16 +62,35 @@ struct ConverPyFuncToFuncPass final
             continue;
 
           builder.setInsertionPoint(term);
-          builder.replaceOpWithNewOp<mlir::func::ReturnOp>(term,
-                                                           term.getOperand());
+          if (retNone) {
+            builder.replaceOpWithNewOp<mlir::func::ReturnOp>(term);
+          } else {
+            builder.replaceOpWithNewOp<mlir::func::ReturnOp>(term,
+                                                             term.getOperand());
+          }
         }
         return mlir::WalkResult::advance();
       }
 
       if (auto call = mlir::dyn_cast<hc::py_ir::StaticCallOp>(op)) {
+        llvm::SmallVector<mlir::Type, 1> resTypes(call->getResultTypes());
+
+        assert(resTypes.size() == 1);
         builder.setInsertionPoint(call);
-        builder.replaceOpWithNewOp<mlir::func::CallOp>(
-            op, call.getCalleeAttr(), call->getResultTypes(), call.getArgs());
+        if (mlir::isa<mlir::NoneType>(resTypes.back())) {
+          resTypes.clear();
+          builder.create<mlir::func::CallOp>(op->getLoc(), call.getCalleeAttr(),
+                                             resTypes, call.getArgs());
+          if (!op->use_empty()) {
+            builder.replaceOpWithNewOp<hc::py_ir::NoneOp>(op);
+          } else {
+            builder.eraseOp(op);
+          }
+        } else {
+          builder.replaceOpWithNewOp<mlir::func::CallOp>(
+              op, call.getCalleeAttr(), resTypes, call.getArgs());
+        }
+
         return mlir::WalkResult::advance();
       }
       return mlir::WalkResult::advance();
