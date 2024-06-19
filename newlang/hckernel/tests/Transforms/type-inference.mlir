@@ -7,7 +7,7 @@ typing.type_resolver ["py_ir.loadvar", "CurrentGroup"] {
 }
 
 //       CHECK: ![[ID:.*]] = !typing<ident "CurrentGroup">
-// CHECK-LABEL: py_ir.module
+// CHECK-LABEL: py_ir.module {
 //       CHECK:  py_ir.func "func"
 //       CHECK:  ^bb0(%[[ARG:.*]]: ![[ID]]):
 //       CHECK:  %[[R:.*]] = py_ir.getattr %[[ARG]] : ![[ID]] attr "foo" -> !py_ir.undefined
@@ -30,7 +30,7 @@ typing.type_resolver ["py_ir.loadvar", "i64"] {
   typing.type_resolver_return %0
 }
 
-// CHECK-LABEL: py_ir.module
+// CHECK-LABEL: py_ir.module {
 //       CHECK:  py_ir.func "func"
 //       CHECK:  ^bb0(%[[ARG:.*]]: i64):
 //       CHECK:  %[[R:.*]] = py_ir.getattr %[[ARG]] : i64 attr "foo" -> !py_ir.undefined
@@ -59,7 +59,7 @@ typing.type_resolver ["py_ir.loadvar", "CurrentGroup"] {
 }
 
 //       CHECK: ![[ID:.*]] = !typing<ident "CurrentGroup">
-// CHECK-LABEL: py_ir.module
+// CHECK-LABEL: py_ir.module {
 //       CHECK:  py_ir.func "func"
 //       CHECK:  ^bb0(%[[ARG:.*]]: ![[ID]]):
 //       CHECK:  %[[R:.*]] = py_ir.getattr %[[ARG]] : ![[ID]] attr "foo" -> !py_ir.undefined
@@ -78,7 +78,7 @@ py_ir.module {
 // -----
 
 //       CHECK: ![[LIT:.*]] = !typing<literal 1 : i64>
-// CHECK-LABEL: py_ir.module
+// CHECK-LABEL: py_ir.module {
 //       CHECK:  py_ir.func "func"
 //       CHECK:  ^bb0(%[[ARG:.*]]: ![[LIT]]):
 
@@ -141,7 +141,7 @@ typing.type_resolver ["py_ir.getitem"] {
 //       CHECK: ![[SYM2:.*]] = !typing<symbol "Baz">
 //       CHECK: ![[SEQ:.*]] = !typing<sequence ![[SYM1]], ![[SYM2]]>
 //       CHECK: ![[ID:.*]] = !typing<ident "Foo" : "Elements" -> ![[SEQ]]>
-// CHECK-LABEL: py_ir.module
+// CHECK-LABEL: py_ir.module {
 //       CHECK:  py_ir.func "func"
 //       CHECK:  ^bb0(%[[ARG:.*]]: ![[ID]]):
 
@@ -179,7 +179,7 @@ typing.type_resolver "join_types" {
 //   CHECK-DAG: ![[ID1:.*]] = !typing<ident "B">
 //   CHECK-DAG: ![[ID2:.*]] = !typing<ident "C">
 //   CHECK-DAG: ![[ID3:.*]] = !typing<ident "D">
-// CHECK-LABEL: py_ir.module
+// CHECK-LABEL: py_ir.module {
 //       CHECK:  py_ir.func "func"
 //       CHECK:  ^bb0(%{{.*}}: !py_ir.undefined, %[[B:.*]]: ![[ID1]], %[[C:.*]]: ![[ID2]]):
 //       CHECK:  cf.cond_br %{{.*}}, ^bb1(%[[B]] : ![[ID1]]), ^bb2(%[[C]] : ![[ID2]])
@@ -230,7 +230,7 @@ typing.type_resolver "join_types" {
 //   CHECK-DAG: ![[ID1:.*]] = !typing<ident "B">
 //   CHECK-DAG: ![[ID2:.*]] = !typing<ident "C">
 //   CHECK-DAG: ![[ID3:.*]] = !typing<ident "D">
-// CHECK-LABEL: py_ir.module
+// CHECK-LABEL: py_ir.module {
 //       CHECK:  py_ir.func "func"
 //       CHECK:  ^bb0(%{{.*}}: !py_ir.undefined, %[[ARG1:.*]]: ![[ID1]], %[[ARG2:.*]]: ![[ID2]]):
 //       CHECK:  %[[RES:.*]] = typing.resolve %{{.*}}, %[[ARG1]], %[[ARG2]] : i1, ![[ID1]], ![[ID2]] -> ![[ID3]] {
@@ -275,7 +275,7 @@ typing.type_resolver "join_types" {
 //   CHECK-DAG: ![[ID1:.*]] = !typing<ident "B">
 //   CHECK-DAG: ![[ID2:.*]] = !typing<ident "C">
 //   CHECK-DAG: ![[ID3:.*]] = !typing<union ![[ID1]], ![[ID2]]>
-// CHECK-LABEL: py_ir.module
+// CHECK-LABEL: py_ir.module {
 //       CHECK:  py_ir.func "func"
 //       CHECK:  ^bb0(%{{.*}}: !py_ir.undefined, %[[ARG1:.*]]: ![[ID1]], %[[ARG2:.*]]: ![[ID2]]):
 //       CHECK:  %[[RES:.*]] = typing.resolve %{{.*}}, %[[ARG1]], %[[ARG2]] : i1, ![[ID1]], ![[ID2]] -> ![[ID3]] {
@@ -326,7 +326,7 @@ typing.type_resolver "join_types" {
 //   CHECK-DAG: ![[ID2:.*]] = !typing<ident "D">
 //   CHECK-DAG: ![[ID3:.*]] = !typing<ident "E">
 //   CHECK-DAG: ![[U:.*]] = !typing<union ![[ID1]], ![[ID3]], ![[ID2]]>
-// CHECK-LABEL: py_ir.module
+// CHECK-LABEL: py_ir.module {
 //       CHECK:  py_ir.func "func"
 //       CHECK:  ^bb0(%[[ARG0:.*]]: !py_ir.undefined, %[[ARG1:.*]]: ![[ID1]], %[[ARG2:.*]]: !py_ir.undefined, %[[ARG3:.*]]: ![[ID2]], %[[ARG4:.*]]: ![[ID3]]):
 //       CHECK:  %[[COND:.*]] = typing.cast %[[ARG0]] : !py_ir.undefined to i1
