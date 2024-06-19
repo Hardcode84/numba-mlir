@@ -6,14 +6,17 @@
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/PatternMatch.h>
 #include <mlir/Pass/PassManager.h>
+#include <mlir/Transforms/GreedyPatternRewriteDriver.h>
 #include <mlir/Transforms/Passes.h>
 
 #include "hc/Dialect/PyIR/IR/PyIROps.hpp"
 #include "hc/Dialect/Typing/IR/TypingOps.hpp"
 #include "hc/Transforms/Passes.hpp"
 
-static void convertCall(mlir::IRRewriter &builder, hc::py_ir::CallOp call,
-                        llvm::StringRef name) {
+namespace {
+static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
+                                       hc::py_ir::CallOp call,
+                                       llvm::StringRef name) {
   builder.setInsertionPoint(call);
   mlir::Type callResType = call.getResult().getType();
   mlir::ValueRange args = call.getArgs();
@@ -36,26 +39,26 @@ static void convertCall(mlir::IRRewriter &builder, hc::py_ir::CallOp call,
   if (checkCall("is_same", i1, {vt, vt})) {
     builder.replaceOpWithNewOp<hc::typing::IsSameOp>(call, callResType, args[0],
                                                      args[1]);
-    return;
+    return mlir::success();
   }
   if (checkCall("check", none, {i1})) {
     builder.create<hc::typing::CheckOp>(call.getLoc(), args[0]);
     builder.replaceOpWithNewOp<hc::py_ir::NoneOp>(call);
-    return;
+    return mlir::success();
   }
   if (checkCall("make_symbol", vt, {vt})) {
     builder.replaceOpWithNewOp<hc::typing::MakeSymbolOp>(call, callResType,
                                                          args[0]);
-    return;
+    return mlir::success();
   }
   if (checkCall("get_num_args", index, {})) {
     builder.replaceOpWithNewOp<hc::typing::GetNumArgsOp>(call, callResType);
-    return;
+    return mlir::success();
   }
   if (checkCall("get_arg", vt, {index})) {
     builder.replaceOpWithNewOp<hc::typing::GetArgOp>(call, callResType,
                                                      args[0]);
-    return;
+    return mlir::success();
   }
 
   auto isStrLiteralArg = [&](llvm::StringRef funcName,
@@ -79,11 +82,31 @@ static void convertCall(mlir::IRRewriter &builder, hc::py_ir::CallOp call,
 
   if (auto name = isStrLiteralArg("get_attr", vt)) {
     builder.replaceOpWithNewOp<hc::typing::GetAttrOp>(call, callResType, name);
-    return;
+    return mlir::success();
   }
-}
 
-namespace {
+  return mlir::failure();
+}
+class ConvertCall final : public mlir::OpRewritePattern<hc::py_ir::CallOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hc::py_ir::CallOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto funcType =
+        mlir::dyn_cast<hc::typing::IdentType>(op.getFunc().getType());
+    if (!funcType)
+      return mlir::failure();
+
+    llvm::StringRef funcName = funcType.getName().getValue();
+    if (!funcName.consume_front("hckernel.typing."))
+      return mlir::failure();
+
+    return convertCall(rewriter, op, funcName);
+  }
+};
+
 struct GenResolversFuncsPass
     : public mlir::PassWrapper<GenResolversFuncsPass,
                                mlir::OperationPass<void>> {
@@ -96,24 +119,13 @@ struct GenResolversFuncsPass
   }
 
   void runOnOperation() override {
-    mlir::IRRewriter builder(&getContext());
-    auto visitor = [&](mlir::Operation *op) {
-      if (auto call = mlir::dyn_cast<hc::py_ir::CallOp>(op)) {
-        auto funcType =
-            mlir::dyn_cast<hc::typing::IdentType>(call.getFunc().getType());
-        if (!funcType)
-          return;
+    auto *ctx = &getContext();
+    mlir::RewritePatternSet patterns(ctx);
+    patterns.insert<ConvertCall>(ctx);
 
-        llvm::StringRef funcName = funcType.getName().getValue();
-        if (!funcName.consume_front("hckernel.typing."))
-          return;
-
-        convertCall(builder, call, funcName);
-        return;
-      }
-    };
-
-    getOperation()->walk(visitor);
+    if (mlir::failed(
+            applyPatternsAndFoldGreedily(getOperation(), std::move(patterns))))
+      return signalPassFailure();
   }
 };
 
