@@ -52,6 +52,11 @@ static void convertCall(mlir::IRRewriter &builder, hc::py_ir::CallOp call,
     builder.replaceOpWithNewOp<hc::typing::GetNumArgsOp>(call, callResType);
     return;
   }
+  if (checkCall("get_arg", vt, {index})) {
+    builder.replaceOpWithNewOp<hc::typing::GetArgOp>(call, callResType,
+                                                     args[0]);
+    return;
+  }
 
   auto isStrLiteralArg = [&](llvm::StringRef funcName,
                              mlir::Type resType) -> mlir::StringAttr {

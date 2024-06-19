@@ -109,5 +109,10 @@ def get_num_args():
 
 
 @_register_func
+def get_arg(index):
+    _stub_error()
+
+
+@_register_func
 def make_symbol(name):
     _stub_error()
