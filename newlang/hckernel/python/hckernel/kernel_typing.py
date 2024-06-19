@@ -26,29 +26,29 @@ def check_type(a: ValueType, b: ValueType):
 
 
 @type_resolver(_registry, ["py_ir.load_module", "hckernel"])
-def module_resolver():
+def resolver():
     return HCKernelMod
 
 
 @type_resolver(_registry, ["py_ir.getattr", "kernel_api"])
-def kernel_api_resolver(a: ValueType):
+def resolver(a: ValueType):
     check_type(a, HCKernelMod)
     return HCKernelAPI
 
 
 @type_resolver(_registry, ["py_ir.getattr", "indexing"])
-def kernel_api_resolver(a: ValueType):
+def resolver(a: ValueType):
     check_type(a, HCKernelMod)
     return Indexing
 
 
 @type_resolver(_registry, ["py_ir.getattr", "Buffer"])
-def current_group_resolver(a: ValueType):
+def resolver(a: ValueType):
     check_type(a, HCKernelAPI)
     return BufferBase
 
 
 @type_resolver(_registry, ["py_ir.getattr", "CurrentGroup"])
-def current_group_resolver(a: ValueType):
+def resolver(a: ValueType):
     check_type(a, HCKernelAPI)
     return CurrentGroup
