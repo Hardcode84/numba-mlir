@@ -40,7 +40,7 @@ class TypingRegistry:
                 if typing_module is None:
                     typing_module = mod
                 else:
-                    link_modules(_typing_module, mod)
+                    link_modules(typing_module, mod)
 
             self._typing_module = typing_module
         finally:
