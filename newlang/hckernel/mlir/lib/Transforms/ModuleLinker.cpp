@@ -6,8 +6,8 @@
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/IRMapping.h>
 
-mlir::LogicalResult hc::linkModules(mlir::Operation *dest,
-                                    mlir::Operation *toLink) {
+static mlir::LogicalResult checkModulesCompatible(mlir::Operation *dest,
+                                                  mlir::Operation *toLink) {
   if (dest->getName() != toLink->getName())
     return dest->emitOpError("Incompatible op types");
 
@@ -18,7 +18,63 @@ mlir::LogicalResult hc::linkModules(mlir::Operation *dest,
       !llvm::hasSingleElement(toLink->getRegion(0)))
     return toLink->emitOpError("Expected 1 region with 1 block");
 
-  // TODO: actually resolve symbols
+  return mlir::success();
+}
+
+static mlir::LogicalResult mergeSymbols(mlir::Operation *dest,
+                                        mlir::Operation *toLink) {
+  mlir::SymbolTable symTable(dest);
+
+  mlir::Block &toLinkBlock = toLink->getRegion(0).front();
+  for (auto symbol : llvm::make_early_inc_range(
+           toLinkBlock.getOps<mlir::SymbolOpInterface>())) {
+    auto destSymbol = mlir::cast_if_present<mlir::SymbolOpInterface>(
+        symTable.lookup(symbol.getNameAttr()));
+    if (!destSymbol)
+      continue;
+
+    if (symbol->getName() != destSymbol->getName())
+      return symbol->emitOpError("Incompatible symbol ops");
+
+    if (symbol.getVisibility() != destSymbol.getVisibility())
+      return symbol->emitOpError("Incompatible symbol visibility");
+
+    if (symbol->getAttrDictionary() != destSymbol->getAttrDictionary())
+      return symbol->emitOpError("Incompatible symbol attrs");
+
+    if (symbol.isDeclaration()) {
+      symbol->erase();
+      continue;
+    }
+
+    if (destSymbol.isDeclaration()) {
+      symbol->moveBefore(destSymbol);
+      destSymbol->erase();
+      continue;
+    }
+
+    if (!mlir::OperationEquivalence::isEquivalentTo(
+            symbol, destSymbol,
+            mlir::OperationEquivalence::Flags::IgnoreLocations))
+      return symbol->emitOpError("Symbols are not equivalent");
+
+    // Symbols are equivalent, drop the second one.
+    symbol->erase();
+  }
+
+  return mlir::success();
+}
+
+mlir::LogicalResult hc::linkModules(mlir::Operation *dest,
+                                    mlir::Operation *toLink) {
+  if (mlir::failed(checkModulesCompatible(dest, toLink)))
+    return mlir::failure();
+
+  if (dest->hasTrait<mlir::OpTrait::SymbolTable>()) {
+    if (mlir::failed(mergeSymbols(dest, toLink)))
+      return mlir::failure();
+  }
+
   mlir::Block &dstBlock = dest->getRegion(0).front();
   if (dstBlock.mightHaveTerminator()) {
     mlir::Operation *term = dstBlock.getTerminator();
