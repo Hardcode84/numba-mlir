@@ -167,7 +167,7 @@ struct TypingInterpreter {
 
     llvm::SmallVector<mlir::Attribute> keys = getTypingKeys(op);
     for (auto key : keys) {
-      auto res = run(key, types, result);
+      auto res = run(op, key, types, result);
       if (mlir::failed(res))
         return res;
 
@@ -180,10 +180,11 @@ struct TypingInterpreter {
   mlir::FailureOr<bool>
   runJoinTypes(mlir::TypeRange types,
                llvm::SmallVectorImpl<mlir::Type> &result) {
-    return run(joinTypesKey, types, result);
+    return run(nullptr, joinTypesKey, types, result);
   }
 
-  mlir::FailureOr<bool> run(mlir::Attribute key, mlir::TypeRange types,
+  mlir::FailureOr<bool> run(mlir::Operation *op, mlir::Attribute key,
+                            mlir::TypeRange types,
                             llvm::SmallVectorImpl<mlir::Type> &result) {
     if (!key)
       return false;
@@ -193,7 +194,7 @@ struct TypingInterpreter {
       return false;
 
     for (auto resolverOp : it->second) {
-      auto res = interp.run(resolverOp, types, result);
+      auto res = interp.run(op, resolverOp, types, result);
       if (mlir::failed(res))
         return mlir::failure();
 

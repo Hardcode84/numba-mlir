@@ -13,10 +13,11 @@ static mlir::FailureOr<bool> handleOp(hc::typing::InterpreterState &state,
 }
 
 mlir::FailureOr<bool>
-hc::typing::Interpreter::run(TypeResolverOp resolver, mlir::TypeRange types,
+hc::typing::Interpreter::run(mlir::Operation *rootOp, TypeResolverOp resolver,
+                             mlir::TypeRange types,
                              llvm::SmallVectorImpl<mlir::Type> &result) {
   assert(!resolver.getBodyRegion().empty());
-  state.init(resolver.getBodyRegion().front(), types);
+  state.init(rootOp, resolver.getBodyRegion().front(), types);
 
   while (true) {
     mlir::Operation &op = state.getNextOp();

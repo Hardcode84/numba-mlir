@@ -7,7 +7,8 @@
 namespace hc::typing {
 class Interpreter final {
 public:
-  mlir::FailureOr<bool> run(TypeResolverOp resolver, mlir::TypeRange types,
+  mlir::FailureOr<bool> run(mlir::Operation *rootOp, TypeResolverOp resolver,
+                            mlir::TypeRange types,
                             llvm::SmallVectorImpl<mlir::Type> &result);
 
 private:

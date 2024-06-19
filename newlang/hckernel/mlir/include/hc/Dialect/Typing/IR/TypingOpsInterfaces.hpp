@@ -10,10 +10,12 @@ void registerArithTypingInterpreter(mlir::MLIRContext &ctx);
 using InterpreterValue = llvm::PointerUnion<mlir::Type, void *>;
 
 struct InterpreterState {
-  void init(mlir::Block &block, mlir::TypeRange types) {
+  void init(mlir::Operation *rootOp, mlir::Block &block,
+            mlir::TypeRange types) {
     state.clear();
     args = types;
     iter = block.begin();
+    op = rootOp;
     completed = false;
   }
 
@@ -29,6 +31,7 @@ struct InterpreterState {
   llvm::SmallVector<mlir::Operation *, 4> callstack;
   mlir::TypeRange args;
   mlir::Block::iterator iter;
+  mlir::Operation *op = nullptr;
   bool completed = false;
 };
 

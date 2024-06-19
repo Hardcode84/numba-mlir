@@ -493,6 +493,22 @@ mlir::FailureOr<bool> hc::typing::GetArgOp::interpret(InterpreterState &state) {
 }
 
 mlir::FailureOr<bool>
+hc::typing::GetAttrOp::interpret(InterpreterState &state) {
+  auto op = state.op;
+  if (!op)
+    return emitOpError("Root op is not set");
+
+  auto name = getNameAttr();
+  auto attr = op->getAttrOfType<mlir::TypedAttr>(name);
+  if (!attr)
+    return emitOpError("Root op doesn't have attr: ")
+           << name.getValue() << " " << *op;
+
+  state.state[getResult()] = hc::typing::LiteralType::get(attr);
+  return true;
+}
+
+mlir::FailureOr<bool>
 hc::typing::GetIdentNameOp::interpret(InterpreterState &state) {
   auto ident = mlir::dyn_cast_if_present<hc::typing::IdentType>(
       hc::typing::getType(state, getIdent()));
