@@ -3,6 +3,7 @@
 #include "Dispatcher.hpp"
 
 #include <llvm/ADT/Twine.h>
+#include <mlir/IR/Operation.h>
 
 #include "Utils.hpp"
 
@@ -17,7 +18,7 @@ void Dispatcher::definePyClass(py::module_ &m) {
 }
 
 void Dispatcher::call(py::args args, py::kwargs kwargs) {
-  runFrontend();
+  runFrontend()->dump();
   invokeFunc(args, kwargs);
 }
 

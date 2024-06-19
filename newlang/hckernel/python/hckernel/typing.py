@@ -47,6 +47,10 @@ class TypingRegistry:
             # To properly handle exceptions in `compile()`
             self._typing_dispatchers.clear()
 
+    @property
+    def module(self):
+        return self._typing_module
+
 
 @_register_func
 def func(func):

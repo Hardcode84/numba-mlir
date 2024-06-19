@@ -2,6 +2,7 @@
 
 import inspect
 from types import FunctionType
+from typing import Callable
 from collections import namedtuple, OrderedDict
 
 from .kernel_api import *
@@ -67,6 +68,11 @@ def _get_desc(func, dispatcher_cls, prelink_module):
         raise RuntimeError(f"Unsupported object {type(func)}")
 
     def _wrapper():
+        if isinstance(prelink_module, Callable):
+            prelink_mod = prelink_module()
+        else:
+            prelink_mod = prelink_module
+
         sig = inspect.signature(func)
         args_types = OrderedDict()
         for name, param in sig.parameters.items():
@@ -101,7 +107,7 @@ def _get_desc(func, dispatcher_cls, prelink_module):
             imported_symbols=imported_symbols,
             literals=literals,
             dispatcher_deps=dispatcher_deps,
-            prelink_module=prelink_module,
+            prelink_module=prelink_mod,
         )
 
     return _wrapper
