@@ -501,8 +501,7 @@ hc::typing::GetAttrOp::interpret(InterpreterState &state) {
   auto name = getNameAttr();
   auto attr = op->getAttrOfType<mlir::TypedAttr>(name);
   if (!attr)
-    return emitOpError("Root op doesn't have attr: ")
-           << name.getValue() << " " << *op;
+    return emitOpError("Invalid attr: ") << name.getValue() << " " << *op;
 
   state.state[getResult()] = hc::typing::LiteralType::get(attr);
   return true;
