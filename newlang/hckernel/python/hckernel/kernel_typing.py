@@ -15,6 +15,7 @@ def get_typing_module():
 ValueType = typing.ValueType.get()
 HCKernelMod = typing.IdentType.get("hckernel")
 HCKernelAPI = typing.IdentType.get("hckernel.kernel_api")
+CurrentGroup = typing.IdentType.get("hckernel.kernel_api.CurrentGroup")
 
 
 @func
@@ -31,3 +32,9 @@ def module_resolver():
 def kernel_api_resolver(a: ValueType):
     check_type(a, HCKernelMod)
     return HCKernelAPI
+
+
+@type_resolver(_registry, ["py_ir.getattr", "CurrentGroup"])
+def current_group_resolver(a: ValueType):
+    check_type(a, HCKernelAPI)
+    return CurrentGroup
