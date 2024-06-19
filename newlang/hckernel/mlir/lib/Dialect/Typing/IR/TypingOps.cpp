@@ -458,9 +458,14 @@ hc::typing::MakeIdentOp::interpret(InterpreterState &state) {
 
 mlir::FailureOr<bool>
 hc::typing::MakeSymbolOp::interpret(InterpreterState &state) {
-  auto name = this->getNameAttr();
+  auto name = hc::typing::getType(state, getName());
+  auto nameLiteral = mlir::dyn_cast<LiteralType>(name);
+  if (!nameLiteral || !mlir::isa<mlir::StringAttr>(nameLiteral.getValue()))
+    return emitOpError("Invalid name value: ") << name;
+
+  auto nameStr = mlir::cast<mlir::StringAttr>(nameLiteral.getValue());
   state.state[getResult()] =
-      hc::typing::SymbolType::get(this->getContext(), name);
+      hc::typing::SymbolType::get(this->getContext(), nameStr.getValue());
   return true;
 }
 

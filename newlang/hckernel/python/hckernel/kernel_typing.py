@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from .typing import type_resolver, func, is_same, check, TypingRegistry
+from .typing import *
 from .mlir import typing
 
 _registry = TypingRegistry()
@@ -40,6 +40,12 @@ def resolver(a: ValueType):
 def resolver(a: ValueType):
     check_type(a, HCKernelMod)
     return Indexing
+
+
+@type_resolver(_registry, ["py_ir.getattr"])
+def resolver(a: ValueType):
+    check_type(a, Indexing)
+    return make_symbol(get_attr("name"))
 
 
 @type_resolver(_registry, ["py_ir.getattr", "Buffer"])

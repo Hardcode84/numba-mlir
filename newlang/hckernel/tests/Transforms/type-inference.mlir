@@ -125,12 +125,14 @@ typing.type_resolver ["py_ir.loadvar", "Foo"] {
 }
 
 typing.type_resolver ["py_ir.loadvar", "Bar"] {
-  %0 = typing.make_symbol "Bar"
+  %str = typing.type_constant #typing.type_attr<!typing<literal "Bar"> > : !typing.value
+  %0 = typing.make_symbol %str
   typing.type_resolver_return %0
 }
 
 typing.type_resolver ["py_ir.loadvar", "Baz"] {
-  %0 = typing.make_symbol "Baz"
+  %str = typing.type_constant #typing.type_attr<!typing<literal "Baz"> > : !typing.value
+  %0 = typing.make_symbol %str
   typing.type_resolver_return %0
 }
 

@@ -42,6 +42,11 @@ static void convertCall(mlir::IRRewriter &builder, hc::py_ir::CallOp call,
     builder.replaceOpWithNewOp<hc::py_ir::NoneOp>(call);
     return;
   }
+  if (checkCall("make_symbol", vt, {vt})) {
+    builder.replaceOpWithNewOp<hc::typing::MakeSymbolOp>(call, callResType,
+                                                         args[0]);
+    return;
+  }
 
   auto isStrLiteralArg = [&](llvm::StringRef funcName,
                              mlir::Type resType) -> mlir::StringAttr {
@@ -63,11 +68,7 @@ static void convertCall(mlir::IRRewriter &builder, hc::py_ir::CallOp call,
   };
 
   if (auto name = isStrLiteralArg("get_attr", vt)) {
-    builder.replaceOpWithNewOp<hc::typing::GetAttrOp>(call, vt, name);
-    return;
-  }
-  if (auto name = isStrLiteralArg("make_symbol", vt)) {
-    builder.replaceOpWithNewOp<hc::typing::MakeSymbolOp>(call, vt, name);
+    builder.replaceOpWithNewOp<hc::typing::GetAttrOp>(call, callResType, name);
     return;
   }
 }
