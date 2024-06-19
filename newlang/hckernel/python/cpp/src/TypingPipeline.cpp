@@ -66,6 +66,10 @@ static void convertCall(mlir::IRRewriter &builder, hc::py_ir::CallOp call,
     builder.replaceOpWithNewOp<hc::typing::GetAttrOp>(call, vt, name);
     return;
   }
+  if (auto name = isStrLiteralArg("make_symbol", vt)) {
+    builder.replaceOpWithNewOp<hc::typing::MakeSymbolOp>(call, vt, name);
+    return;
+  }
 }
 
 namespace {
