@@ -3,6 +3,7 @@
 #include "PyWrappers.hpp"
 
 #include <mlir/CAPI/IR.h>
+#include <mlir/IR/Builders.h>
 
 #include "Globals.h"
 #include "IRModule.h"
@@ -23,12 +24,12 @@ void popContext(mlir::MLIRContext *ctx) {
   translateContext(ctx)->contextExit(py::none(), py::none(), py::none());
 }
 
-static bool mlirTypeIsATypingValue(MlirType type) {
-  return mlir::isa<hc::typing::ValueType>(unwrap(type));
+template <typename T> static bool genIsA(MlirType type) {
+  return mlir::isa<T>(unwrap(type));
 }
 
-static MlirTypeID mlirTypingValueTypeGetTypeID() {
-  return wrap(hc::typing::ValueType::getTypeID());
+template <typename T> static MlirTypeID genGetTypeID() {
+  return wrap(T::getTypeID());
 }
 
 using namespace mlir;
@@ -38,9 +39,9 @@ using namespace mlir::python;
 namespace {
 class PyValueType : public PyConcreteType<PyValueType> {
 public:
-  static constexpr IsAFunctionTy isaFunction = mlirTypeIsATypingValue;
+  static constexpr IsAFunctionTy isaFunction = genIsA<hc::typing::ValueType>;
   static constexpr GetTypeIDFunctionTy getTypeIdFunction =
-      mlirTypingValueTypeGetTypeID;
+      genGetTypeID<hc::typing::ValueType>;
   static constexpr const char *pyClassName = "ValueType";
   using PyConcreteType::PyConcreteType;
 
@@ -54,9 +55,45 @@ public:
         py::arg("context") = py::none(), "Create typing.value type");
   }
 };
+
+class PyIdentType : public PyConcreteType<PyIdentType> {
+public:
+  static constexpr IsAFunctionTy isaFunction = genIsA<hc::typing::IdentType>;
+  static constexpr GetTypeIDFunctionTy getTypeIdFunction =
+      genGetTypeID<hc::typing::IdentType>;
+  static constexpr const char *pyClassName = "IdentType";
+  using PyConcreteType::PyConcreteType;
+
+  static void bindDerived(ClassTy &c) {
+    c.def_static(
+        "get",
+        [](py::str name, py::dict params, DefaultingPyMlirContext context) {
+          llvm::SmallVector<mlir::StringAttr> paramNames;
+          llvm::SmallVector<mlir::Type> paramTypes;
+
+          auto ctx = unwrap(context->get());
+          mlir::OpBuilder builder(ctx);
+          auto nameAttr = builder.getStringAttr(name.cast<std::string>());
+          for (auto &&[key, value] : params) {
+            paramNames.emplace_back(
+                builder.getStringAttr(key.cast<std::string>()));
+            paramTypes.emplace_back(unwrap(key.cast<PyType>()));
+          }
+
+          MlirType t = wrap(hc::typing::IdentType::get(ctx, nameAttr,
+                                                       paramNames, paramTypes));
+          return PyValueType(context->getRef(), t);
+        },
+        py::arg("name"), py::arg("params") = py::dict(),
+        py::arg("context") = py::none(), "Create ident type");
+  }
+};
 } // namespace
 
-static void populateTypingTypes(py::module &m) { PyValueType::bind(m); }
+static void populateTypingTypes(py::module &m) {
+  PyValueType::bind(m);
+  PyIdentType::bind(m);
+}
 
 void populateMlirModule(py::module &m) {
   // TODO: refactor upstream
