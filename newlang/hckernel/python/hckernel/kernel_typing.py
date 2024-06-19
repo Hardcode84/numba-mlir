@@ -15,6 +15,7 @@ def get_typing_module():
 ValueType = typing.ValueType.get()
 HCKernelMod = typing.IdentType.get("hckernel")
 HCKernelAPI = typing.IdentType.get("hckernel.kernel_api")
+Indexing = typing.IdentType.get("hckernel.indexing")
 BufferBase = typing.IdentType.get("hckernel.kernel_api.BufferBase")
 CurrentGroup = typing.IdentType.get("hckernel.kernel_api.CurrentGroup")
 
@@ -33,6 +34,12 @@ def module_resolver():
 def kernel_api_resolver(a: ValueType):
     check_type(a, HCKernelMod)
     return HCKernelAPI
+
+
+@type_resolver(_registry, ["py_ir.getattr", "indexing"])
+def kernel_api_resolver(a: ValueType):
+    check_type(a, HCKernelMod)
+    return Indexing
 
 
 @type_resolver(_registry, ["py_ir.getattr", "Buffer"])
