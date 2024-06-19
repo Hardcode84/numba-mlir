@@ -87,6 +87,7 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
 
   return mlir::failure();
 }
+
 class ConvertCall final : public mlir::OpRewritePattern<hc::py_ir::CallOp> {
 public:
   using OpRewritePattern::OpRewritePattern;
@@ -107,6 +108,63 @@ public:
   }
 };
 
+static mlir::Value doCast(mlir::OpBuilder &builder, mlir::Location loc,
+                          mlir::Value val, mlir::Type dstType) {
+  mlir::Type srcType = val.getType();
+  if (srcType == dstType)
+    return val;
+
+  if (srcType.isIntOrIndex() && dstType.isIntOrIndex()) {
+    return builder.create<mlir::arith::IndexCastOp>(loc, dstType, val);
+  }
+
+  return builder.create<hc::typing::CastOp>(loc, dstType, val);
+}
+
+template <typename Op>
+static mlir::Value createBinOp(mlir::OpBuilder &builder, mlir::Location loc,
+                               mlir::Value lhs, mlir::Value rhs,
+                               mlir::Type dstType) {
+  lhs = doCast(builder, loc, lhs, dstType);
+  rhs = doCast(builder, loc, rhs, dstType);
+  return builder.create<Op>(loc, lhs, rhs);
+}
+
+class ConvertBinop final : public mlir::OpRewritePattern<hc::py_ir::BinOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hc::py_ir::BinOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto retType = op.getType();
+    if (!retType.isIntOrIndex())
+      return mlir::failure();
+
+    using fptr =
+        mlir::Value (*)(mlir::OpBuilder & builder, mlir::Location loc,
+                        mlir::Value lhs, mlir::Value rhs, mlir::Type dstType);
+    using Op = hc::py_ir::BinOpVal;
+    namespace arith = mlir::arith;
+    const std::pair<Op, fptr> handlers[] = {
+        {Op::add, createBinOp<arith::AddIOp>},
+        {Op::sub, createBinOp<arith::SubIOp>},
+        {Op::mul, createBinOp<arith::MulIOp>},
+    };
+
+    auto opType = op.getOp();
+    for (auto &&[type, handler] : handlers) {
+      if (type == opType) {
+        mlir::Value res = handler(rewriter, op.getLoc(), op.getLeft(),
+                                  op.getRight(), retType);
+        rewriter.replaceOp(op, res);
+        return mlir::success();
+      }
+    }
+    return mlir::failure();
+  }
+};
+
 struct GenResolversFuncsPass
     : public mlir::PassWrapper<GenResolversFuncsPass,
                                mlir::OperationPass<void>> {
@@ -121,7 +179,7 @@ struct GenResolversFuncsPass
   void runOnOperation() override {
     auto *ctx = &getContext();
     mlir::RewritePatternSet patterns(ctx);
-    patterns.insert<ConvertCall>(ctx);
+    patterns.insert<ConvertCall, ConvertBinop>(ctx);
 
     if (mlir::failed(
             applyPatternsAndFoldGreedily(getOperation(), std::move(patterns))))

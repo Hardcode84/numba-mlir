@@ -191,6 +191,12 @@ typing.type_resolver ["py_ir.call"] {
   typing.type_resolver_return %3
 }
 
+// py_ir ops
+
+typing.type_resolver ["py_ir.binop"] {
+  %0 = typing.type_constant #typing.type_attr<index> : !typing.value
+  typing.type_resolver_return %0
+}
 
 typing.type_resolver ["py_ir.make_list"] {
   %c0 = arith.constant 0 : index
