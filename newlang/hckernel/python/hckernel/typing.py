@@ -104,5 +104,10 @@ def get_attr(name):
 
 
 @_register_func
+def get_num_args():
+    _stub_error()
+
+
+@_register_func
 def make_symbol(name):
     _stub_error()

@@ -29,6 +29,7 @@ static void convertCall(mlir::IRRewriter &builder, hc::py_ir::CallOp call,
     return llvm::equal(callArgTypes, argTypes);
   };
 
+  auto index = builder.getIndexType();
   auto i1 = builder.getIntegerType(1);
   auto none = builder.getNoneType();
   auto vt = hc::typing::ValueType::get(builder.getContext());
@@ -45,6 +46,10 @@ static void convertCall(mlir::IRRewriter &builder, hc::py_ir::CallOp call,
   if (checkCall("make_symbol", vt, {vt})) {
     builder.replaceOpWithNewOp<hc::typing::MakeSymbolOp>(call, callResType,
                                                          args[0]);
+    return;
+  }
+  if (checkCall("get_num_args", index, {})) {
+    builder.replaceOpWithNewOp<hc::typing::GetNumArgsOp>(call, callResType);
     return;
   }
 
