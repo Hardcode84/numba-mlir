@@ -42,6 +42,30 @@ static void convertCall(mlir::IRRewriter &builder, hc::py_ir::CallOp call,
     builder.replaceOpWithNewOp<hc::py_ir::NoneOp>(call);
     return;
   }
+
+  auto isStrLiteralArg = [&](llvm::StringRef funcName,
+                             mlir::Type resType) -> mlir::StringAttr {
+    if (callArgTypes.size() != 1)
+      return nullptr;
+
+    if (funcName != name)
+      return nullptr;
+
+    if (callResType != resType)
+      return nullptr;
+
+    auto literal =
+        mlir::dyn_cast<hc::typing::LiteralType>(callArgTypes.front());
+    if (!literal)
+      return nullptr;
+
+    return mlir::dyn_cast<mlir::StringAttr>(literal.getValue());
+  };
+
+  if (auto name = isStrLiteralArg("get_attr", vt)) {
+    builder.replaceOpWithNewOp<hc::typing::GetAttrOp>(call, vt, name);
+    return;
+  }
 }
 
 namespace {

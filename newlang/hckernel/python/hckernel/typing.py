@@ -96,3 +96,8 @@ def is_same(a, b):
 @_register_func
 def check(cond):
     _stub_error()
+
+
+@_register_func
+def get_attr(name):
+    _stub_error()
