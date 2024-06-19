@@ -25,6 +25,17 @@ typing.type_resolver ["py_ir.getattr", "type_resolver"] {
   typing.type_resolver_return %3
 }
 
+typing.type_resolver ["py_ir.getattr", "TypingRegistry"] {
+  %c1 = arith.constant 0: index
+  %0 = typing.make_ident "hckernel.typing" []
+  %1 = typing.get_arg %c1
+  %2 = typing.is_same %0 %1
+  typing.check %2
+
+  %3 = typing.make_ident "hckernel.typing.TypingRegistry" []
+  typing.type_resolver_return %3
+}
+
 typing.type_resolver ["py_ir.getattr", "func"] {
   %c1 = arith.constant 0: index
   %0 = typing.make_ident "hckernel.typing" []
@@ -111,11 +122,18 @@ typing.type_resolver ["py_ir.call"] {
   %c1 = arith.constant 1: index
   %3 = typing.get_arg %c1
   %4 = typing.get_ident_name %3
-  %5 = typing.make_literal "List"
+  %5 = typing.make_literal "hckernel.typing.TypingRegistry"
   %6 = typing.is_same %4 %5
   typing.check %6
 
-  %7 = typing.get_ident_param %3 "Elements"
-  %8 = typing.make_ident "type_resolver_type" ["key"] : %7
-  typing.type_resolver_return %8
+  %c2 = arith.constant 2: index
+  %7 = typing.get_arg %c2
+  %8 = typing.get_ident_name %7
+  %9 = typing.make_literal "List"
+  %10 = typing.is_same %8 %9
+  typing.check %10
+
+  %11 = typing.get_ident_param %7 "Elements"
+  %12 = typing.make_ident "type_resolver_type" ["key"] : %11
+  typing.type_resolver_return %12
 }

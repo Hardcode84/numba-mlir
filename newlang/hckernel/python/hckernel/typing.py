@@ -20,23 +20,46 @@ def _stub_error():
     raise NotImplementedError("This is a stub")
 
 
+_typing_prelink = load_mlir_module(ir._BaseContext.current, get_bitcode_file("typing"))
+
+
+class TypingRegistry:
+    def __init__(self):
+        self._typing_dispatchers = []
+        self._typing_module = None
+        _reg_symbol_impl(self, "TypingRegistry", __name__)
+
+    def add_dispatcher(self, disp):
+        self._typing_dispatchers.append(disp)
+
+    def compile_type_resolvers(self):
+        typing_module = None
+        try:
+            for disp in self._typing_dispatchers:
+                mod = disp.compile()
+                if typing_module is None:
+                    typing_module = mod
+                else:
+                    link_modules(_typing_module, mod)
+
+            self._typing_module = typing_module
+        finally:
+            # To properly handle exceptions in `compile()`
+            self._typing_dispatchers.clear()
+
+
 @_register_func
 def func(func):
     return create_dispatcher(func, dispatcher=TypingDispatcher)
 
 
-_typing_prelink = load_mlir_module(ir._BaseContext.current, get_bitcode_file("typing"))
-
-_typing_dispatchers = []
-
-
 @_register_func
-def type_resolver(key):
+def type_resolver(registry, key):
     def _wrapper(func):
         disp = create_dispatcher(
             func, prelink_module=_typing_prelink, dispatcher=TypingDispatcher
         )
-        _typing_dispatchers.append(disp)
+        registry.add_dispatcher(disp)
         return disp
 
     return _wrapper
