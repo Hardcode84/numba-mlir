@@ -392,6 +392,7 @@ def _register_symbol(sym):
     _reg_symbol_impl(eval(sym), sym, __name__)
 
 
+_register_symbol("Buffer")
 _register_symbol("CurrentGroup")
 _register_symbol("CurrentSubGroup")
 _register_symbol("CurrentWorkitem")
