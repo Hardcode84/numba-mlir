@@ -138,11 +138,11 @@ static void updateTypes(mlir::Operation *rootOp,
   rootOp->walk([&](mlir::Block *block) { updateBranchTypes(builder, block); });
 }
 
-static mlir::Attribute getTypingKey(mlir::Operation *op) {
+static llvm::SmallVector<mlir::Attribute> getTypingKeys(mlir::Operation *op) {
   if (auto iface = mlir::dyn_cast<hc::typing::TypingKeyInterface>(op))
-    return iface.getTypingKey();
+    return iface.getTypingKeys();
 
-  return nullptr;
+  return {};
 }
 
 namespace {
@@ -165,8 +165,16 @@ struct TypingInterpreter {
         return res;
     }
 
-    mlir::Attribute key = getTypingKey(op);
-    return run(key, types, result);
+    llvm::SmallVector<mlir::Attribute> keys = getTypingKeys(op);
+    for (auto key : keys) {
+      auto res = run(key, types, result);
+      if (mlir::failed(res))
+        return res;
+
+      if (*res)
+        return true;
+    }
+    return false;
   }
 
   mlir::FailureOr<bool>

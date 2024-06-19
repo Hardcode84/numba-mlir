@@ -11,16 +11,23 @@ def TypingKeyInterface : OpInterface<"TypingKeyInterface"> {
   let methods = [
     InterfaceMethod<
       "",
-      "::mlir::Attribute",
-      "getTypingKey",
+      "::llvm::SmallVector<::mlir::Attribute>",
+      "getTypingKeys",
       (ins),
       [{}],
       [{
+        ::llvm::SmallVector<::mlir::Attribute> ret;
         ::llvm::SmallVector<::mlir::Attribute> attrs;
         auto op = ::mlir::cast<ConcreteOp>(this->getOperation());
-        attrs.emplace_back(op->getName().getIdentifier());
+        ::mlir::Attribute name = op->getName().getIdentifier();
+        attrs.emplace_back(name);
         op.getTypingKeyArgs(attrs);
-        return ::mlir::ArrayAttr::get(op->getContext(), attrs);
+        auto *ctx = op->getContext();
+        if (attrs.size() > 1)
+          ret.emplace_back(::mlir::ArrayAttr::get(ctx, name));
+
+        ret.emplace_back(::mlir::ArrayAttr::get(ctx, attrs));
+        return ret;
       }]
       >,
     InterfaceMethod<
