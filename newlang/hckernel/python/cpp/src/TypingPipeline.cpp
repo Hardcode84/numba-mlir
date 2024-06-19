@@ -97,17 +97,20 @@ struct GenResolversFuncsPass
 
   void runOnOperation() override {
     mlir::IRRewriter builder(&getContext());
-    auto visitor = [&](hc::py_ir::CallOp op) {
-      auto funcType =
-          mlir::dyn_cast<hc::typing::IdentType>(op.getFunc().getType());
-      if (!funcType)
-        return;
+    auto visitor = [&](mlir::Operation *op) {
+      if (auto call = mlir::dyn_cast<hc::py_ir::CallOp>(op)) {
+        auto funcType =
+            mlir::dyn_cast<hc::typing::IdentType>(call.getFunc().getType());
+        if (!funcType)
+          return;
 
-      llvm::StringRef funcName = funcType.getName().getValue();
-      if (!funcName.consume_front("hckernel.typing."))
-        return;
+        llvm::StringRef funcName = funcType.getName().getValue();
+        if (!funcName.consume_front("hckernel.typing."))
+          return;
 
-      convertCall(builder, op, funcName);
+        convertCall(builder, call, funcName);
+        return;
+      }
     };
 
     getOperation()->walk(visitor);
