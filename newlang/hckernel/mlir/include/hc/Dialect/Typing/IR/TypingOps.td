@@ -218,6 +218,8 @@ def Typing_CastOp : Typing_OpBase<"cast", [
   let arguments = (ins AnyType:$value);
   let results = (outs AnyType:$result);
 
+  let hasFolder = 1;
+
   let assemblyFormat = "attr-dict $value `:` type($value) `to` type($result)";
 }
 

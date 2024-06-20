@@ -112,6 +112,21 @@ bool hc::typing::CastOp::areCastCompatible(mlir::TypeRange inputs,
   return true;
 }
 
+mlir::OpFoldResult hc::typing::CastOp::fold(FoldAdaptor /*adaptor*/) {
+  mlir::Value arg = getValue();
+  mlir::Type dstType = getType();
+  if (arg.getType() == dstType)
+    return arg;
+
+  while (auto parent = arg.getDefiningOp<CastOp>()) {
+    arg = parent.getValue();
+    if (arg.getType() == dstType)
+      return arg;
+  }
+
+  return nullptr;
+}
+
 mlir::FailureOr<bool>
 hc::typing::CastOp::inferTypes(mlir::TypeRange types,
                                llvm::SmallVectorImpl<mlir::Type> &results) {
@@ -211,6 +226,25 @@ struct AddOpInterpreterInterface final
       return op->emitError("Invalid rhs val");
 
     state.state[op.getResult()] = setInt(op.getContext(), *lhs + *rhs);
+    return true;
+  }
+};
+
+struct SubOpInterpreterInterface final
+    : public hc::typing::TypingInterpreterInterface::ExternalModel<
+          SubOpInterpreterInterface, mlir::arith::SubIOp> {
+  mlir::FailureOr<bool> interpret(mlir::Operation *o,
+                                  InterpreterState &state) const {
+    auto op = mlir::cast<mlir::arith::AddIOp>(o);
+    auto lhs = getInt(state, op.getLhs());
+    if (!lhs)
+      return op->emitError("Invalid lhs val");
+
+    auto rhs = getInt(state, op.getRhs());
+    if (!rhs)
+      return op->emitError("Invalid rhs val");
+
+    state.state[op.getResult()] = setInt(op.getContext(), *lhs - *rhs);
     return true;
   }
 };
@@ -363,6 +397,7 @@ void hc::typing::registerArithTypingInterpreter(mlir::MLIRContext &ctx) {
 
   mlir::arith::ConstantOp::attachInterface<ConstantOpInterpreterInterface>(ctx);
   mlir::arith::AddIOp::attachInterface<AddOpInterpreterInterface>(ctx);
+  mlir::arith::SubIOp::attachInterface<SubOpInterpreterInterface>(ctx);
   mlir::arith::CmpIOp::attachInterface<CmpOpInterpreterInterface>(ctx);
 
   mlir::func::CallOp::attachInterface<CallOpInterpreterInterface>(ctx);
