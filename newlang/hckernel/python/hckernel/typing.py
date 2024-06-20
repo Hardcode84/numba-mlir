@@ -116,3 +116,8 @@ def get_arg(index):
 @_register_func
 def make_symbol(name):
     _stub_error()
+
+
+@_register_func
+def create_seq():
+    _stub_error()

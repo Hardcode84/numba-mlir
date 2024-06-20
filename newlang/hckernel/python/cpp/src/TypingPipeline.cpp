@@ -61,6 +61,10 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
                                                      args[0]);
     return mlir::success();
   }
+  if (checkCall("create_seq", vt, {})) {
+    builder.replaceOpWithNewOp<hc::typing::CreateSeqOp>(call, callResType);
+    return mlir::success();
+  }
 
   auto isStrLiteralArg = [&](llvm::StringRef funcName,
                              mlir::Type resType) -> mlir::StringAttr {
