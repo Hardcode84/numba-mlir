@@ -375,7 +375,7 @@ def PyAST_WhileOp : PyAST_OpBase<"while", [
   let assemblyFormat = "attr-dict $test $bodyRegion";
 }
 
-def PyAST_CompareOp : PyAST_OpBase<"compare"> {
+def PyAST_CompareOp : PyAST_PureOpBase<"compare"> {
   let arguments = (ins
       PyAST_ASTNodeType:$left,
       ArrayAttr:$ops,
