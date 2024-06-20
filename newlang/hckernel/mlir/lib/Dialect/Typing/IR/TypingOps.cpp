@@ -235,7 +235,7 @@ struct SubOpInterpreterInterface final
           SubOpInterpreterInterface, mlir::arith::SubIOp> {
   mlir::FailureOr<bool> interpret(mlir::Operation *o,
                                   InterpreterState &state) const {
-    auto op = mlir::cast<mlir::arith::AddIOp>(o);
+    auto op = mlir::cast<mlir::arith::SubIOp>(o);
     auto lhs = getInt(state, op.getLhs());
     if (!lhs)
       return op->emitError("Invalid lhs val");
@@ -245,6 +245,25 @@ struct SubOpInterpreterInterface final
       return op->emitError("Invalid rhs val");
 
     state.state[op.getResult()] = setInt(op.getContext(), *lhs - *rhs);
+    return true;
+  }
+};
+
+struct OrOpInterpreterInterface final
+    : public hc::typing::TypingInterpreterInterface::ExternalModel<
+          OrOpInterpreterInterface, mlir::arith::OrIOp> {
+  mlir::FailureOr<bool> interpret(mlir::Operation *o,
+                                  InterpreterState &state) const {
+    auto op = mlir::cast<mlir::arith::OrIOp>(o);
+    auto lhs = getInt(state, op.getLhs());
+    if (!lhs)
+      return op->emitError("Invalid lhs val");
+
+    auto rhs = getInt(state, op.getRhs());
+    if (!rhs)
+      return op->emitError("Invalid rhs val");
+
+    state.state[op.getResult()] = setInt(op.getContext(), *lhs | *rhs);
     return true;
   }
 };
@@ -387,6 +406,7 @@ void hc::typing::registerArithTypingInterpreter(mlir::MLIRContext &ctx) {
   mlir::arith::ConstantOp::attachInterface<ConstantOpInterpreterInterface>(ctx);
   mlir::arith::AddIOp::attachInterface<AddOpInterpreterInterface>(ctx);
   mlir::arith::SubIOp::attachInterface<SubOpInterpreterInterface>(ctx);
+  mlir::arith::OrIOp::attachInterface<OrOpInterpreterInterface>(ctx);
   mlir::arith::CmpIOp::attachInterface<CmpOpInterpreterInterface>(ctx);
 
   mlir::func::CallOp::attachInterface<CallOpInterpreterInterface>(ctx);
