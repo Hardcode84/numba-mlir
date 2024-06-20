@@ -70,6 +70,11 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
                                                         args[0], args[1]);
     return mlir::success();
   }
+  if (checkCall("get_type_name", vt, {vt})) {
+    builder.replaceOpWithNewOp<hc::typing::GetIdentNameOp>(call, callResType,
+                                                           args[0]);
+    return mlir::success();
+  }
 
   auto isStrLiteralArg = [&](llvm::StringRef funcName,
                              mlir::Type resType) -> mlir::StringAttr {

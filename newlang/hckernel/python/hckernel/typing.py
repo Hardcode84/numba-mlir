@@ -131,3 +131,8 @@ def append_seq(seq, value):
 @_register_func
 def make_type(name, **kwargs):
     _stub_error()
+
+
+@_register_func
+def get_type_name(type):
+    _stub_error()
