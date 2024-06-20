@@ -95,6 +95,43 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
     return mlir::success();
   }
 
+  auto matchMakeType = [&]() -> bool {
+    if ("make_type" != name)
+      return false;
+
+    if (callResType != vt)
+      return false;
+
+    auto literal =
+        mlir::dyn_cast<hc::typing::LiteralType>(callArgTypes.front());
+    if (!literal)
+      return false;
+
+    auto nameAttr = mlir::dyn_cast<mlir::StringAttr>(literal.getValue());
+    if (!nameAttr)
+      return false;
+
+    auto names = llvm::to_vector(
+        call.getArgsNames().getAsValueRange<mlir::StringAttr>());
+    if (names.empty())
+      return false;
+
+    if (!names[0].empty())
+      return false;
+
+    names.erase(names.begin());
+
+    auto args = call.getArgs().drop_front();
+    assert(args.size() == names.size());
+
+    auto namesAttr = builder.getStrArrayAttr(names);
+    builder.replaceOpWithNewOp<hc::typing::MakeIdentOp>(
+        call, callResType, nameAttr, namesAttr, args);
+    return true;
+  };
+  if (matchMakeType())
+    return mlir::success();
+
   return mlir::failure();
 }
 
