@@ -165,6 +165,37 @@ public:
   }
 };
 
+class ConvertConst final
+    : public mlir::OpRewritePattern<hc::py_ir::ConstantOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hc::py_ir::ConstantOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    auto val = mlir::dyn_cast<mlir::IntegerAttr>(op.getValue());
+    if (!val)
+      return mlir::failure();
+
+    mlir::Operation *opToReplace = op;
+    mlir::OpBuilder::InsertionGuard g(rewriter);
+    if (auto resolve =
+            mlir::dyn_cast<hc::typing::ResolveOp>(op->getParentOp())) {
+      rewriter.setInsertionPoint(resolve);
+      opToReplace = resolve;
+    }
+
+    mlir::Type resType = opToReplace->getResult(0).getType();
+
+    mlir::Location loc = op.getLoc();
+    mlir::Value newVal =
+        rewriter.create<mlir::arith::ConstantIndexOp>(loc, val.getInt());
+    newVal = doCast(rewriter, loc, newVal, resType);
+    rewriter.replaceOp(opToReplace, newVal);
+    return mlir::success();
+  }
+};
+
 struct GenResolversFuncsPass
     : public mlir::PassWrapper<GenResolversFuncsPass,
                                mlir::OperationPass<void>> {
@@ -179,7 +210,7 @@ struct GenResolversFuncsPass
   void runOnOperation() override {
     auto *ctx = &getContext();
     mlir::RewritePatternSet patterns(ctx);
-    patterns.insert<ConvertCall, ConvertBinop>(ctx);
+    patterns.insert<ConvertCall, ConvertBinop, ConvertConst>(ctx);
 
     if (mlir::failed(
             applyPatternsAndFoldGreedily(getOperation(), std::move(patterns))))
