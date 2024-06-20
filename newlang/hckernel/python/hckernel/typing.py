@@ -121,3 +121,8 @@ def make_symbol(name):
 @_register_func
 def create_seq():
     _stub_error()
+
+
+@_register_func
+def append_seq(seq, value):
+    _stub_error()
