@@ -191,6 +191,23 @@ typing.type_resolver ["py_ir.call"] {
   typing.type_resolver_return %3
 }
 
+// join types
+typing.type_resolver "join_types" {
+  %0 = typing.type_constant #typing.type_attr<index> : !typing.value
+  %c0 = arith.constant 0: index
+  %1 = typing.get_arg %c0
+
+  %c1 = arith.constant 1: index
+  %2 = typing.get_arg %c1
+
+  %3 = typing.is_same %0 %1
+  %4 = typing.is_same %0 %2
+  %5 = arith.ori %3, %4 : i1
+  typing.check %5
+
+  typing.type_resolver_return %0
+}
+
 // py_ir ops
 
 typing.type_resolver ["py_ir.binop"] {
