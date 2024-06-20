@@ -131,13 +131,13 @@ static mlir::Value createBinOp(mlir::OpBuilder &builder, mlir::Location loc,
   return builder.create<Op>(loc, lhs, rhs);
 }
 
-class ConvertBinop final : public mlir::OpRewritePattern<hc::py_ir::BinOp> {
+template <typename BinOp>
+class ConvertBinop final : public mlir::OpRewritePattern<BinOp> {
 public:
-  using OpRewritePattern::OpRewritePattern;
+  using mlir::OpRewritePattern<BinOp>::OpRewritePattern;
 
   mlir::LogicalResult
-  matchAndRewrite(hc::py_ir::BinOp op,
-                  mlir::PatternRewriter &rewriter) const override {
+  matchAndRewrite(BinOp op, mlir::PatternRewriter &rewriter) const override {
     auto retType = op.getType();
     if (!retType.isIntOrIndex())
       return mlir::failure();
@@ -251,53 +251,6 @@ public:
   }
 };
 
-class PropagateCastBr final
-    : public mlir::OpRewritePattern<mlir::cf::BranchOp> {
-public:
-  using OpRewritePattern::OpRewritePattern;
-
-  mlir::LogicalResult
-  matchAndRewrite(mlir::cf::BranchOp op,
-                  mlir::PatternRewriter &rewriter) const override {
-    bool changed = false;
-    llvm::SmallVector<mlir::Type> newTypes(op.getDestOperands().size());
-    rewriter.startOpModification(op);
-    for (auto &&[i, arg] : llvm::enumerate(op.getDestOperandsMutable())) {
-      auto cast = arg.get().getDefiningOp<hc::typing::CastOp>();
-      if (!cast) {
-        newTypes[i] = arg.get().getType();
-        continue;
-      }
-
-      auto newVal = cast.getValue();
-      arg.assign(newVal);
-      newTypes[i] = newVal.getType();
-      changed = true;
-    }
-
-    if (!changed) {
-      rewriter.cancelOpModification(op);
-      return mlir::failure();
-    }
-    rewriter.finalizeOpModification(op);
-
-    mlir::Location loc = op.getLoc();
-    mlir::OpBuilder::InsertionGuard g(rewriter);
-    mlir::Block *block = op.getDest();
-    rewriter.setInsertionPointToStart(block);
-    for (auto &&[arg, newType] :
-         llvm::zip_equal(block->getArguments(), newTypes)) {
-      if (arg.getType() == newType)
-        continue;
-
-      auto cast = rewriter.create<hc::typing::CastOp>(loc, newType, arg);
-      rewriter.replaceAllUsesExcept(arg, cast.getResult(), cast);
-    }
-
-    return mlir::success();
-  }
-};
-
 struct GenResolversFuncsPass
     : public mlir::PassWrapper<GenResolversFuncsPass,
                                mlir::OperationPass<void>> {
@@ -312,8 +265,9 @@ struct GenResolversFuncsPass
   void runOnOperation() override {
     auto *ctx = &getContext();
     mlir::RewritePatternSet patterns(ctx);
-    patterns.insert<ConvertCall, ConvertBinop, ConvertCmp, ConvertConst,
-                    PropagateCastBr>(ctx);
+    patterns.insert<ConvertCall, ConvertBinop<hc::py_ir::BinOp>,
+                    ConvertBinop<hc::py_ir::InplaceBinOp>, ConvertCmp,
+                    ConvertConst>(ctx);
 
     if (mlir::failed(
             applyPatternsAndFoldGreedily(getOperation(), std::move(patterns))))
