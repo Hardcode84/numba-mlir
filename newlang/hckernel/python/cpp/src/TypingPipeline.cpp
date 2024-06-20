@@ -3,6 +3,7 @@
 #include "TypingPipeline.hpp"
 
 #include <mlir/Dialect/Arith/IR/Arith.h>
+#include <mlir/Dialect/ControlFlow/IR/ControlFlowOps.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/PatternMatch.h>
 #include <mlir/Pass/PassManager.h>
@@ -250,6 +251,53 @@ public:
   }
 };
 
+class PropagateCastBr final
+    : public mlir::OpRewritePattern<mlir::cf::BranchOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(mlir::cf::BranchOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    bool changed = false;
+    llvm::SmallVector<mlir::Type> newTypes(op.getDestOperands().size());
+    rewriter.startOpModification(op);
+    for (auto &&[i, arg] : llvm::enumerate(op.getDestOperandsMutable())) {
+      auto cast = arg.get().getDefiningOp<hc::typing::CastOp>();
+      if (!cast) {
+        newTypes[i] = arg.get().getType();
+        continue;
+      }
+
+      auto newVal = cast.getValue();
+      arg.assign(newVal);
+      newTypes[i] = newVal.getType();
+      changed = true;
+    }
+
+    if (!changed) {
+      rewriter.cancelOpModification(op);
+      return mlir::failure();
+    }
+    rewriter.finalizeOpModification(op);
+
+    mlir::Location loc = op.getLoc();
+    mlir::OpBuilder::InsertionGuard g(rewriter);
+    mlir::Block *block = op.getDest();
+    rewriter.setInsertionPointToStart(block);
+    for (auto &&[arg, newType] :
+         llvm::zip_equal(block->getArguments(), newTypes)) {
+      if (arg.getType() == newType)
+        continue;
+
+      auto cast = rewriter.create<hc::typing::CastOp>(loc, newType, arg);
+      rewriter.replaceAllUsesExcept(arg, cast.getResult(), cast);
+    }
+
+    return mlir::success();
+  }
+};
+
 struct GenResolversFuncsPass
     : public mlir::PassWrapper<GenResolversFuncsPass,
                                mlir::OperationPass<void>> {
@@ -264,7 +312,8 @@ struct GenResolversFuncsPass
   void runOnOperation() override {
     auto *ctx = &getContext();
     mlir::RewritePatternSet patterns(ctx);
-    patterns.insert<ConvertCall, ConvertBinop, ConvertCmp, ConvertConst>(ctx);
+    patterns.insert<ConvertCall, ConvertBinop, ConvertCmp, ConvertConst,
+                    PropagateCastBr>(ctx);
 
     if (mlir::failed(
             applyPatternsAndFoldGreedily(getOperation(), std::move(patterns))))
