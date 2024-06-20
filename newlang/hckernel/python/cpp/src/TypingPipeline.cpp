@@ -165,6 +165,60 @@ public:
   }
 };
 
+template <mlir::arith::CmpIPredicate Pred>
+static mlir::Value createCmpOp(mlir::OpBuilder &builder, mlir::Location loc,
+                               mlir::Value lhs, mlir::Value rhs,
+                               mlir::Type dstType) {
+  lhs = doCast(builder, loc, lhs, dstType);
+  rhs = doCast(builder, loc, rhs, dstType);
+  return builder.create<mlir::arith::CmpIOp>(loc, Pred, lhs, rhs);
+}
+
+static bool isIntType(mlir::Type type) {
+  if (type.isIntOrIndex())
+    return true;
+
+  auto lit = mlir::dyn_cast<hc::typing::LiteralType>(type);
+  return lit && mlir::isa<mlir::IntegerAttr>(lit.getValue());
+}
+
+class ConvertCmp final : public mlir::OpRewritePattern<hc::py_ir::CmpOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+
+  mlir::LogicalResult
+  matchAndRewrite(hc::py_ir::CmpOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    mlir::Value lhs = op.getLeft();
+    mlir::Value rhs = op.getRight();
+    if (!isIntType(lhs.getType()) || !isIntType(rhs.getType()))
+      return mlir::failure();
+
+    mlir::Type resType = rewriter.getIndexType();
+
+    using fptr =
+        mlir::Value (*)(mlir::OpBuilder & builder, mlir::Location loc,
+                        mlir::Value lhs, mlir::Value rhs, mlir::Type dstType);
+    using Op = hc::py_ir::CmpOpVal;
+    using pred = mlir::arith::CmpIPredicate;
+    const std::pair<Op, fptr> handlers[] = {
+        {Op::le, createCmpOp<pred::sle>}, {Op::lt, createCmpOp<pred::slt>},
+        {Op::ge, createCmpOp<pred::sge>}, {Op::gt, createCmpOp<pred::sgt>},
+        {Op::eq, createCmpOp<pred::eq>},  {Op::ne, createCmpOp<pred::ne>},
+    };
+
+    auto opType = op.getOp();
+    for (auto &&[type, handler] : handlers) {
+      if (type == opType) {
+        mlir::Value res = handler(rewriter, op.getLoc(), lhs, rhs, resType);
+        rewriter.replaceOp(op, res);
+        return mlir::success();
+      }
+    }
+    return mlir::failure();
+  }
+};
+
 class ConvertConst final
     : public mlir::OpRewritePattern<hc::py_ir::ConstantOp> {
 public:
@@ -210,7 +264,7 @@ struct GenResolversFuncsPass
   void runOnOperation() override {
     auto *ctx = &getContext();
     mlir::RewritePatternSet patterns(ctx);
-    patterns.insert<ConvertCall, ConvertBinop, ConvertConst>(ctx);
+    patterns.insert<ConvertCall, ConvertBinop, ConvertCmp, ConvertConst>(ctx);
 
     if (mlir::failed(
             applyPatternsAndFoldGreedily(getOperation(), std::move(patterns))))
