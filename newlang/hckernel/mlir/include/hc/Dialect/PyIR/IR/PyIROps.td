@@ -531,7 +531,9 @@ def PyIR_BinOp : PyIR_OpBase<"binop", [
   let assemblyFormat = "attr-dict $left`:`type($left) $op $right`:`type($right) `->` type($result)";
 }
 
-def PyIR_InplaceBinOp : PyIR_OpBase<"inplace_binop"> {
+def PyIR_InplaceBinOp : PyIR_OpBase<"inplace_binop", [
+  DeclareOpInterfaceMethods<TypingKeyInterface>
+]> {
   let arguments = (ins
       AnyType:$left,
       PyIR_BinOpAttr:$op,
