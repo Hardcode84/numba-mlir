@@ -15,6 +15,10 @@ namespace hc {
 #include "hc/Transforms/Passes.h.inc"
 } // namespace hc
 
+static hc::py_ir::CmpOpVal convertCmpOpType(hc::py_ast::CmpOp val) {
+  return static_cast<hc::py_ir::CmpOpVal>(val);
+}
+
 static hc::py_ir::BinOpVal convertBinOpType(hc::py_ast::BinOpVal val) {
   return static_cast<hc::py_ir::BinOpVal>(val);
 }
@@ -91,6 +95,30 @@ static mlir::Value getVar(mlir::OpBuilder &builder, mlir::Location loc,
     hc::py_ir::UnaryOpVal uop = convertUnaryOpType(unaryOp.getOp());
 
     return builder.create<::hc::py_ir::UnaryOp>(loc, type, uop, operand);
+  }
+
+  if (auto cmpOp = val.getDefiningOp<hc::py_ast::CompareOp>()) {
+    assert(!cmpOp.getOps().empty());
+
+    mlir::Value result;
+    mlir::Value leftVal = getVar(builder, loc, cmpOp.getLeft());
+    for (auto &&[op, right] : llvm::zip_equal(
+             cmpOp.getOps().getAsValueRange<hc::py_ast::CmpOpAttr>(),
+             cmpOp.getComparators())) {
+      mlir::Value rightVal = getVar(builder, loc, right);
+
+      hc::py_ir::CmpOpVal cop = convertCmpOpType(op);
+      mlir::Value res =
+          builder.create<hc::py_ir::CmpOp>(loc, type, leftVal, cop, rightVal);
+      leftVal = rightVal;
+      if (!result) {
+        result = res;
+      } else {
+        result = builder.create<hc::py_ir::BinOp>(
+            loc, type, result, hc::py_ir::BinOpVal::bool_and, res);
+      }
+    }
+    return result;
   }
 
   if (auto ifExp = val.getDefiningOp<hc::py_ast::IfExpOp>()) {
