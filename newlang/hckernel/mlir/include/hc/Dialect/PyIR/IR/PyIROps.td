@@ -468,6 +468,22 @@ def PyIR_SliceOp : PyIR_OpBase<"slice", [AttrSizedOperandSegments]> {
   }];
 }
 
+def PyIR_CmpOpAttr : I64EnumAttr<
+    "CmpOpVal", "",
+    [
+      I64EnumAttrCase<"eq", 0>,
+      I64EnumAttrCase<"ne", 1>,
+      I64EnumAttrCase<"lt", 2>,
+      I64EnumAttrCase<"le", 3>,
+      I64EnumAttrCase<"gt", 4>,
+      I64EnumAttrCase<"ge", 5>,
+      I64EnumAttrCase<"is", 6>,
+      I64EnumAttrCase<"isn", 7>,
+      I64EnumAttrCase<"in", 8>,
+      I64EnumAttrCase<"nin", 9>,
+    ]> {
+  let cppNamespace = "::hc::py_ir";
+}
 
 def PyIR_BinOpAttr : I64EnumAttr<
     "BinOpVal", "",
@@ -532,6 +548,18 @@ def PyIR_UnaryOp : PyIR_OpBase<"unaryop"> {
   let results = (outs AnyType:$result);
 
   let assemblyFormat = "attr-dict $op $operand`:`type($operand) `->` type($result)";
+}
+
+def PyIR_CmpOp : PyIR_OpBase<"cmp", [
+  DeclareOpInterfaceMethods<TypingKeyInterface>
+]> {
+  let arguments = (ins
+      AnyType:$left,
+      PyIR_CmpOpAttr:$op,
+      AnyType:$right);
+  let results = (outs AnyType:$result);
+
+  let assemblyFormat = "attr-dict $left`:`type($left) $op $right`:`type($right) `->` type($result)";
 }
 
 def PyIR_IterOp : PyIR_OpBase<"iter"> {
