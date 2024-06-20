@@ -136,3 +136,8 @@ def make_type(name, **kwargs):
 @_register_func
 def get_type_name(type):
     _stub_error()
+
+
+@_register_func
+def get_type_param(type, name):
+    _stub_error()

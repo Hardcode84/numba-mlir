@@ -76,9 +76,9 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
     return mlir::success();
   }
 
-  auto isStrLiteralArg = [&](llvm::StringRef funcName,
-                             mlir::Type resType) -> mlir::StringAttr {
-    if (callArgTypes.size() != 1)
+  auto isStrLiteralArg = [&](llvm::StringRef funcName, mlir::Type resType,
+                             mlir::TypeRange argTypes) -> mlir::StringAttr {
+    if (callArgTypes.size() != argTypes.size() + 1)
       return nullptr;
 
     if (funcName != name)
@@ -87,16 +87,23 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
     if (callResType != resType)
       return nullptr;
 
-    auto literal =
-        mlir::dyn_cast<hc::typing::LiteralType>(callArgTypes.front());
+    if (!llvm::equal(callArgTypes.drop_back(), argTypes))
+      return nullptr;
+
+    auto literal = mlir::dyn_cast<hc::typing::LiteralType>(callArgTypes.back());
     if (!literal)
       return nullptr;
 
     return mlir::dyn_cast<mlir::StringAttr>(literal.getValue());
   };
 
-  if (auto name = isStrLiteralArg("get_attr", vt)) {
+  if (auto name = isStrLiteralArg("get_attr", vt, {})) {
     builder.replaceOpWithNewOp<hc::typing::GetAttrOp>(call, callResType, name);
+    return mlir::success();
+  }
+  if (auto name = isStrLiteralArg("get_type_param", vt, {vt})) {
+    builder.replaceOpWithNewOp<hc::typing::GetIdentParamOp>(call, callResType,
+                                                            args[0], name);
     return mlir::success();
   }
 
