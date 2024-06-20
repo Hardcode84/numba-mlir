@@ -48,6 +48,18 @@ def resolver(a: ValueType):
     return make_symbol(get_attr("name"))
 
 
+@type_resolver(_registry, ["py_ir.tuple_pack"])
+def resolver(a: ValueType):
+    count = get_num_args()
+    i = 0
+    seq = create_seq()
+    while i < count:
+        seq = append_seq(seq, get_arg(i))
+        i += 1
+
+    return make_type("Tuple", elements=seq)
+
+
 @type_resolver(_registry, ["py_ir.getattr", "Buffer"])
 def resolver(a: ValueType):
     check_type(a, HCKernelAPI)
