@@ -305,17 +305,6 @@ struct CmpOpInterpreterInterface final
   }
 };
 
-template <typename A, typename B> static bool compareRanges(A &&a, B &&b) {
-  if (std::size(a) != std::size(b))
-    return false;
-
-  for (auto &&[v1, v2] : llvm::zip_equal(a, b)) {
-    if (v1 != v1)
-      return false;
-  }
-  return true;
-}
-
 struct CallOpInterpreterInterface final
     : public hc::typing::TypingInterpreterInterface::ExternalModel<
           CallOpInterpreterInterface, mlir::func::CallOp> {
@@ -329,8 +318,8 @@ struct CallOpInterpreterInterface final
       return op->emitError("Function not found: ") << callee;
 
     auto ftype = func.getFunctionType();
-    if (!compareRanges(ftype.getInputs(), op.getOperandTypes()) ||
-        !compareRanges(ftype.getResults(), op.getResultTypes()))
+    if (!llvm::equal(ftype.getInputs(), op.getOperandTypes()) ||
+        !llvm::equal(ftype.getResults(), op.getResultTypes()))
       return op->emitError("Invalid  function type: ") << ftype;
 
     if (func.isDeclaration())
