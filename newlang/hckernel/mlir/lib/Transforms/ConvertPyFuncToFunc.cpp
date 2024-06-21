@@ -75,20 +75,38 @@ struct ConverPyFuncToFuncPass final
       if (auto call = mlir::dyn_cast<hc::py_ir::StaticCallOp>(op)) {
         llvm::SmallVector<mlir::Type, 1> resTypes(call->getResultTypes());
 
+        auto callee = call.getCalleeAttr();
+        auto func = mlir::SymbolTable::lookupNearestSymbolFrom<
+            mlir::FunctionOpInterface>(op, callee);
+        if (!func) {
+          op->emitOpError("Uresolved symbol");
+          return mlir::WalkResult::interrupt();
+        }
+
+        auto funcType =
+            mlir::dyn_cast<mlir::FunctionType>(func.getFunctionType());
+        if (!funcType || call.getOperandTypes() != funcType.getInputs() ||
+            !(llvm::equal(funcType.getResults(), resTypes) ||
+              (funcType.getResults().empty() &&
+               mlir::isa<mlir::NoneType>(resTypes.back())))) {
+          op->emitOpError("Ivalid symbol type, expected ") << funcType;
+          return mlir::WalkResult::interrupt();
+        }
+
         assert(resTypes.size() == 1);
         builder.setInsertionPoint(call);
         if (mlir::isa<mlir::NoneType>(resTypes.back())) {
           resTypes.clear();
-          builder.create<mlir::func::CallOp>(op->getLoc(), call.getCalleeAttr(),
-                                             resTypes, call.getArgs());
+          builder.create<mlir::func::CallOp>(op->getLoc(), callee, resTypes,
+                                             call.getArgs());
           if (!op->use_empty()) {
             builder.replaceOpWithNewOp<hc::py_ir::NoneOp>(op);
           } else {
             builder.eraseOp(op);
           }
         } else {
-          builder.replaceOpWithNewOp<mlir::func::CallOp>(
-              op, call.getCalleeAttr(), resTypes, call.getArgs());
+          builder.replaceOpWithNewOp<mlir::func::CallOp>(op, callee, resTypes,
+                                                         call.getArgs());
         }
 
         return mlir::WalkResult::advance();
