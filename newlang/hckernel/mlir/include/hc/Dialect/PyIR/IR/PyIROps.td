@@ -452,7 +452,11 @@ def PyIR_TupleUnpackOp : PyIR_OpBase<"tuple_unpack"> {
   let assemblyFormat = "attr-dict $arg `:` type($arg) `->` type($results)";
 }
 
-def PyIR_SliceOp : PyIR_OpBase<"slice", [AttrSizedOperandSegments]> {
+def PyIR_SliceOp : PyIR_OpBase<"slice", [
+  Pure,
+  AttrSizedOperandSegments,
+  DeclareOpInterfaceMethods<TypingKeyInterface>
+]> {
   let arguments = (ins
       Optional<AnyType>:$lower,
       Optional<AnyType>:$upper,
