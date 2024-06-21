@@ -137,6 +137,20 @@ hc::typing::CastOp::inferTypes(mlir::TypeRange types,
   return true;
 }
 
+mlir::FailureOr<bool> hc::typing::CastOp::interpret(InterpreterState &state) {
+  mlir::Type dstType = getType();
+  if (dstType.isIntOrIndex()) {
+    auto val = getInt(state, getValue());
+    if (!val)
+      return emitOpError("Invalid src val");
+
+    state.state[getResult()] = setInt(getContext(), *val);
+    return true;
+  }
+
+  return emitOpError("Unsupported cast");
+}
+
 namespace {
 using namespace hc::typing;
 
