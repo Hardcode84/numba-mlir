@@ -623,15 +623,17 @@ hc::typing::GetIdentParamOp::interpret(InterpreterState &state) {
   auto names = ident.getParamNames();
   auto params = ident.getParams();
 
+  auto nameAttr = getNameAttr();
   mlir::Type paramVal;
   for (auto &&[name, val] : llvm::zip_equal(names, params)) {
-    if (name == getNameAttr()) {
+    if (name == nameAttr) {
       paramVal = val;
       break;
     }
   }
   if (!paramVal)
-    return emitError("Invalid param name");
+    return emitError("Invalid param name for ")
+           << ident << " : " << nameAttr.getValue();
 
   state.state[getResult()] = paramVal;
   return true;
