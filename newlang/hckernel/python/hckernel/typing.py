@@ -89,6 +89,11 @@ def compile_type_resolvers():
 
 
 @_register_func
+def to_int(a, b):
+    _stub_error()
+
+
+@_register_func
 def is_same(a, b):
     _stub_error()
 

@@ -22,6 +22,11 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
   mlir::Type callResType = call.getResult().getType();
   mlir::ValueRange args = call.getArgs();
   mlir::TypeRange callArgTypes = args.getTypes();
+  if (name == "to_int" && args.size() == 1) {
+    builder.replaceOpWithNewOp<hc::typing::CastOp>(call, callResType, args[0]);
+    return mlir::success();
+  }
+
   auto checkCall = [&](llvm::StringRef funcName, mlir::Type resType,
                        mlir::TypeRange argTypes) -> bool {
     if (funcName != name)
