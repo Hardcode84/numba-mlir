@@ -134,3 +134,12 @@ def resolver(a: ValueType):
 def resolver(a: ValueType):
     check_type(a, CurrentGroup3)
     return make_tuple3(Index, Index, Index)
+
+
+@type_resolver(_registry, ["py_ir.getitem"])
+def resolver(target: ValueType, index: ValueType):
+    check_is_tuple(target)
+    idx = to_int(index)
+    elements = get_type_param(target, "elements")
+    # check(idx >= 0 and idx < )
+    return get_seq_element(elements, idx)
