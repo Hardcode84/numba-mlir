@@ -213,6 +213,21 @@ def Typing_CastOp : Typing_OpBase<"cast", [
   DeclareOpInterfaceMethods<CastOpInterface>,
   DeclareOpInterfaceMethods<TypingKeyInterface>,
   DeclareOpInterfaceMethods<TypingUpdateInplaceInterface>,
+  DeclareOpInterfaceMethods<TypeInferenceInterface>
+]> {
+  let arguments = (ins AnyType:$value);
+  let results = (outs AnyType:$result);
+
+  let hasFolder = 1;
+
+  let assemblyFormat = "attr-dict $value `:` type($value) `to` type($result)";
+}
+
+def Typing_ValueCastOp : Typing_OpBase<"value_cast", [
+  Pure,
+  DeclareOpInterfaceMethods<CastOpInterface>,
+  DeclareOpInterfaceMethods<TypingKeyInterface>,
+  DeclareOpInterfaceMethods<TypingUpdateInplaceInterface>,
   DeclareOpInterfaceMethods<TypeInferenceInterface>,
   DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {

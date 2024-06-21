@@ -23,7 +23,8 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
   mlir::ValueRange args = call.getArgs();
   mlir::TypeRange callArgTypes = args.getTypes();
   if (name == "to_int" && args.size() == 1) {
-    builder.replaceOpWithNewOp<hc::typing::CastOp>(call, callResType, args[0]);
+    builder.replaceOpWithNewOp<hc::typing::ValueCastOp>(call, callResType,
+                                                        args[0]);
     return mlir::success();
   }
 

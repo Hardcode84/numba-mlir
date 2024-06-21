@@ -137,7 +137,38 @@ hc::typing::CastOp::inferTypes(mlir::TypeRange types,
   return true;
 }
 
-mlir::FailureOr<bool> hc::typing::CastOp::interpret(InterpreterState &state) {
+bool hc::typing::ValueCastOp::areCastCompatible(mlir::TypeRange inputs,
+                                                mlir::TypeRange outputs) {
+  (void)inputs;
+  (void)outputs;
+  assert(inputs.size() == 1 && "expected one input");
+  assert(outputs.size() == 1 && "expected one output");
+  return true;
+}
+
+mlir::OpFoldResult hc::typing::ValueCastOp::fold(FoldAdaptor /*adaptor*/) {
+  mlir::Value arg = getValue();
+  mlir::Type dstType = getType();
+  if (arg.getType() == dstType)
+    return arg;
+
+  while (auto parent = arg.getDefiningOp<CastOp>()) {
+    arg = parent.getValue();
+    if (arg.getType() == dstType)
+      return arg;
+  }
+
+  return nullptr;
+}
+
+mlir::FailureOr<bool> hc::typing::ValueCastOp::inferTypes(
+    mlir::TypeRange /*types*/, llvm::SmallVectorImpl<mlir::Type> &results) {
+  results.emplace_back(getType());
+  return true;
+}
+
+mlir::FailureOr<bool>
+hc::typing::ValueCastOp::interpret(InterpreterState &state) {
   mlir::Type dstType = getType();
   if (dstType.isIntOrIndex()) {
     auto val = getInt(state, getValue());
