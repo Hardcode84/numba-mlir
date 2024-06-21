@@ -158,6 +158,12 @@ mlir::OpFoldResult hc::typing::ValueCastOp::fold(FoldAdaptor /*adaptor*/) {
       return arg;
   }
 
+  if (mlir::isa<ValueType>(getType())) {
+    if (auto lit = mlir::dyn_cast<LiteralType>(getValue().getType())) {
+      return TypeAttr::get(lit);
+    }
+  }
+
   return nullptr;
 }
 
