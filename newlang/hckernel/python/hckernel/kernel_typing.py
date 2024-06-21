@@ -18,11 +18,18 @@ HCKernelAPI = typing.IdentType.get("hckernel.kernel_api")
 Indexing = typing.IdentType.get("hckernel.indexing")
 BufferBase = typing.IdentType.get("hckernel.kernel_api.BufferBase")
 CurrentGroup = typing.IdentType.get("hckernel.kernel_api.CurrentGroup")
+TupleBase = typing.IdentType.get("Tuple")
 
 
 @func
 def check_type(a: ValueType, b: ValueType):
     check(is_same(a, b))
+
+
+@func
+def check_is_tuple(t: ValueType):
+    base_type = make_type(get_type_name(t))
+    check(is_same(base_type, TupleBase))
 
 
 @type_resolver(_registry, ["py_ir.load_module", "hckernel"])
@@ -58,6 +65,14 @@ def resolver(a: ValueType):
         i += 1
 
     return make_type("Tuple", elements=seq)
+
+
+@type_resolver(_registry, ["py_ir.getitem"])
+def resolver(target: ValueType, index: ValueType):
+    check_type(target, BufferBase)
+    # check_is_tuple(index)
+    elements = get_type_param(index, "elements")
+    return make_type("Buffer", dims=elements)
 
 
 @type_resolver(_registry, ["py_ir.getattr", "Buffer"])
