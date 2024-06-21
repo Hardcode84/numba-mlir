@@ -22,15 +22,27 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
   mlir::Type callResType = call.getResult().getType();
   mlir::ValueRange args = call.getArgs();
   mlir::TypeRange callArgTypes = args.getTypes();
+
+  mlir::Location loc = call.getLoc();
+  auto doCast = [&](mlir::Value val, mlir::Type type) -> mlir::Value {
+    if (val.getType() == type)
+      return val;
+
+    return builder.create<hc::typing::ValueCastOp>(loc, type, val);
+  };
+
   if (name == "to_int" && args.size() == 1) {
-    builder.replaceOpWithNewOp<hc::typing::ValueCastOp>(call, callResType,
-                                                        args[0]);
+    builder.replaceOp(call, doCast(args[0], callResType));
     return mlir::success();
   }
 
+  auto checkFuncName = [&](llvm::StringRef funcName) -> bool {
+    return funcName == name;
+  };
+
   auto checkCall = [&](llvm::StringRef funcName, mlir::Type resType,
                        mlir::TypeRange argTypes) -> bool {
-    if (funcName != name)
+    if (!checkFuncName(funcName))
       return false;
 
     if (callResType != resType)
@@ -43,13 +55,15 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
   auto i1 = builder.getIntegerType(1);
   auto none = builder.getNoneType();
   auto vt = hc::typing::ValueType::get(builder.getContext());
-  if (checkCall("is_same", i1, {vt, vt})) {
-    builder.replaceOpWithNewOp<hc::typing::IsSameOp>(call, callResType, args[0],
-                                                     args[1]);
+  if (checkFuncName("is_same") && callResType == i1) {
+    auto arg0 = doCast(args[0], vt);
+    auto arg1 = doCast(args[1], vt);
+    builder.replaceOpWithNewOp<hc::typing::IsSameOp>(call, callResType, arg0,
+                                                     arg1);
     return mlir::success();
   }
   if (checkCall("check", none, {i1})) {
-    builder.create<hc::typing::CheckOp>(call.getLoc(), args[0]);
+    builder.create<hc::typing::CheckOp>(loc, args[0]);
     builder.replaceOpWithNewOp<hc::py_ir::NoneOp>(call);
     return mlir::success();
   }
@@ -92,7 +106,7 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
     if (callArgTypes.size() != argTypes.size() + 1)
       return nullptr;
 
-    if (funcName != name)
+    if (!checkFuncName(funcName))
       return nullptr;
 
     if (callResType != resType)
@@ -119,7 +133,7 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
   }
 
   auto matchMakeType = [&]() -> bool {
-    if ("make_type" != name)
+    if (!checkFuncName("make_type"))
       return false;
 
     if (callResType != vt)
