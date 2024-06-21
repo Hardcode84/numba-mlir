@@ -93,6 +93,9 @@ static void updateTypes(mlir::Operation *rootOp,
     if (!needWrap(op))
       return;
 
+    if (mlir::isa<hc::typing::ResolveOp>(op->getParentOp()))
+      return;
+
     builder.setInsertionPoint(op);
     mlir::Location loc = op->getLoc();
     auto resolve = builder.create<hc::typing::ResolveOp>(
@@ -133,7 +136,8 @@ static void updateTypes(mlir::Operation *rootOp,
     if (mlir::isa_and_present<hc::typing::ResolveOp>(op->getParentOp()))
       return;
 
-    updateTypes(op->getResults(), op->getResults());
+    if (!needWrap(op))
+      updateTypes(op->getResults(), op->getResults());
   });
   rootOp->walk([&](mlir::Block *block) { updateBranchTypes(builder, block); });
 }
