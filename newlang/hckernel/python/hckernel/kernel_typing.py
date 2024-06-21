@@ -22,7 +22,6 @@ BufferBase = typing.IdentType.get("hckernel.kernel_api.BufferBase")
 CurrentGroup1 = typing.IdentType.get("hckernel.kernel_api.CurrentGroup1")
 CurrentGroup2 = typing.IdentType.get("hckernel.kernel_api.CurrentGroup2")
 CurrentGroup3 = typing.IdentType.get("hckernel.kernel_api.CurrentGroup3")
-TupleBase = typing.IdentType.get("Tuple")
 
 
 @func
@@ -32,8 +31,7 @@ def check_type(a: ValueType, b: ValueType):
 
 @func
 def check_is_tuple(t: ValueType):
-    base_type = make_type(get_type_name(t))
-    check(is_same(base_type, TupleBase))
+    check(is_same(get_type_name(t), "Tuple"))
 
 
 @func
@@ -91,7 +89,7 @@ def resolver(a: ValueType):
 @type_resolver(_registry, ["py_ir.getitem"])
 def resolver(target: ValueType, index: ValueType):
     check_type(target, BufferBase)
-    # check_is_tuple(index)
+    check_is_tuple(index)
     elements = get_type_param(index, "elements")
     return make_type("Buffer", dims=elements)
 
