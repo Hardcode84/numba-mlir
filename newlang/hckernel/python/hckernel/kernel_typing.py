@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from .typing import *
+from .mlir import ir
 from .mlir import typing
 
 _registry = TypingRegistry()
@@ -12,6 +13,7 @@ def get_typing_module():
     return _registry.module
 
 
+Index = ir.IndexType.get()
 ValueType = typing.ValueType.get()
 HCKernelMod = typing.IdentType.get("hckernel")
 HCKernelAPI = typing.IdentType.get("hckernel.kernel_api")
@@ -32,6 +34,23 @@ def check_type(a: ValueType, b: ValueType):
 def check_is_tuple(t: ValueType):
     base_type = make_type(get_type_name(t))
     check(is_same(base_type, TupleBase))
+
+
+@func
+def make_tuple2(a: ValueType, b: ValueType):
+    seq = create_seq()
+    seq = append_seq(seq, a)
+    seq = append_seq(seq, b)
+    return make_type("Tuple", elements=seq)
+
+
+@func
+def make_tuple3(a: ValueType, b: ValueType, c: ValueType):
+    seq = create_seq()
+    seq = append_seq(seq, a)
+    seq = append_seq(seq, b)
+    seq = append_seq(seq, c)
+    return make_type("Tuple", elements=seq)
 
 
 @type_resolver(_registry, ["py_ir.load_module", "hckernel"])
@@ -99,3 +118,21 @@ def resolver(a: ValueType):
 def resolver(a: ValueType):
     check_type(a, HCKernelAPI)
     return CurrentGroup3
+
+
+@type_resolver(_registry, ["py_ir.getattr", "work_offset"])
+def resolver(a: ValueType):
+    check_type(a, CurrentGroup1)
+    return Index
+
+
+@type_resolver(_registry, ["py_ir.getattr", "work_offset"])
+def resolver(a: ValueType):
+    check_type(a, CurrentGroup2)
+    return make_tuple2(Index, Index)
+
+
+@type_resolver(_registry, ["py_ir.getattr", "work_offset"])
+def resolver(a: ValueType):
+    check_type(a, CurrentGroup3)
+    return make_tuple3(Index, Index, Index)
