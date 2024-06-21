@@ -321,6 +321,17 @@ def Typing_AppendSeqOp : Typing_OpBase<"append_seq", [
   let assemblyFormat = "attr-dict $seq $arg";
 }
 
+def Typing_GetSeqElementOp : Typing_OpBase<"get_seq_element", [
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
+  let arguments = (ins
+    Typing_ValueType:$seq,
+    Index:$index);
+  let results = (outs Typing_ValueType:$result);
+
+  let assemblyFormat = "attr-dict $seq `[` $index `]`";
+}
+
 def Typing_IsSameOp : Typing_OpBase<"is_same", [
   Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {

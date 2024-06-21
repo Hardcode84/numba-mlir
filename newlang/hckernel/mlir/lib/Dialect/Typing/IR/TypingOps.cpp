@@ -614,6 +614,26 @@ hc::typing::AppendSeqOp::interpret(InterpreterState &state) {
   return true;
 }
 
+mlir::FailureOr<bool>
+hc::typing::GetSeqElementOp::interpret(InterpreterState &state) {
+  auto seq = mlir::dyn_cast_if_present<SequenceType>(
+      ::hc::typing::getType(state, getSeq()));
+  if (!seq)
+    return emitError("Invalid seq type");
+
+  auto val = getInt(state, getIndex());
+  if (!val)
+    return emitError("Invalid index");
+
+  auto idx = *val;
+  mlir::TypeRange params = seq.getParams();
+  if (idx < 0 || static_cast<size_t>(idx) >= params.size())
+    return emitError("Index out of bounds: ") << idx;
+
+  state.state[getResult()] = params[idx];
+  return true;
+}
+
 mlir::FailureOr<bool> hc::typing::IsSameOp::interpret(InterpreterState &state) {
   auto lhs = hc::typing::getType(state, getLhs());
   auto rhs = hc::typing::getType(state, getRhs());
