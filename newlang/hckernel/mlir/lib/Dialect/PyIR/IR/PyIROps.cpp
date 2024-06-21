@@ -272,9 +272,16 @@ public:
     if (!fn)
       return mlir::failure();
 
-    rewriter.replaceOpWithNewOp<hc::py_ir::StaticCallOp>(
-        op, op->getResultTypes(), def.getValueAttr(), op.getArgs(),
-        op.getArgsNames());
+    mlir::TypeRange resTypes = fn.getFunctionType().getResults();
+    mlir::Location loc = op.getLoc();
+    mlir::Value newRes = rewriter.create<hc::py_ir::StaticCallOp>(
+        loc, resTypes, def.getValueAttr(), op.getArgs(), op.getArgsNames());
+
+    mlir::Type newType = newRes.getType();
+    if (newType != op.getType())
+      newRes = rewriter.create<hc::typing::CastOp>(loc, newType, newRes);
+
+    rewriter.replaceOp(op, newRes);
     return mlir::success();
   }
 };
