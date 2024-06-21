@@ -23,6 +23,8 @@ CurrentGroup1 = typing.IdentType.get("hckernel.kernel_api.CurrentGroup1")
 CurrentGroup2 = typing.IdentType.get("hckernel.kernel_api.CurrentGroup2")
 CurrentGroup3 = typing.IdentType.get("hckernel.kernel_api.CurrentGroup3")
 
+Slice = typing.IdentType.get("Slice")
+
 
 @func
 def check_type(a: ValueType, b: ValueType):
@@ -32,6 +34,11 @@ def check_type(a: ValueType, b: ValueType):
 @func
 def check_is_tuple(t: ValueType):
     check(is_same(get_type_name(t), "Tuple"))
+
+
+@func
+def check_is_buffer(t: ValueType):
+    check(is_same(get_type_name(t), "Buffer"))
 
 
 @func
@@ -141,5 +148,18 @@ def resolver(target: ValueType, index: ValueType):
     check_is_tuple(target)
     idx = to_int(index)
     elements = get_type_param(target, "elements")
-    # check(idx >= 0 and idx < )
+    # TODO: check(idx >= 0 and idx < size)
     return get_seq_element(elements, idx)
+
+
+@type_resolver(_registry, ["py_ir.slice"])
+def resolver(a: ValueType, b: ValueType, c: ValueType):
+    # check(get_num_args() == 3) TODO
+    return Slice  # TODO
+
+
+# @type_resolver(_registry, ["py_ir.getitem"])
+# def resolver(target: ValueType, index: ValueType):
+#     check_is_buffer(target)
+#     check_type(index, Slice)
+#     return target # TODO
