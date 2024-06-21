@@ -388,11 +388,25 @@ def atomic_ref(a):
     return a
 
 
+class CurrentGroup1(CurrentGroup):
+    pass
+
+
+class CurrentGroup2(CurrentGroup):
+    pass
+
+
+class CurrentGroup3(CurrentGroup):
+    pass
+
+
 def _register_symbol(sym):
     _reg_symbol_impl(eval(sym), sym, __name__)
 
 
 _register_symbol("Buffer")
-_register_symbol("CurrentGroup")
+_register_symbol("CurrentGroup1")
+_register_symbol("CurrentGroup2")
+_register_symbol("CurrentGroup3")
 _register_symbol("CurrentSubGroup")
 _register_symbol("CurrentWorkitem")
