@@ -687,6 +687,18 @@ hc::typing::GetSeqElementOp::interpret(InterpreterState &state) {
   return true;
 }
 
+mlir::FailureOr<bool>
+hc::typing::GetSeqSizeOp::interpret(InterpreterState &state) {
+  auto seq = mlir::dyn_cast_if_present<SequenceType>(
+      ::hc::typing::getType(state, getSeq()));
+  if (!seq)
+    return emitError("Invalid seq type");
+
+  state.state[getResult()] =
+      setInt(getContext(), static_cast<int64_t>(seq.getParams().size()));
+  return true;
+}
+
 mlir::FailureOr<bool> hc::typing::IsSameOp::interpret(InterpreterState &state) {
   auto lhs = hc::typing::getType(state, getLhs());
   auto rhs = hc::typing::getType(state, getRhs());

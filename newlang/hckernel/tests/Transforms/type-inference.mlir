@@ -301,6 +301,34 @@ py_ir.module {
   }
   %3 = py_ir.call %1 : !py_ir.undefined  () -> !py_ir.undefined
 }
+
+// -----
+
+typing.type_resolver ["py_ir.loadvar", "i64"] {
+  %0 = typing.type_constant #typing.type_attr<!typing<sequence i32, i64, i16>> : !typing.value
+  %1 = typing.get_seq_size %0
+  %c2 = arith.constant 2 : index
+  %2 = arith.subi %1, %c2 : index
+  %3 = typing.get_seq_element %0 [ %2 ]
+  typing.type_resolver_return %3
+}
+
+// CHECK-LABEL: py_ir.module {
+//       CHECK:  py_ir.func "func"
+//       CHECK:  ^bb0(%[[ARG:.*]]: i64):
+//       CHECK:  %[[R:.*]] = py_ir.getattr %[[ARG]] : i64 attr "foo" -> !py_ir.undefined
+//       CHECK:  py_ir.return %[[R]] : !py_ir.undefined
+
+py_ir.module {
+  %0 = py_ir.loadvar "i64" : !py_ir.undefined
+  %1 = py_ir.func "func" (group:%0) : !py_ir.undefined capture () -> !py_ir.undefined {
+  ^bb0(%arg0: !py_ir.undefined):
+    %2 = py_ir.getattr %arg0 : !py_ir.undefined attr "foo" -> !py_ir.undefined
+    py_ir.return %2 : !py_ir.undefined
+  }
+  %3 = py_ir.call %1 : !py_ir.undefined  () -> !py_ir.undefined
+}
+
 // -----
 
 typing.type_resolver ["py_ir.loadvar", "B"] {

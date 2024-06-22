@@ -348,6 +348,15 @@ def Typing_GetSeqElementOp : Typing_OpBase<"get_seq_element", [
   let assemblyFormat = "attr-dict $seq `[` $index `]`";
 }
 
+def Typing_GetSeqSizeOp : Typing_OpBase<"get_seq_size", [
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
+  let arguments = (ins Typing_ValueType:$seq);
+  let results = (outs Index:$result);
+
+  let assemblyFormat = "attr-dict $seq";
+}
+
 def Typing_IsSameOp : Typing_OpBase<"is_same", [
   Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {
