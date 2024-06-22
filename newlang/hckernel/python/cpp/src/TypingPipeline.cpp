@@ -239,6 +239,10 @@ public:
         {Op::add, createBinOp<arith::AddIOp>},
         {Op::sub, createBinOp<arith::SubIOp>},
         {Op::mul, createBinOp<arith::MulIOp>},
+        {Op::bool_and, createBinOp<arith::AndIOp>},
+        {Op::bool_or, createBinOp<arith::OrIOp>},
+        {Op::bit_and, createBinOp<arith::AndIOp>},
+        {Op::bit_or, createBinOp<arith::OrIOp>},
     };
 
     auto opType = op.getOp();

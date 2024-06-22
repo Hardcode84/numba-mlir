@@ -404,6 +404,34 @@ typing.type_resolver "join_types" {
 // py_ir ops
 
 typing.type_resolver ["py_ir.binop"] {
+  %0 = typing.type_constant #typing.type_attr<i1> : !typing.value
+  %c0 = arith.constant 0: index
+  %c1 = arith.constant 1: index
+  %a0 = typing.get_arg %c0
+  %a1 = typing.get_arg %c1
+  %i0 = typing.is_same %a0 %0
+  %i1 = typing.is_same %a1 %0
+  typing.check %i0
+  typing.check %i1
+
+  typing.type_resolver_return %0
+}
+
+typing.type_resolver ["py_ir.inplace_binop"] {
+  %0 = typing.type_constant #typing.type_attr<i1> : !typing.value
+  %c0 = arith.constant 0: index
+  %c1 = arith.constant 1: index
+  %a0 = typing.get_arg %c0
+  %a1 = typing.get_arg %c1
+  %i0 = typing.is_same %a0 %0
+  %i1 = typing.is_same %a1 %0
+  typing.check %i0
+  typing.check %i1
+
+  typing.type_resolver_return %0
+}
+
+typing.type_resolver ["py_ir.binop"] {
   %0 = typing.type_constant #typing.type_attr<index> : !typing.value
   typing.type_resolver_return %0
 }
