@@ -103,6 +103,24 @@ void hc::typing::ResolveOp::build(::mlir::OpBuilder &odsBuilder,
   odsBuilder.createBlock(region, {}, mlir::TypeRange(args), locs);
 }
 
+/// Given the region at `index`, or the parent operation if `index` is None,
+/// return the successor regions. These are the regions that may be selected
+/// during the flow of control. `operands` is a set of optional attributes that
+/// correspond to a constant value for each operand, or null if that operand is
+/// not a constant.
+void hc::typing::ResolveOp::getSuccessorRegions(
+    mlir::RegionBranchPoint point,
+    mlir::SmallVectorImpl<mlir::RegionSuccessor> &regions) {
+  // If the predecessor is the ExecuteRegionOp, branch into the body.
+  if (point.isParent()) {
+    regions.push_back(mlir::RegionSuccessor(&getRegion()));
+    return;
+  }
+
+  // Otherwise, the region branches back to the parent operation.
+  regions.push_back(mlir::RegionSuccessor(getResults()));
+}
+
 bool hc::typing::CastOp::areCastCompatible(mlir::TypeRange inputs,
                                            mlir::TypeRange outputs) {
   (void)inputs;
