@@ -315,6 +315,22 @@ public:
   void visitOperation(mlir::Operation *op,
                       llvm::ArrayRef<const TypeValueLattice *> operands,
                       llvm::ArrayRef<TypeValueLattice *> results) override {
+    if (auto resolver = mlir::dyn_cast<hc::typing::ResolveOp>(op)) {
+      auto term = mlir::cast<hc::typing::ResolveYieldOp>(
+          resolver.getBody()->getTerminator());
+      for (auto &&[termArg, resultLattice] :
+           llvm::zip_equal(term.getArgs(), results)) {
+        auto termLattice = getOrCreateFor<TypeValueLattice>(op, termArg);
+        if (!termLattice)
+          continue;
+
+        auto changed = resultLattice->join(termLattice->getValue());
+        propagateIfChanged(resultLattice, changed);
+      }
+
+      return;
+    }
+
     if (auto joinInterface =
             mlir::dyn_cast<hc::typing::DataflowJoinInterface>(op)) {
       llvm::SmallVector<unsigned> resIndices;
