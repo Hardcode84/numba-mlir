@@ -158,8 +158,15 @@ def resolver(a: ValueType, b: ValueType, c: ValueType):
     return Slice  # TODO
 
 
-# @type_resolver(_registry, ["py_ir.getitem"])
-# def resolver(target: ValueType, index: ValueType):
-#     check_is_buffer(target)
-#     check_type(index, Slice)
-#     return target # TODO
+@type_resolver(_registry, ["py_ir.getitem"])
+def resolver(target: ValueType, index: ValueType):
+    check_is_buffer(target)
+    check_type(index, Slice)
+    dims = get_type_param(target, "dims")
+    count = get_seq_size(dims)
+    i = 0
+    res = create_seq()
+    while i < count:
+        res = append_seq(res, Index)
+        i += 1
+    return make_type("Buffer", dims=res)
