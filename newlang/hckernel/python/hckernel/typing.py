@@ -139,6 +139,11 @@ def get_seq_element(seq, index):
 
 
 @_register_func
+def get_seq_size(seq):
+    _stub_error()
+
+
+@_register_func
 def make_type(name, **kwargs):
     _stub_error()
 
