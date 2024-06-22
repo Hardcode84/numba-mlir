@@ -212,3 +212,12 @@ def resolver(target: ValueType):
 def resolver(target: ValueType):
     check_is_current_group(target)
     return GroupLoad
+
+
+@type_resolver(_registry, ["py_ir.call"])
+def resolver(func: ValueType):
+    check_type(func, GroupLoad)
+    shape = get_arg(2)
+    check_is_tuple(shape)
+    elements = get_type_param(shape, "elements")
+    return make_type("Tensor", dims=elements)
