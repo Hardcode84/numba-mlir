@@ -14,7 +14,50 @@
 #include "hc/Dialect/Typing/IR/TypingOps.hpp"
 #include "hc/Transforms/Passes.hpp"
 
-namespace {
+static mlir::Value doCast(mlir::OpBuilder &builder, mlir::Location loc,
+                          mlir::Value val, mlir::Type type) {
+  if (val.getType() == type)
+    return val;
+
+  return builder.create<hc::typing::ValueCastOp>(loc, type, val);
+}
+
+template <typename Op, int NumArgs, bool NoRes = false>
+static mlir::Operation *
+convertCall(mlir::OpBuilder &builder, mlir::Location loc, mlir::ValueRange args,
+            mlir::Type resType, mlir::TypeRange expectedArgTypes) {
+  static_assert(NumArgs == 0 || NumArgs == 1 || NumArgs == 2 || NumArgs == 3);
+  assert(args.size() == NumArgs);
+  assert(expectedArgTypes.size() == NumArgs);
+  auto doCast = [&](mlir::Value val, mlir::Type type) -> mlir::Value {
+    return ::doCast(builder, loc, val, type);
+  };
+  auto build = [&](auto &&...args) -> mlir::Operation * {
+    if constexpr (NoRes) {
+      return builder.create<Op>(loc, args...);
+    } else {
+      return builder.create<Op>(loc, resType, args...);
+    }
+  };
+
+  if constexpr (NumArgs == 0) {
+    return builder.create<Op>(loc, resType);
+  } else if constexpr (NumArgs == 1) {
+    auto arg0 = doCast(args[0], expectedArgTypes[0]);
+    return build(arg0);
+  } else if constexpr (NumArgs == 2) {
+    auto arg0 = doCast(args[0], expectedArgTypes[0]);
+    auto arg1 = doCast(args[1], expectedArgTypes[1]);
+    return build(arg0, arg1);
+  } else if constexpr (NumArgs == 3) {
+    auto arg0 = doCast(args[0], expectedArgTypes[0]);
+    auto arg1 = doCast(args[1], expectedArgTypes[1]);
+    auto arg2 = doCast(args[2], expectedArgTypes[2]);
+    return build(arg0, arg1, arg2);
+  }
+  llvm_unreachable("Unreachable");
+}
+
 static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
                                        hc::py_ir::CallOp call,
                                        llvm::StringRef name) {
@@ -25,10 +68,7 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
 
   mlir::Location loc = call.getLoc();
   auto doCast = [&](mlir::Value val, mlir::Type type) -> mlir::Value {
-    if (val.getType() == type)
-      return val;
-
-    return builder.create<hc::typing::ValueCastOp>(loc, type, val);
+    return ::doCast(builder, loc, val, type);
   };
 
   if (name == "to_int" && args.size() == 1) {
@@ -40,72 +80,60 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
     return funcName == name;
   };
 
-  auto checkCall = [&](llvm::StringRef funcName, mlir::Type resType,
-                       mlir::TypeRange argTypes) -> bool {
-    if (!checkFuncName(funcName))
-      return false;
-
-    if (callResType != resType)
-      return false;
-
-    return llvm::equal(callArgTypes, argTypes);
-  };
-
   auto index = builder.getIndexType();
   auto i1 = builder.getIntegerType(1);
   auto none = builder.getNoneType();
   auto vt = hc::typing::ValueType::get(builder.getContext());
-  if (checkFuncName("is_same") && callResType == i1) {
-    auto arg0 = doCast(args[0], vt);
-    auto arg1 = doCast(args[1], vt);
-    builder.replaceOpWithNewOp<hc::typing::IsSameOp>(call, callResType, arg0,
-                                                     arg1);
-    return mlir::success();
-  }
-  if (checkCall("check", none, {i1})) {
-    builder.create<hc::typing::CheckOp>(loc, args[0]);
-    builder.replaceOpWithNewOp<hc::py_ir::NoneOp>(call);
-    return mlir::success();
-  }
-  if (checkCall("make_symbol", vt, {vt})) {
-    builder.replaceOpWithNewOp<hc::typing::MakeSymbolOp>(call, callResType,
-                                                         args[0]);
-    return mlir::success();
-  }
-  if (checkCall("get_num_args", index, {})) {
-    builder.replaceOpWithNewOp<hc::typing::GetNumArgsOp>(call, callResType);
-    return mlir::success();
-  }
-  if (checkFuncName("get_arg") && callResType == vt &&
-      callArgTypes.size() == 1 &&
-      mlir::isa<mlir::IndexType, hc::typing::LiteralType>(
-          callArgTypes.front())) {
-    auto arg = doCast(args[0], index);
-    builder.replaceOpWithNewOp<hc::typing::GetArgOp>(call, callResType, arg);
-    return mlir::success();
-  }
-  if (checkCall("create_seq", vt, {})) {
-    builder.replaceOpWithNewOp<hc::typing::CreateSeqOp>(call, callResType);
-    return mlir::success();
-  }
-  if (checkCall("append_seq", vt, {vt, vt})) {
-    builder.replaceOpWithNewOp<hc::typing::AppendSeqOp>(call, callResType,
-                                                        args[0], args[1]);
-    return mlir::success();
-  }
-  if (checkCall("get_seq_element", vt, {vt, index})) {
-    builder.replaceOpWithNewOp<hc::typing::GetSeqElementOp>(call, callResType,
-                                                            args[0], args[1]);
-    return mlir::success();
-  }
-  if (checkCall("get_seq_size", index, {vt})) {
-    builder.replaceOpWithNewOp<hc::typing::GetSeqSizeOp>(call, callResType,
-                                                         args[0]);
-    return mlir::success();
-  }
-  if (checkCall("get_type_name", vt, {vt})) {
-    builder.replaceOpWithNewOp<hc::typing::GetIdentNameOp>(call, callResType,
-                                                           args[0]);
+  using fptr =
+      mlir::Operation *(*)(mlir::OpBuilder & builder, mlir::Location loc,
+                           mlir::ValueRange args, mlir::Type resType,
+                           mlir::TypeRange expectedArgTypes);
+
+  const std::tuple<llvm::StringRef, mlir::Type,
+                   llvm::SmallVector<mlir::Type, 3>, fptr>
+      handlers[] = {
+          {"is_same", i1, {vt, vt}, &convertCall<hc::typing::IsSameOp, 2>},
+          {"check", none, {i1}, &convertCall<hc::typing::CheckOp, 1, true>},
+          {"make_symbol", vt, {vt}, &convertCall<hc::typing::MakeSymbolOp, 1>},
+          {"get_num_args",
+           index,
+           {},
+           &convertCall<hc::typing::GetNumArgsOp, 0>},
+          {"get_arg", vt, {index}, &convertCall<hc::typing::GetArgOp, 1>},
+          {"create_seq", vt, {}, &convertCall<hc::typing::CreateSeqOp, 0>},
+          {"append_seq",
+           vt,
+           {vt, vt},
+           &convertCall<hc::typing::AppendSeqOp, 2>},
+          {"get_seq_element",
+           vt,
+           {vt, index},
+           &convertCall<hc::typing::GetSeqElementOp, 2>},
+          {"get_seq_size",
+           index,
+           {vt},
+           &convertCall<hc::typing::GetSeqSizeOp, 1>},
+          {"get_type_name",
+           vt,
+           {vt},
+           &convertCall<hc::typing::GetIdentNameOp, 1>},
+      };
+
+  for (auto &&[funcName, resType, argTypes, handler] : handlers) {
+    if (!checkFuncName(funcName))
+      continue;
+
+    mlir::Operation *resOp = handler(builder, loc, args, resType, argTypes);
+    if (resOp->getNumResults() == 0) {
+      builder.replaceOpWithNewOp<hc::py_ir::NoneOp>(call);
+    } else {
+      assert(resOp->getNumResults() == 1);
+      mlir::Value res = resOp->getResult(0);
+      if (res.getType() != callResType)
+        res = doCast(res, callResType);
+
+      builder.replaceOp(call, res);
+    }
     return mlir::success();
   }
 
@@ -180,6 +208,7 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
   return mlir::failure();
 }
 
+namespace {
 class ConvertCall final : public mlir::OpRewritePattern<hc::py_ir::CallOp> {
 public:
   using OpRewritePattern::OpRewritePattern;
