@@ -76,9 +76,12 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
     builder.replaceOpWithNewOp<hc::typing::GetNumArgsOp>(call, callResType);
     return mlir::success();
   }
-  if (checkCall("get_arg", vt, {index})) {
-    builder.replaceOpWithNewOp<hc::typing::GetArgOp>(call, callResType,
-                                                     args[0]);
+  if (checkFuncName("get_arg") && callResType == vt &&
+      callArgTypes.size() == 1 &&
+      mlir::isa<mlir::IndexType, hc::typing::LiteralType>(
+          callArgTypes.front())) {
+    auto arg = doCast(args[0], index);
+    builder.replaceOpWithNewOp<hc::typing::GetArgOp>(call, callResType, arg);
     return mlir::success();
   }
   if (checkCall("create_seq", vt, {})) {
