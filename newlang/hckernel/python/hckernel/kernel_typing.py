@@ -25,6 +25,8 @@ CurrentGroup3 = typing.IdentType.get("hckernel.kernel_api.CurrentGroup3")
 
 Slice = typing.IdentType.get("Slice")
 
+GroupLoad = typing.IdentType.get("hckernel.kernel_api.CurrentGroup.load")
+
 
 @func
 def check_type(a: ValueType, b: ValueType):
@@ -39,6 +41,15 @@ def check_is_tuple(t: ValueType):
 @func
 def check_is_buffer(t: ValueType):
     check(is_same(get_type_name(t), "Buffer"))
+
+
+@func
+def check_is_current_group(t: ValueType):
+    check(
+        is_same(t, CurrentGroup1)
+        or is_same(t, CurrentGroup2)
+        or is_same(t, CurrentGroup3)
+    )
 
 
 @func
@@ -195,3 +206,9 @@ def resolver(target: ValueType):
     check_is_buffer(target)
     dims = get_type_param(target, "dims")
     return make_type("Tuple", elements=dims)
+
+
+@type_resolver(_registry, ["py_ir.getattr", "load"])
+def resolver(target: ValueType):
+    check_is_current_group(target)
+    return GroupLoad
