@@ -143,6 +143,24 @@ def resolver(a: ValueType):
     return make_tuple3(Index, Index, Index)
 
 
+@type_resolver(_registry, ["py_ir.getattr", "shape"])
+def resolver(a: ValueType):
+    check_type(a, CurrentGroup1)
+    return Index
+
+
+@type_resolver(_registry, ["py_ir.getattr", "shape"])
+def resolver(a: ValueType):
+    check_type(a, CurrentGroup2)
+    return make_tuple2(Index, Index)
+
+
+@type_resolver(_registry, ["py_ir.getattr", "shape"])
+def resolver(a: ValueType):
+    check_type(a, CurrentGroup3)
+    return make_tuple3(Index, Index, Index)
+
+
 @type_resolver(_registry, ["py_ir.getitem"])
 def resolver(target: ValueType, index: ValueType):
     check_is_tuple(target)
@@ -170,3 +188,10 @@ def resolver(target: ValueType, index: ValueType):
         res = append_seq(res, Index)
         i += 1
     return make_type("Buffer", dims=res)
+
+
+@type_resolver(_registry, ["py_ir.getattr", "shape"])
+def resolver(target: ValueType):
+    check_is_buffer(target)
+    dims = get_type_param(target, "dims")
+    return make_type("Tuple", elements=dims)
