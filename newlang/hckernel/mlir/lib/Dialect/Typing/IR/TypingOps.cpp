@@ -609,10 +609,10 @@ hc::typing::GetAttrOp::interpret(InterpreterState &state) {
 
 mlir::FailureOr<bool>
 hc::typing::GetIdentNameOp::interpret(InterpreterState &state) {
-  auto ident = mlir::dyn_cast_if_present<hc::typing::IdentType>(
-      hc::typing::getType(state, getIdent()));
+  auto type = hc::typing::getType(state, getIdent());
+  auto ident = mlir::dyn_cast_if_present<hc::typing::IdentType>(type);
   if (!ident)
-    return emitError("Invalid ident type");
+    return emitError("Invalid ident type, got: ") << type;
 
   auto name = ident.getName();
   state.state[getResult()] = hc::typing::LiteralType::get(name);
@@ -621,10 +621,10 @@ hc::typing::GetIdentNameOp::interpret(InterpreterState &state) {
 
 mlir::FailureOr<bool>
 hc::typing::GetIdentParamOp::interpret(InterpreterState &state) {
-  auto ident = mlir::dyn_cast_if_present<hc::typing::IdentType>(
-      hc::typing::getType(state, getIdent()));
+  auto type = hc::typing::getType(state, getIdent());
+  auto ident = mlir::dyn_cast_if_present<hc::typing::IdentType>(type);
   if (!ident)
-    return emitError("Invalid ident type");
+    return emitError("Invalid ident type, got: ") << type;
 
   auto names = ident.getParamNames();
   auto params = ident.getParams();
