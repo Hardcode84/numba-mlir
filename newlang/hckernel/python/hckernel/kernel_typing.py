@@ -187,18 +187,23 @@ def resolver(a: ValueType, b: ValueType, c: ValueType):
     return Slice  # TODO
 
 
+@func
+def getitem_typing(array: ValueType, index: ValueType):
+    check_type(index, Slice)
+    dims = get_type_param(array, "dims")
+    count = get_seq_size(dims)
+    i = 0
+    res_dims = create_seq()
+    while i < count:
+        res_dims = append_seq(res_dims, Index)
+        i += 1
+    return res_dims
+
+
 @type_resolver(_registry, ["py_ir.getitem"])
 def resolver(target: ValueType, index: ValueType):
     check_is_buffer(target)
-    check_type(index, Slice)
-    dims = get_type_param(target, "dims")
-    count = get_seq_size(dims)
-    i = 0
-    res = create_seq()
-    while i < count:
-        res = append_seq(res, Index)
-        i += 1
-    return make_type("Buffer", dims=res)
+    return make_type("Buffer", dims=getitem_typing(target, index))
 
 
 @type_resolver(_registry, ["py_ir.getattr", "shape"])
