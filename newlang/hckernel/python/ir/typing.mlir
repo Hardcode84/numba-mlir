@@ -239,6 +239,11 @@ typing.type_resolver ["py_ir.call"] {
   typing.type_resolver_return %3
 }
 
+typing.type_resolver ["typing.create_seq"] {
+  %3 = typing.type_constant #typing.type_attr<!typing.value> : !typing.value
+  typing.type_resolver_return %3
+}
+
 // typing.append_seq
 
 typing.type_resolver ["py_ir.getattr", "append_seq"] {
