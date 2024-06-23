@@ -319,7 +319,9 @@ def Typing_GetIdentParamOp : Typing_OpBase<"get_ident_param", [
 }
 
 def Typing_CreateSeqOp : Typing_OpBase<"create_seq", [
-  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+  Pure,
+  DeclareOpInterfaceMethods<TypingInterpreterInterface>,
+  DeclareOpInterfaceMethods<TypingKeyInterface>
 ]> {
   let results = (outs Typing_ValueType:$result);
 
