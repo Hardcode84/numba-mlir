@@ -556,10 +556,14 @@ struct GenResolversPass
 } // namespace
 
 void populateTypingPipeline(mlir::PassManager &pm) {
-  pm.addPass(hc::createPyTypeInferencePass());
-  pm.addPass(mlir::createCanonicalizerPass());
-  pm.addPass(std::make_unique<GenResolversFuncsPass>());
-  pm.addPass(std::make_unique<DropFuncDecoratorPass>());
+  pm.addPass(mlir::createCompositeFixedPointPass(
+      "TypingLoop", [](mlir::OpPassManager &p) {
+        p.addPass(hc::createPyTypeInferencePass());
+        p.addPass(mlir::createCanonicalizerPass());
+        p.addPass(std::make_unique<GenResolversFuncsPass>());
+        p.addPass(std::make_unique<DropFuncDecoratorPass>());
+        p.addPass(hc::createPyIRPromoteFuncsToStaticPass());
+      }));
   pm.addPass(mlir::createCanonicalizerPass());
   pm.addPass(hc::createPyIRPromoteFuncsToStaticPass());
   pm.addPass(hc::createPyTypeInferencePass());
