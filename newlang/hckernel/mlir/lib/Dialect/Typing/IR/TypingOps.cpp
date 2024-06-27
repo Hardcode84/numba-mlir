@@ -137,6 +137,11 @@ hc::typing::CastOp::inferTypes(mlir::TypeRange types,
   return true;
 }
 
+mlir::FailureOr<bool> hc::typing::CastOp::interpret(InterpreterState &state) {
+  state.state[getResult()] = getVal(state, getValue());
+  return true;
+}
+
 bool hc::typing::ValueCastOp::areCastCompatible(mlir::TypeRange inputs,
                                                 mlir::TypeRange outputs) {
   (void)inputs;
@@ -471,6 +476,13 @@ static auto castArrayRef(mlir::ArrayRef<Src> src) {
   return mlir::ArrayRef<Dst>(static_cast<const Dst *>(src.data()), src.size());
 }
 
+InterpreterValue hc::typing::getVal(const InterpreterState &state,
+                                    mlir::Value val) {
+  auto it = state.state.find(val);
+  assert(it != state.state.end());
+  return it->second;
+}
+
 static const constexpr int PackShift = 2;
 
 std::optional<int64_t> hc::typing::getInt(InterpreterValue val) {
@@ -506,9 +518,7 @@ hc::typing::InterpreterValue hc::typing::setInt(mlir::MLIRContext *ctx,
 
 mlir::Type hc::typing::getType(const hc::typing::InterpreterState &state,
                                mlir::Value val) {
-  auto it = state.state.find(val);
-  assert(it != state.state.end());
-  return mlir::dyn_cast<mlir::Type>(it->second);
+  return mlir::dyn_cast<mlir::Type>(getVal(state, val));
 }
 
 void hc::typing::getTypes(const hc::typing::InterpreterState &state,

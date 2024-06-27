@@ -35,6 +35,8 @@ struct InterpreterState {
   bool completed = false;
 };
 
+InterpreterValue getVal(const InterpreterState &state, mlir::Value val);
+
 std::optional<int64_t> getInt(InterpreterValue val);
 std::optional<int64_t> getInt(InterpreterState &state, mlir::Value val);
 
