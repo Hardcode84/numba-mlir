@@ -33,22 +33,23 @@ static void updateBranchTypes(mlir::OpBuilder &builder, mlir::Block *block) {
   if (!branch)
     return;
 
+  mlir::Location loc = branch.getLoc();
+  builder.setInsertionPoint(branch);
   for (auto &&[i, successor] : llvm::enumerate(branch->getSuccessors())) {
-    mlir::ValueRange branchArgs =
+    mlir::OperandRange branchArgs =
         branch.getSuccessorOperands(i).getForwardedOperands();
 
-    mlir::Location loc = branch.getLoc();
-    builder.setInsertionPoint(branch);
-    for (auto &&[branchArg, successorArg] :
-         llvm::zip_equal(branchArgs, successor->getArguments())) {
+    for (auto &&[i, branchArg, successorArg] :
+         llvm::enumerate(branchArgs, successor->getArguments())) {
       mlir::Type srcType = branchArg.getType();
       mlir::Type dstType = successorArg.getType();
       if (srcType == dstType)
         continue;
 
+      auto operandIdx = branchArgs.getBeginOperandIndex() + i;
       mlir::Value cast = makeCast(builder, loc, branchArg, dstType);
       auto shouldReplace = [&](mlir::OpOperand &op) -> bool {
-        return op.getOwner() == branch;
+        return op.getOwner() == branch && op.getOperandNumber() == operandIdx;
       };
 
       branchArg.replaceUsesWithIf(cast, shouldReplace);
