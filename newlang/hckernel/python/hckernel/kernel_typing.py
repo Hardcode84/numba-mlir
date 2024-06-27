@@ -13,6 +13,7 @@ def get_typing_module():
     return _registry.module
 
 
+NoneTyp = ir.NoneType.get()
 Index = ir.IndexType.get()
 ValueType = typing.ValueType.get()
 HCKernelMod = typing.IdentType.get("hckernel")
@@ -34,8 +35,13 @@ def check_type(a: ValueType, b: ValueType):
 
 
 @func
+def is_tuple(t: ValueType):
+    return is_same(get_type_name(t), "Tuple")
+
+
+@func
 def check_is_tuple(t: ValueType):
-    check(is_same(get_type_name(t), "Tuple"))
+    check(is_tuple(t))
 
 
 @func
@@ -188,22 +194,39 @@ def resolver(a: ValueType, b: ValueType, c: ValueType):
 
 
 @func
-def getitem_typing(array: ValueType, index: ValueType):
-    check_type(index, Slice)
-    dims = get_type_param(array, "dims")
-    count = get_seq_size(dims)
-    i = 0
+def getitem_typing(dims: ValueType, index: ValueType):
+    if is_tuple(index):
+        indices = get_type_param(index, "elements")
+    else:
+        indices = create_seq()
+        indices = append_seq(indices, index)
+
     res_dims = create_seq()
-    while i < count:
-        res_dims = append_seq(res_dims, Index)
+    indices_len = get_seq_size(indices)
+    i = 0
+    drop_count = 0
+    while i < indices_len:
+        if is_same(get_seq_element(indices, i), NoneTyp):
+            res_dims = append_seq(res_dims, 1)
+        else:
+            drop_count += 1
         i += 1
+
+    dims_count = get_seq_size(dims)
+    i = drop_count
+    while i < dims_count:
+        res_dims = append_seq(res_dims, get_seq_element(dims, i))
+        i += 1
+
     return res_dims
 
 
 @type_resolver(_registry, ["py_ir.getitem"])
 def resolver(target: ValueType, index: ValueType):
     check_is_buffer(target)
-    return make_type("Buffer", dims=getitem_typing(target, index))
+    return make_type(
+        "Buffer", dims=getitem_typing(get_type_param(target, "dims"), index)
+    )
 
 
 @type_resolver(_registry, ["py_ir.getattr", "shape"])
