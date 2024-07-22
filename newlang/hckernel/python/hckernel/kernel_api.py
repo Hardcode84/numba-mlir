@@ -39,28 +39,35 @@ def resolve_symbols(func, symbols):
     old_closure = func.__closure__
     new_closure = None
 
-    if old_closure is not None:
-        cell_cls = type(old_closure[0])
-
-        def resolve_cell(cell):
-            if isinstance(cell.cell_contents, Symbol):
-                if cell.cell_contents in symbols.keys():
-                    return cell_cls(symbols[cell.cell_contents])
-            elif isinstance(cell.cell_contents, Expr):
-                return cell_cls(cell.cell_contents.subs(symbols))
-
-            return cell
-
-        new_closure = tuple([resolve_cell(cell) for cell in old_closure])
-
-    def resolve_global(val):
+    def resolve_impl(val):
         if isinstance(val, Symbol):
             if val in symbols.keys():
                 return symbols[val]
         elif isinstance(val, Expr):
             return val.subs(symbols)
 
-        return val
+        return None
+
+    if old_closure is not None:
+        cell_cls = type(old_closure[0])
+
+        def resolve_cell(cell):
+            res = resolve_impl(cell.cell_contents)
+            if res is None:
+                res = cell
+            else:
+                res = cell_cls(res)
+
+            return res
+
+        new_closure = tuple([resolve_cell(cell) for cell in old_closure])
+
+    def resolve_global(val):
+        res = resolve_impl(val)
+        if res is None:
+            res = val
+
+        return res
 
     new_globals = {key: resolve_global(val) for key, val in func.__globals__.items()}
 
