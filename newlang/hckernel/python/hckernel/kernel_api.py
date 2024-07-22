@@ -45,6 +45,8 @@ def resolve_symbols(func, symbols):
                 return symbols[val]
         elif isinstance(val, Expr):
             return val.subs(symbols)
+        elif isinstance(val, Mapping):
+            return Mapping(resolve_symbols(val.func, symbols))
 
         return None
 
