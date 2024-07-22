@@ -209,8 +209,8 @@ def test_implicit_gemm(n, c, nf, stride):
     WORK_SHAPE = (N, NF, H_OUT * W_OUT)
     GROUP_SHAPE = (TN, TNF, 1)
 
-    TTN = TunableParam(TN, 1, range(1, 64))
-    TTNF = TunableParam(TNF, 1, range(1, 64))
+    TTN = TunableParam(TN, 8, range(1, 64))
+    TTNF = TunableParam(TNF, 8, range(1, 64))
     TKB = TunableParam(KB, 16, range(8, 128))
 
     x_map = create_mapping(
