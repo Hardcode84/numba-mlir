@@ -197,16 +197,15 @@ def test_implicit_gemm():
     H_OUT = (H + 2 * padding - hf) / stride + 1
     W_OUT = (W + 2 * padding - hf) / stride + 1
 
-    TN, TNF, TIDX = sym.TN, sym.TNF, sym.TIDX
+    TN, TNF = sym.TN, sym.TNF
 
     WORK_SHAPE = (N, NF, H_OUT * W_OUT)
-    GROUP_SHAPE = (TN, TNF, TIDX)
+    GROUP_SHAPE = (TN, TNF, 1)
 
-    TTN = TunableParam(TN, 2, range(1, 64))
-    TTNF = TunableParam(TNF, 2, range(1, 64))
-    TTIDX = TunableParam(TIDX, 1, range(1, 64))
+    TTN = TunableParam(TN, 1, range(1, 64))
+    TTNF = TunableParam(TNF, 1, range(1, 64))
 
-    @kernel(work_shape=WORK_SHAPE, group_shape=GROUP_SHAPE, tunables=(TTN, TTNF, TTIDX))
+    @kernel(work_shape=WORK_SHAPE, group_shape=GROUP_SHAPE, tunables=(TTN, TTNF))
     def conv(
         gr: CurrentGroup,
         x: Buffer[N, C, H, W],
@@ -218,22 +217,19 @@ def test_implicit_gemm():
         i = w_idx % W_OUT
         j = w_idx // W_OUT
         sz = hf * wf * c
-        szt = sz * TIDX
         x_map = gr.create_mapping(lambda i, j: (i, j // (hf * wf), j % wf, j // wf))
-        x_view = gr.load(x[n:, :, i:, j:], shape=(TN, szt), mapping=x_map)
-        print("-=-=-=-=-=-=-=-=-", n, nf, w_idx)
-        print(x_view)
+        x_view = gr.load(x[n:, :, i:, j:], shape=(TN, sz), mapping=x_map)
+        # print("-=-=-=-=-=-=-=-=-", n, nf, w_idx)
+        # print(x_view)
 
-        f_map = gr.create_mapping(
-            lambda i, j: (j, (i % sz) // (hf * wf), (i % sz) % wf, (i % sz) // wf)
-        )
-        f_view = gr.load(f[nf:, :, :, :], shape=(szt, TNF), mapping=f_map)
-        print(f_view)
+        f_map = gr.create_mapping(lambda i, j: (j, i // (hf * wf), i % wf, i // wf))
+        f_view = gr.load(f[nf:, :, :, :], shape=(sz, TNF), mapping=f_map)
+        # print(f_view)
 
         r = gr.zeros(shape=(x_view.shape[0], f_view.shape[1]), dtype=out.dtype)
         r += np.dot(x_view, f_view)
-        print(r.shape)
-        print(r)
+        # print(r.shape)
+        # print(r)
 
         out_map = gr.create_mapping(lambda i, j: (i, j, 0, 0))
         gr.store(out[n:, nf:, i:, j:], r, mapping=out_map)
