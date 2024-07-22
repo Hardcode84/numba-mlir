@@ -120,7 +120,7 @@ class _masked_array:
     def __setitem__(self, key, value):
         if isinstance(value, _masked_array):
             self.data[key] = np.where(value.mask, value.data, self.data[key])
-            self.__set_mask(key, self.mask | value.mask)
+            self.__set_mask(key, self.mask[key] | value.mask)
         else:
             self.data[key] = value
             self.__set_mask(key, True)
@@ -335,6 +335,9 @@ class CurrentGroup:
             dst[s] = np.where(src.mask[s], src[s], dst[s])
         else:
             dst[s] = src[s]
+
+    def vload(self, array, shape, mapping=None):
+        return self.load(array, shape, mapping)
 
     def empty(self, shape, dtype):
         return self._alloc_impl(shape, dtype, _get_uninit_value(dtype))
