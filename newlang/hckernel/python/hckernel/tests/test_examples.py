@@ -193,7 +193,7 @@ def test_implicit_gemm():
     print(out_ref)
 
     N, C, H, W = sym.N, sym.C, sym.H, sym.W
-    NF, CF, HF, WF = sym.NF, sym.CF, sym.HF, sym.WF
+    NF, HF, WF = sym.NF, sym.HF, sym.WF
     H_OUT = (H + 2 * padding - hf) / stride + 1
     W_OUT = (W + 2 * padding - hf) / stride + 1
 
@@ -210,21 +210,25 @@ def test_implicit_gemm():
     def conv(
         gr: CurrentGroup,
         x: Buffer[N, C, H, W],
-        f: Buffer[NF, CF, HF, WF],
+        f: Buffer[NF, C, HF, WF],
         out: Buffer[N, NF, H_OUT, W_OUT],
     ):
         n, nf, w_idx = gr.work_offset
 
         i = w_idx % W_OUT
         j = w_idx // W_OUT
+        sz = hf * wf * c
+        szt = sz * TIDX
         x_map = gr.create_mapping(lambda i, j: (i, j // (hf * wf), j % wf, j // wf))
-        x_view = gr.load(x[n:, :, i:, j:], shape=(TN, hf * wf * c), mapping=x_map)
+        x_view = gr.load(x[n:, :, i:, j:], shape=(TN, szt), mapping=x_map)
         print("-=-=-=-=-=-=-=-=-", n, nf, w_idx)
         print(x_view)
 
-        f_map = gr.create_mapping(lambda i, j: (j, i // (hf * wf), i % wf, i // wf))
-        f_view = gr.load(f[nf:, :, :, :], shape=(hf * wf * c, TNF), mapping=f_map)
-        # print(f_view)
+        f_map = gr.create_mapping(
+            lambda i, j: (j, (i % sz) // (hf * wf), (i % sz) % wf, (i % sz) // wf)
+        )
+        f_view = gr.load(f[nf:, :, :, :], shape=(szt, TNF), mapping=f_map)
+        print(f_view)
 
         r = gr.zeros(shape=(x_view.shape[0], f_view.shape[1]), dtype=out.dtype)
         r += np.dot(x_view, f_view)
