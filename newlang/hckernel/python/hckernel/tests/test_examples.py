@@ -155,15 +155,15 @@ def test_dot_2():
     assert_equal(result, np.dot(a, b))
 
 
-@pytest.mark.parametrize("n", [1, 2])
+@pytest.mark.parametrize("n", [1, 2, 4])
 @pytest.mark.parametrize("c", [1, 3])
-@pytest.mark.parametrize("nf", [1, 2])
-def test_implicit_gemm(n, c, nf):
-    h, w = 3, 3  # Image.
+@pytest.mark.parametrize("nf", [1, 2, 8])
+@pytest.mark.parametrize("stride", [1, 2, 3])
+def test_implicit_gemm(n, c, nf, stride):
+    h, w = 4, 4  # Image.
     cf, hf, wf = c, 2, 2  # Filters.
     x = np.random.randn(n, c, h, w)
     we = np.random.randn(nf, cf, hf, wf)
-    stride = 1
     padding = 0
 
     def conv_ref(X, W):
@@ -209,8 +209,8 @@ def test_implicit_gemm(n, c, nf):
     WORK_SHAPE = (N, NF, H_OUT * W_OUT)
     GROUP_SHAPE = (TN, TNF, 1)
 
-    TTN = TunableParam(TN, 16, range(1, 64))
-    TTNF = TunableParam(TNF, 16, range(1, 64))
+    TTN = TunableParam(TN, 1, range(1, 64))
+    TTNF = TunableParam(TNF, 1, range(1, 64))
     TKB = TunableParam(KB, 16, range(8, 128))
 
     x_map = create_mapping(
@@ -232,7 +232,9 @@ def test_implicit_gemm(n, c, nf):
 
         i = w_idx % W_OUT
         j = w_idx // W_OUT
-        x_view = gr.load(x[n:, :, i:, j:], shape=(TN, SZ), mapping=x_map)
+        x_view = gr.load(
+            x[n:, :, i * stride :, j * stride :], shape=(TN, SZ), mapping=x_map
+        )
         # print("-=-=-=-=-=-=-=-=-", n, nf, w_idx)
         # print(x_view)
 
