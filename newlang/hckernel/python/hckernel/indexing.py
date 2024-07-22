@@ -20,7 +20,7 @@ def index_expr(value: Any) -> IndexExpr:
 class _IndexSymbolExpando:
     def __getattr__(self, n):
         s = index_symbol(n)
-        _reg_symbol_impl(s, n, __name__)
+        _reg_symbol_impl(s, n, __name__, overwrite=True)
         return s
 
 
