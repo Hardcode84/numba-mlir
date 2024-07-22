@@ -137,7 +137,7 @@ class _masked_array:
         return getattr(self.__ma, name)
 
     def __repr__(self):
-        return f"_masked_array(data={self.__ma.data},\n mask={self.mask})"
+        return str(self.__ma)
 
 
 def set_arithm_methods():
@@ -195,6 +195,11 @@ def set_arithm_methods():
 
 
 set_arithm_methods()
+
+
+class Mapping:
+    def __init__(self, func):
+        self.func = func
 
 
 def _get_uninit_value(dtype):
@@ -271,19 +276,50 @@ class CurrentGroup:
     def work_offset(self):
         return tuple(a * b for a, b in zip(self._group_shape, self._group_id))
 
-    def load(self, array, shape):
+    def create_mapping(self, func):
+        return Mapping(func)
+
+    def load(self, array, shape, mapping=None):
         if not isinstance(shape, Iterable):
             shape = (shape,)
 
         dtype = array.dtype
         init = _get_uninit_value(dtype)
         res = _masked_array(np.full(shape, fill_value=init, dtype=dtype), mask=False)
-        s = tuple(slice(0, min(s1, s2)) for s1, s2 in zip(array.shape, shape))
+        if mapping:
+            f = mapping.func
+            src_shape = array.shape
+            for index in np.ndindex(*shape):
+                mapped = f(*index)
+                if all(i >= 0 and i < b for i, b in zip(mapped, src_shape)):
+                    res[index] = array[mapped]
 
-        res[s] = array[s]
+        else:
+            s = tuple(slice(0, min(s1, s2)) for s1, s2 in zip(array.shape, shape))
+            res[s] = array[s]
+
         return res
 
-    def store(self, dst, src):
+    def store(self, dst, src, mapping=None):
+        if mapping:
+            f = mapping.func
+            src_shape = src.shape
+            dst_shape = dst.shape
+            if isinstance(src, _masked_array):
+                for index in np.ndindex(*src_shape):
+                    mapped = f(*index)
+                    if all(i >= 0 and i < b for i, b in zip(mapped, dst_shape)):
+                        val = src[index]
+                        if val.mask:
+                            dst[mapped] = val.data
+            else:
+                for index in np.ndindex(*src_shape):
+                    mapped = f(*index)
+                    if all(i >= 0 and i < b for i, b in zip(mapped, dst_shape)):
+                        dst[mapped] = src[index]
+
+            return
+
         s = tuple(slice(0, min(s1, s2)) for s1, s2 in zip(src.shape, dst.shape))
         if isinstance(src, _masked_array):
             dst[s] = np.where(src.mask[s], src[s], dst[s])

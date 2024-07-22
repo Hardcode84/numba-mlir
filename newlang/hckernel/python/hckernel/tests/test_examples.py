@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from itertools import product
-from numpy.testing import assert_equal
+from numpy.testing import assert_equal, assert_allclose
 import numpy as np
 import pytest
 
@@ -152,6 +152,86 @@ def test_dot_2():
     dot(a, b, result, (8, 8))
 
     assert_equal(result, np.dot(a, b))
+
+
+def test_implicit_gemm():
+    n, c, h, w = 1, 1, 3, 3  # Image.
+    nf, cf, hf, wf = 2, c, 2, 2  # Filters.
+    x = np.random.randn(n, c, h, w)
+    we = np.random.randn(nf, cf, hf, wf)
+    stride = 1
+    padding = 0
+
+    def conv_ref(X, W):
+        m, n_C_prev, n_H_prev, n_W_prev = X.shape
+
+        n_C = nf
+        n_H = int((n_H_prev + 2 * padding - hf) / stride) + 1
+        n_W = int((n_W_prev + 2 * padding - hf) / stride) + 1
+
+        out = np.zeros((m, n_C, n_H, n_W))
+        for i in range(m):  # For each image.
+            for c in range(n_C):  # For each channel.
+                for h in range(n_H):  # Slide the filter vertically.
+                    h_start = h * stride
+                    h_end = h_start + hf
+
+                    for w in range(n_W):  # Slide the filter horizontally.
+                        w_start = w * stride
+                        w_end = w_start + hf
+
+                        out[i, c, h, w] = np.sum(
+                            X[i, :, h_start:h_end, w_start:w_end] * W[c, ...]
+                        )
+        return out
+
+    out_ref = conv_ref(x, we)
+    print("x")
+    print(x)
+    print("we")
+    print(we)
+    print("res", out_ref.shape)
+    print(out_ref)
+
+    N, C, H, W = sym.N, sym.C, sym.H, sym.W
+    NF, CF, HF, WF = sym.NF, sym.CF, sym.HF, sym.WF
+    H_OUT = (H + 2 * padding - hf) / stride + 1
+    W_OUT = (W + 2 * padding - hf) / stride + 1
+
+    WORK_SHAPE = (N, NF, H_OUT * W_OUT)
+    GROUP_SHAPE = (1, 1, 1)
+
+    @kernel(work_shape=WORK_SHAPE, group_shape=GROUP_SHAPE)
+    def conv(
+        gr: CurrentGroup,
+        x: Buffer[N, C, H, W],
+        f: Buffer[NF, CF, HF, WF],
+        out: Buffer[N, NF, H_OUT, W_OUT],
+    ):
+        n, nf, w_idx = gr.work_offset
+        i = w_idx % W_OUT
+        j = w_idx // W_OUT
+        x_map = gr.create_mapping(lambda i, j: (0, j // (hf * wf), j % wf, j // wf))
+        x_view = gr.load(x[n:, :, i:, j:], shape=(1, hf * wf * c), mapping=x_map)
+        # print('-=-=-=-=-=-=-=-=-', n, nf, w_idx)
+        # print(x_view)
+
+        f_map = gr.create_mapping(lambda i, j: (0, i // (hf * wf), i % wf, i // wf))
+        f_view = gr.load(f[nf:, :, :, :], shape=(hf * wf * c, 1), mapping=f_map)
+        # print(f_view)
+
+        r = gr.zeros(shape=(x_view.shape[0], f_view.shape[1]), dtype=out.dtype)
+        r += np.dot(x_view, f_view)
+        print(r)
+
+        out_map = gr.create_mapping(lambda i, j: (0, 0, i, j))
+        gr.store(out[n:, nf:, i:, j:], r, mapping=out_map)
+
+    result = np.zeros_like(out_ref)
+
+    conv(x, we, result)
+
+    assert_allclose(result, out_ref)
 
 
 def test_pairwise_distance():

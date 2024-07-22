@@ -50,6 +50,11 @@ def check_is_buffer(t: ValueType):
 
 
 @func
+def check_is_tensor(t: ValueType):
+    check(is_same(get_type_name(t), "tensor"))
+
+
+@func
 def check_is_current_group(t: ValueType):
     check(
         is_same(t, CurrentGroup1)
@@ -234,6 +239,14 @@ def resolver(target: ValueType):
     check_is_buffer(target)
     dims = get_type_param(target, "dims")
     return make_type("Tuple", elements=dims)
+
+
+@type_resolver(_registry, ["py_ir.getitem"])
+def resolver(target: ValueType, index: ValueType):
+    check_is_tensor(target)
+    return make_type(
+        "Tensor", dims=getitem_typing(get_type_param(target, "dims"), index)
+    )
 
 
 @type_resolver(_registry, ["py_ir.getattr", "load"])
