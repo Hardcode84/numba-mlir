@@ -155,9 +155,12 @@ def test_dot_2():
     assert_equal(result, np.dot(a, b))
 
 
-def test_implicit_gemm():
-    n, c, h, w = 2, 2, 3, 3  # Image.
-    nf, cf, hf, wf = 2, c, 2, 2  # Filters.
+@pytest.mark.parametrize("n", [1, 2])
+@pytest.mark.parametrize("c", [1, 3])
+@pytest.mark.parametrize("nf", [1, 2])
+def test_implicit_gemm(n, c, nf):
+    h, w = 3, 3  # Image.
+    cf, hf, wf = c, 2, 2  # Filters.
     x = np.random.randn(n, c, h, w)
     we = np.random.randn(nf, cf, hf, wf)
     stride = 1
@@ -186,12 +189,12 @@ def test_implicit_gemm():
         return out
 
     out_ref = conv_ref(x, we)
-    print("x")
-    print(x)
-    print("we")
-    print(we)
-    print("res", out_ref.shape)
-    print(out_ref)
+    # print("x")
+    # print(x)
+    # print("we")
+    # print(we)
+    # print("res", out_ref.shape)
+    # print(out_ref)
 
     N, C, H, W = sym.N, sym.C, sym.H, sym.W
     NF, HF, WF = sym.NF, sym.HF, sym.WF
@@ -227,16 +230,16 @@ def test_implicit_gemm():
         j = w_idx // W_OUT
         sz = hf * wf * c
         x_view = gr.load(x[n:, :, i:, j:], shape=(TN, sz), mapping=x_map)
-        print("-=-=-=-=-=-=-=-=-", n, nf, w_idx)
-        print(x_view)
+        # print("-=-=-=-=-=-=-=-=-", n, nf, w_idx)
+        # print(x_view)
 
         f_view = gr.load(f[nf:, :, :, :], shape=(sz, TNF), mapping=f_map)
-        print(f_view)
+        # print(f_view)
 
         r = gr.zeros(shape=(x_view.shape[0], f_view.shape[1]), dtype=out.dtype)
         r += np.dot(x_view, f_view)
-        print(r.shape)
-        print(r)
+        # print(r.shape)
+        # print(r)
 
         gr.store(out[n:, nf:, i:, j:], r, mapping=out_map)
 
