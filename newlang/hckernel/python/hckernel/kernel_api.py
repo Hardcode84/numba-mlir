@@ -202,6 +202,10 @@ class Mapping:
         self.func = func
 
 
+def create_mapping(func):
+    return Mapping(func)
+
+
 def _get_uninit_value(dtype):
     return 0
 
@@ -275,9 +279,6 @@ class CurrentGroup:
     @property
     def work_offset(self):
         return tuple(a * b for a, b in zip(self._group_shape, self._group_id))
-
-    def create_mapping(self, func):
-        return Mapping(func)
 
     def load(self, array, shape, mapping=None):
         if not isinstance(shape, Iterable):

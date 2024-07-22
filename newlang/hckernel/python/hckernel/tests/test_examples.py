@@ -6,14 +6,15 @@ import numpy as np
 import pytest
 
 from hckernel.kernel_sim import (
-    kernel,
-    sym,
+    Buffer,
     CurrentGroup,
     CurrentSubGroup,
     CurrentWorkitem,
-    Buffer,
     TunableParam,
     atomic_ref,
+    create_mapping,
+    kernel,
+    sym,
 )
 
 
@@ -205,6 +206,10 @@ def test_implicit_gemm():
     TTN = TunableParam(TN, 1, range(1, 64))
     TTNF = TunableParam(TNF, 1, range(1, 64))
 
+    x_map = create_mapping(lambda i, j: (i, j // (hf * wf), j % wf, j // wf))
+    f_map = create_mapping(lambda i, j: (j, i // (hf * wf), i % wf, i // wf))
+    out_map = create_mapping(lambda i, j: (i, j, 0, 0))
+
     @kernel(work_shape=WORK_SHAPE, group_shape=GROUP_SHAPE, tunables=(TTN, TTNF))
     def conv(
         gr: CurrentGroup,
@@ -217,12 +222,10 @@ def test_implicit_gemm():
         i = w_idx % W_OUT
         j = w_idx // W_OUT
         sz = hf * wf * c
-        x_map = gr.create_mapping(lambda i, j: (i, j // (hf * wf), j % wf, j // wf))
         x_view = gr.load(x[n:, :, i:, j:], shape=(TN, sz), mapping=x_map)
         # print("-=-=-=-=-=-=-=-=-", n, nf, w_idx)
         # print(x_view)
 
-        f_map = gr.create_mapping(lambda i, j: (j, i // (hf * wf), i % wf, i // wf))
         f_view = gr.load(f[nf:, :, :, :], shape=(sz, TNF), mapping=f_map)
         # print(f_view)
 
@@ -231,7 +234,6 @@ def test_implicit_gemm():
         # print(r.shape)
         # print(r)
 
-        out_map = gr.create_mapping(lambda i, j: (i, j, 0, 0))
         gr.store(out[n:, nf:, i:, j:], r, mapping=out_map)
 
     result = np.zeros_like(out_ref)
