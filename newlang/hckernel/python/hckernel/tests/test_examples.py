@@ -156,7 +156,7 @@ def test_dot_2():
 
 
 def test_implicit_gemm():
-    n, c, h, w = 2, 1, 3, 3  # Image.
+    n, c, h, w = 2, 2, 3, 3  # Image.
     nf, cf, hf, wf = 2, c, 2, 2  # Filters.
     x = np.random.randn(n, c, h, w)
     we = np.random.randn(nf, cf, hf, wf)
@@ -203,11 +203,15 @@ def test_implicit_gemm():
     WORK_SHAPE = (N, NF, H_OUT * W_OUT)
     GROUP_SHAPE = (TN, TNF, 1)
 
-    TTN = TunableParam(TN, 1, range(1, 64))
-    TTNF = TunableParam(TNF, 1, range(1, 64))
+    TTN = TunableParam(TN, 2, range(1, 64))
+    TTNF = TunableParam(TNF, 2, range(1, 64))
 
-    x_map = create_mapping(lambda i, j: (i, j // (hf * wf), j % wf, j // wf))
-    f_map = create_mapping(lambda i, j: (j, i // (hf * wf), i % wf, i // wf))
+    x_map = create_mapping(
+        lambda i, j: (i, j // (hf * wf), (j % (hf * wf)) % wf, (j % (hf * wf)) // wf)
+    )
+    f_map = create_mapping(
+        lambda i, j: (j, i // (hf * wf), i % wf, (i % (hf * wf)) // wf)
+    )
     out_map = create_mapping(lambda i, j: (i, j, 0, 0))
 
     @kernel(work_shape=WORK_SHAPE, group_shape=GROUP_SHAPE, tunables=(TTN, TTNF))
@@ -223,16 +227,16 @@ def test_implicit_gemm():
         j = w_idx // W_OUT
         sz = hf * wf * c
         x_view = gr.load(x[n:, :, i:, j:], shape=(TN, sz), mapping=x_map)
-        # print("-=-=-=-=-=-=-=-=-", n, nf, w_idx)
-        # print(x_view)
+        print("-=-=-=-=-=-=-=-=-", n, nf, w_idx)
+        print(x_view)
 
         f_view = gr.load(f[nf:, :, :, :], shape=(sz, TNF), mapping=f_map)
-        # print(f_view)
+        print(f_view)
 
         r = gr.zeros(shape=(x_view.shape[0], f_view.shape[1]), dtype=out.dtype)
         r += np.dot(x_view, f_view)
-        # print(r.shape)
-        # print(r)
+        print(r.shape)
+        print(r)
 
         gr.store(out[n:, nf:, i:, j:], r, mapping=out_map)
 
