@@ -198,8 +198,11 @@ def test_implicit_gemm(n, c, nf):
 
     N, C, H, W = sym.N, sym.C, sym.H, sym.W
     NF, HF, WF = sym.NF, sym.HF, sym.WF
+    KB = sym.KB
     H_OUT = (H + 2 * padding - hf) / stride + 1
     W_OUT = (W + 2 * padding - hf) / stride + 1
+    SZ = HF * WF * C
+    KI = ceil_div(SZ, KB)
 
     TN, TNF = sym.TN, sym.TNF
 
@@ -208,6 +211,7 @@ def test_implicit_gemm(n, c, nf):
 
     TTN = TunableParam(TN, 2, range(1, 64))
     TTNF = TunableParam(TNF, 2, range(1, 64))
+    TKB = TunableParam(KB, 16, range(8, 128))
 
     x_map = create_mapping(
         lambda i, j: (i, j // (HF * WF), (j % (HF * WF)) % WF, (j % (HF * WF)) // WF)
@@ -217,7 +221,7 @@ def test_implicit_gemm(n, c, nf):
     )
     out_map = create_mapping(lambda i, j: (i, j, 0, 0))
 
-    @kernel(work_shape=WORK_SHAPE, group_shape=GROUP_SHAPE, tunables=(TTN, TTNF))
+    @kernel(work_shape=WORK_SHAPE, group_shape=GROUP_SHAPE, tunables=(TTN, TTNF, TKB))
     def conv(
         gr: CurrentGroup,
         x: Buffer[N, C, H, W],
@@ -228,16 +232,19 @@ def test_implicit_gemm(n, c, nf):
 
         i = w_idx % W_OUT
         j = w_idx // W_OUT
-        sz = HF * WF * C
-        x_view = gr.load(x[n:, :, i:, j:], shape=(TN, sz), mapping=x_map)
+        x_view = gr.load(x[n:, :, i:, j:], shape=(TN, SZ), mapping=x_map)
         # print("-=-=-=-=-=-=-=-=-", n, nf, w_idx)
         # print(x_view)
 
-        f_view = gr.load(f[nf:, :, :, :], shape=(sz, TNF), mapping=f_map)
+        f_view = gr.load(f[nf:, :, :, :], shape=(SZ, TNF), mapping=f_map)
         # print(f_view)
 
         r = gr.zeros(shape=(x_view.shape[0], f_view.shape[1]), dtype=out.dtype)
-        r += np.dot(x_view, f_view)
+        for k in range(KI):
+            k_start = k * KB
+            x_slice = gr.vload(x_view[:, k_start:], shape=(TN, KB))
+            f_slice = gr.vload(f_view[k_start:, :], shape=(KB, TNF))
+            r += np.dot(x_slice, f_slice)
         # print(r.shape)
         # print(r)
 
