@@ -155,7 +155,7 @@ def test_dot_2():
 
 
 def test_implicit_gemm():
-    n, c, h, w = 1, 1, 3, 3  # Image.
+    n, c, h, w = 2, 1, 3, 3  # Image.
     nf, cf, hf, wf = 2, c, 2, 2  # Filters.
     x = np.random.randn(n, c, h, w)
     we = np.random.randn(nf, cf, hf, wf)
@@ -165,13 +165,12 @@ def test_implicit_gemm():
     def conv_ref(X, W):
         m, n_C_prev, n_H_prev, n_W_prev = X.shape
 
-        n_C = nf
         n_H = int((n_H_prev + 2 * padding - hf) / stride) + 1
         n_W = int((n_W_prev + 2 * padding - hf) / stride) + 1
 
-        out = np.zeros((m, n_C, n_H, n_W))
+        out = np.zeros((m, nf, n_H, n_W))
         for i in range(m):  # For each image.
-            for c in range(n_C):  # For each channel.
+            for c in range(nf):  # For each channel.
                 for h in range(n_H):  # Slide the filter vertically.
                     h_start = h * stride
                     h_end = h_start + hf
@@ -198,10 +197,16 @@ def test_implicit_gemm():
     H_OUT = (H + 2 * padding - hf) / stride + 1
     W_OUT = (W + 2 * padding - hf) / stride + 1
 
-    WORK_SHAPE = (N, NF, H_OUT * W_OUT)
-    GROUP_SHAPE = (1, 1, 1)
+    TN, TNF, TIDX = sym.TN, sym.TNF, sym.TIDX
 
-    @kernel(work_shape=WORK_SHAPE, group_shape=GROUP_SHAPE)
+    WORK_SHAPE = (N, NF, H_OUT * W_OUT)
+    GROUP_SHAPE = (TN, TNF, TIDX)
+
+    TTN = TunableParam(TN, 2, range(1, 64))
+    TTNF = TunableParam(TNF, 2, range(1, 64))
+    TTIDX = TunableParam(TIDX, 1, range(1, 64))
+
+    @kernel(work_shape=WORK_SHAPE, group_shape=GROUP_SHAPE, tunables=(TTN, TTNF, TTIDX))
     def conv(
         gr: CurrentGroup,
         x: Buffer[N, C, H, W],
@@ -209,22 +214,24 @@ def test_implicit_gemm():
         out: Buffer[N, NF, H_OUT, W_OUT],
     ):
         n, nf, w_idx = gr.work_offset
+
         i = w_idx % W_OUT
         j = w_idx // W_OUT
-        x_map = gr.create_mapping(lambda i, j: (0, j // (hf * wf), j % wf, j // wf))
-        x_view = gr.load(x[n:, :, i:, j:], shape=(1, hf * wf * c), mapping=x_map)
-        # print('-=-=-=-=-=-=-=-=-', n, nf, w_idx)
-        # print(x_view)
+        x_map = gr.create_mapping(lambda i, j: (i, j // (hf * wf), j % wf, j // wf))
+        x_view = gr.load(x[n:, :, i:, j:], shape=(TN, hf * wf * c), mapping=x_map)
+        print("-=-=-=-=-=-=-=-=-", n, nf, w_idx)
+        print(x_view)
 
-        f_map = gr.create_mapping(lambda i, j: (0, i // (hf * wf), i % wf, i // wf))
-        f_view = gr.load(f[nf:, :, :, :], shape=(hf * wf * c, 1), mapping=f_map)
+        f_map = gr.create_mapping(lambda i, j: (j, i // (hf * wf), i % wf, i // wf))
+        f_view = gr.load(f[nf:, :, :, :], shape=(hf * wf * c, TNF), mapping=f_map)
         # print(f_view)
 
         r = gr.zeros(shape=(x_view.shape[0], f_view.shape[1]), dtype=out.dtype)
         r += np.dot(x_view, f_view)
+        print(r.shape)
         print(r)
 
-        out_map = gr.create_mapping(lambda i, j: (0, 0, i, j))
+        out_map = gr.create_mapping(lambda i, j: (i, j, 0, 0))
         gr.store(out[n:, nf:, i:, j:], r, mapping=out_map)
 
     result = np.zeros_like(out_ref)
