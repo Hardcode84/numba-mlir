@@ -210,10 +210,10 @@ def test_implicit_gemm(n, c, nf):
     TTNF = TunableParam(TNF, 2, range(1, 64))
 
     x_map = create_mapping(
-        lambda i, j: (i, j // (hf * wf), (j % (hf * wf)) % wf, (j % (hf * wf)) // wf)
+        lambda i, j: (i, j // (HF * WF), (j % (HF * WF)) % WF, (j % (HF * WF)) // WF)
     )
     f_map = create_mapping(
-        lambda i, j: (j, i // (hf * wf), i % wf, (i % (hf * wf)) // wf)
+        lambda i, j: (j, i // (HF * WF), i % WF, (i % (HF * WF)) // WF)
     )
     out_map = create_mapping(lambda i, j: (i, j, 0, 0))
 
@@ -228,7 +228,7 @@ def test_implicit_gemm(n, c, nf):
 
         i = w_idx % W_OUT
         j = w_idx // W_OUT
-        sz = hf * wf * c
+        sz = HF * WF * C
         x_view = gr.load(x[n:, :, i:, j:], shape=(TN, sz), mapping=x_map)
         # print("-=-=-=-=-=-=-=-=-", n, nf, w_idx)
         # print(x_view)
