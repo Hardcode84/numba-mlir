@@ -200,7 +200,7 @@ def test_implicit_gemm(n, c, nf, stride):
     NF, HF, WF = sym.NF, sym.HF, sym.WF
     KB = sym.KB
     H_OUT = (H + 2 * padding - hf) / stride + 1
-    W_OUT = (W + 2 * padding - hf) / stride + 1
+    W_OUT = (W + 2 * padding - wf) / stride + 1
     SZ = HF * WF * C
     KI = ceil_div(SZ, KB)
 
