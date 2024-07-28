@@ -23,6 +23,7 @@ FuncDesc = namedtuple(
         "prelink_module",
     ],
 )
+from .typename import Typename
 
 
 def _is_literal(val):
@@ -52,6 +53,9 @@ def _process_annotation(ann):
 
     if isinstance(ann, Symbol):
         return "sym"
+
+    if isinstance(ann, Typename):
+        return "typename"
 
     elif istypingtype(ann, tuple):
         return tuple(_process_annotation(e) for e in get_typing_args(ann))

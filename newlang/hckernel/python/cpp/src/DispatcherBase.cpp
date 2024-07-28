@@ -272,9 +272,11 @@ static HandlerT getArgHandler(py::handle arg) {
   }
   if (py::isinstance<py::list>(arg)) {
     py::str lit("lit");
-    llvm::SmallVector<int64_t> srcShape(py::len(arg));
+    llvm::SmallVector<int64_t> srcShape(py::len(arg) - 1);
     for (auto &&[i, s] : llvm::enumerate(arg)) {
-      if (py::isinstance<py::int_>(s)) {
+      if (i == srcShape.size()) {
+        // TODO: get dtype
+      } else if (py::isinstance<py::int_>(s)) {
         srcShape[i] = s.cast<int64_t>();
       } else if (s.equal(sym)) {
         srcShape[i] = kDynamic;
