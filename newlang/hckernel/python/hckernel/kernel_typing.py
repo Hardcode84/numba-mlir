@@ -19,6 +19,7 @@ ValueType = typing.ValueType.get()
 HCKernelMod = typing.IdentType.get("hckernel")
 HCKernelAPI = typing.IdentType.get("hckernel.kernel_api")
 Indexing = typing.IdentType.get("hckernel.indexing")
+Typename = typing.IdentType.get("hckernel.typename")
 BufferBase = typing.IdentType.get("hckernel.kernel_api.BufferBase")
 CurrentGroup1 = typing.IdentType.get("hckernel.kernel_api.CurrentGroup1")
 CurrentGroup2 = typing.IdentType.get("hckernel.kernel_api.CurrentGroup2")
@@ -97,10 +98,22 @@ def resolver(a: ValueType):
     return Indexing
 
 
+@type_resolver(_registry, ["py_ir.getattr", "typename"])
+def resolver(a: ValueType):
+    check_type(a, HCKernelMod)
+    return Typename
+
+
 @type_resolver(_registry, ["py_ir.getattr"])
 def resolver(a: ValueType):
     check_type(a, Indexing)
     return make_symbol(get_attr("name"))
+
+
+@type_resolver(_registry, ["py_ir.getattr"])
+def resolver(a: ValueType):
+    check_type(a, Typename)
+    return make_type("Typename", name=get_attr("name"))
 
 
 @type_resolver(_registry, ["py_ir.tuple_pack"])
