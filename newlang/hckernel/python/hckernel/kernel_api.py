@@ -39,28 +39,37 @@ def resolve_symbols(func, symbols):
     old_closure = func.__closure__
     new_closure = None
 
-    if old_closure is not None:
-        cell_cls = type(old_closure[0])
-
-        def resolve_cell(cell):
-            if isinstance(cell.cell_contents, Symbol):
-                if cell.cell_contents in symbols.keys():
-                    return cell_cls(symbols[cell.cell_contents])
-            elif isinstance(cell.cell_contents, Expr):
-                return cell_cls(cell.cell_contents.subs(symbols))
-
-            return cell
-
-        new_closure = tuple([resolve_cell(cell) for cell in old_closure])
-
-    def resolve_global(val):
+    def resolve_impl(val):
         if isinstance(val, Symbol):
             if val in symbols.keys():
                 return symbols[val]
         elif isinstance(val, Expr):
             return val.subs(symbols)
+        elif isinstance(val, Mapping):
+            return Mapping(resolve_symbols(val.func, symbols))
 
-        return val
+        return None
+
+    if old_closure is not None:
+        cell_cls = type(old_closure[0])
+
+        def resolve_cell(cell):
+            res = resolve_impl(cell.cell_contents)
+            if res is None:
+                res = cell
+            else:
+                res = cell_cls(res)
+
+            return res
+
+        new_closure = tuple(resolve_cell(cell) for cell in old_closure)
+
+    def resolve_global(val):
+        res = resolve_impl(val)
+        if res is None:
+            res = val
+
+        return res
 
     new_globals = {key: resolve_global(val) for key, val in func.__globals__.items()}
 
@@ -111,7 +120,7 @@ class _masked_array:
     def __setitem__(self, key, value):
         if isinstance(value, _masked_array):
             self.data[key] = np.where(value.mask, value.data, self.data[key])
-            self.__set_mask(key, self.mask | value.mask)
+            self.__set_mask(key, self.mask[key] | value.mask)
         else:
             self.data[key] = value
             self.__set_mask(key, True)
@@ -137,7 +146,7 @@ class _masked_array:
         return getattr(self.__ma, name)
 
     def __repr__(self):
-        return f"_masked_array(data={self.__ma.data},\n mask={self.mask})"
+        return str(self.__ma)
 
 
 def set_arithm_methods():
@@ -195,6 +204,15 @@ def set_arithm_methods():
 
 
 set_arithm_methods()
+
+
+class Mapping:
+    def __init__(self, func):
+        self.func = func
+
+
+def create_mapping(func):
+    return Mapping(func)
 
 
 def _get_uninit_value(dtype):
@@ -271,24 +289,55 @@ class CurrentGroup:
     def work_offset(self):
         return tuple(a * b for a, b in zip(self._group_shape, self._group_id))
 
-    def load(self, array, shape):
+    def load(self, array, shape, mapping=None):
         if not isinstance(shape, Iterable):
             shape = (shape,)
 
         dtype = array.dtype
         init = _get_uninit_value(dtype)
         res = _masked_array(np.full(shape, fill_value=init, dtype=dtype), mask=False)
-        s = tuple(slice(0, min(s1, s2)) for s1, s2 in zip(array.shape, shape))
+        if mapping:
+            f = mapping.func
+            src_shape = array.shape
+            for index in np.ndindex(*shape):
+                mapped = f(*index)
+                if all(i >= 0 and i < b for i, b in zip(mapped, src_shape)):
+                    res[index] = array[mapped]
 
-        res[s] = array[s]
+        else:
+            s = tuple(slice(0, min(s1, s2)) for s1, s2 in zip(array.shape, shape))
+            res[s] = array[s]
+
         return res
 
-    def store(self, dst, src):
+    def store(self, dst, src, mapping=None):
+        if mapping:
+            f = mapping.func
+            src_shape = src.shape
+            dst_shape = dst.shape
+            if isinstance(src, _masked_array):
+                for index in np.ndindex(*src_shape):
+                    mapped = f(*index)
+                    if all(i >= 0 and i < b for i, b in zip(mapped, dst_shape)):
+                        val = src[index]
+                        if val.mask:
+                            dst[mapped] = val.data
+            else:
+                for index in np.ndindex(*src_shape):
+                    mapped = f(*index)
+                    if all(i >= 0 and i < b for i, b in zip(mapped, dst_shape)):
+                        dst[mapped] = src[index]
+
+            return
+
         s = tuple(slice(0, min(s1, s2)) for s1, s2 in zip(src.shape, dst.shape))
         if isinstance(src, _masked_array):
             dst[s] = np.where(src.mask[s], src[s], dst[s])
         else:
             dst[s] = src[s]
+
+    def vload(self, array, shape, mapping=None):
+        return self.load(array, shape, mapping)
 
     def empty(self, shape, dtype):
         return self._alloc_impl(shape, dtype, _get_uninit_value(dtype))

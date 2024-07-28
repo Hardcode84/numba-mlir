@@ -1,19 +1,20 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from itertools import product
-from numpy.testing import assert_equal
+from numpy.testing import assert_equal, assert_allclose
 import numpy as np
 import pytest
 
 from hckernel.kernel_sim import (
-    kernel,
-    sym,
+    Buffer,
     CurrentGroup,
     CurrentSubGroup,
     CurrentWorkitem,
-    Buffer,
     TunableParam,
     atomic_ref,
+    create_mapping,
+    kernel,
+    sym,
 )
 
 
@@ -152,6 +153,99 @@ def test_dot_2():
     dot(a, b, result, (8, 8))
 
     assert_equal(result, np.dot(a, b))
+
+
+@pytest.mark.parametrize("n", [1, 2, 4])
+@pytest.mark.parametrize("c", [1, 3])
+@pytest.mark.parametrize("nf", [1, 2, 8])
+@pytest.mark.parametrize("stride", [1, 2, 3])
+def test_implicit_gemm(n, c, nf, stride):
+    h, w = 4, 4  # Image.
+    cf, hf, wf = c, 2, 2  # Filters.
+    x = np.random.randn(n, c, h, w)
+    we = np.random.randn(nf, cf, hf, wf)
+    padding = 0
+
+    def conv_ref(X, W):
+        m, n_C_prev, n_H_prev, n_W_prev = X.shape
+
+        n_H = int((n_H_prev + 2 * padding - hf) / stride) + 1
+        n_W = int((n_W_prev + 2 * padding - hf) / stride) + 1
+
+        out = np.zeros((m, nf, n_H, n_W))
+        for i in range(m):  # For each image.
+            for c in range(nf):  # For each channel.
+                for h in range(n_H):  # Slide the filter vertically.
+                    h_start = h * stride
+                    h_end = h_start + hf
+
+                    for w in range(n_W):  # Slide the filter horizontally.
+                        w_start = w * stride
+                        w_end = w_start + hf
+
+                        out[i, c, h, w] = np.sum(
+                            X[i, :, h_start:h_end, w_start:w_end] * W[c, ...]
+                        )
+        return out
+
+    out_ref = conv_ref(x, we)
+
+    N, C, H, W = sym.N, sym.C, sym.H, sym.W
+    NF, HF, WF = sym.NF, sym.HF, sym.WF
+    KB = sym.KB
+    H_OUT = (H + 2 * padding - HF) / stride + 1
+    W_OUT = (W + 2 * padding - WF) / stride + 1
+    SZ = HF * WF * C
+    KI = ceil_div(SZ, KB)
+
+    TN, TNF = sym.TN, sym.TNF
+
+    WORK_SHAPE = (N, NF, H_OUT * W_OUT)
+    GROUP_SHAPE = (TN, TNF, 1)
+
+    TTN = TunableParam(TN, 8, range(1, 64))
+    TTNF = TunableParam(TNF, 8, range(1, 64))
+    TKB = TunableParam(KB, 16, range(8, 128))
+
+    x_map = create_mapping(
+        lambda i, j: (i, j // (HF * WF), (j % (HF * WF)) % WF, (j % (HF * WF)) // WF)
+    )
+    f_map = create_mapping(
+        lambda i, j: (j, i // (HF * WF), i % WF, (i % (HF * WF)) // WF)
+    )
+    out_map = create_mapping(lambda i, j: (i, j, 0, 0))
+
+    @kernel(work_shape=WORK_SHAPE, group_shape=GROUP_SHAPE, tunables=(TTN, TTNF, TKB))
+    def conv(
+        gr: CurrentGroup,
+        x: Buffer[N, C, H, W],
+        f: Buffer[NF, C, HF, WF],
+        out: Buffer[N, NF, H_OUT, W_OUT],
+    ):
+        n, nf, w_idx = gr.work_offset
+
+        i = w_idx % W_OUT
+        j = w_idx // W_OUT
+        x_view = gr.load(
+            x[n:, :, i * stride :, j * stride :], shape=(TN, SZ), mapping=x_map
+        )
+
+        f_view = gr.load(f[nf:, :, :, :], shape=(SZ, TNF), mapping=f_map)
+
+        r = gr.zeros(shape=(x_view.shape[0], f_view.shape[1]), dtype=out.dtype)
+        for k in range(KI):
+            k_start = k * KB
+            x_slice = gr.vload(x_view[:, k_start:], shape=(TN, KB))
+            f_slice = gr.vload(f_view[k_start:, :], shape=(KB, TNF))
+            r += np.dot(x_slice, f_slice)
+
+        gr.store(out[n:, nf:, i:, j:], r, mapping=out_map)
+
+    result = np.zeros_like(out_ref)
+
+    conv(x, we, result)
+
+    assert_allclose(result, out_ref)
 
 
 def test_pairwise_distance():

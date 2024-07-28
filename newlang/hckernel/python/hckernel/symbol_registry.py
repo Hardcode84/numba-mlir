@@ -4,9 +4,11 @@
 _symbol_registry = {}
 
 
-def register_symbol(sym, sym_name, module_name):
+def register_symbol(sym, sym_name, module_name, overwrite=False):
     assert module_name is not None
-    assert sym not in _symbol_registry, f"Symbol is alredy registered: {sym}"
+    assert overwrite or (
+        sym not in _symbol_registry
+    ), f"Symbol is alredy registered: {sym}"
     if isinstance(module_name, str):
         module_name = module_name.split(".")
 
