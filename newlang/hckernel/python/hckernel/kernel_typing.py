@@ -133,7 +133,15 @@ def resolver(target: ValueType, index: ValueType):
     check_type(target, BufferBase)
     check_is_tuple(index)
     elements = get_type_param(index, "elements")
-    return make_type("Buffer", dims=elements)
+    dims = create_seq()
+    dims_len = get_seq_size(elements) - 1
+    i = 0
+    while i < dims_len:
+        dims = append_seq(dims, get_seq_element(elements, i))
+        i += 1
+
+    dtype = get_seq_element(elements, i)
+    return make_type("Buffer", dims=dims, dtype=dtype)
 
 
 @type_resolver(_registry, ["py_ir.getattr", "Buffer"])
@@ -243,7 +251,9 @@ def getitem_typing(dims: ValueType, index: ValueType):
 def resolver(target: ValueType, index: ValueType):
     check_is_buffer(target)
     return make_type(
-        "Buffer", dims=getitem_typing(get_type_param(target, "dims"), index)
+        "Buffer",
+        dims=getitem_typing(get_type_param(target, "dims"), index),
+        dtype=get_type_param(target, "dtype"),
     )
 
 
