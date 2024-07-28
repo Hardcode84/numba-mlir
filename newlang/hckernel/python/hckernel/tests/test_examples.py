@@ -189,18 +189,12 @@ def test_implicit_gemm(n, c, nf, stride):
         return out
 
     out_ref = conv_ref(x, we)
-    # print("x")
-    # print(x)
-    # print("we")
-    # print(we)
-    # print("res", out_ref.shape)
-    # print(out_ref)
 
     N, C, H, W = sym.N, sym.C, sym.H, sym.W
     NF, HF, WF = sym.NF, sym.HF, sym.WF
     KB = sym.KB
-    H_OUT = (H + 2 * padding - hf) / stride + 1
-    W_OUT = (W + 2 * padding - wf) / stride + 1
+    H_OUT = (H + 2 * padding - HF) / stride + 1
+    W_OUT = (W + 2 * padding - WF) / stride + 1
     SZ = HF * WF * C
     KI = ceil_div(SZ, KB)
 
@@ -235,11 +229,8 @@ def test_implicit_gemm(n, c, nf, stride):
         x_view = gr.load(
             x[n:, :, i * stride :, j * stride :], shape=(TN, SZ), mapping=x_map
         )
-        # print("-=-=-=-=-=-=-=-=-", n, nf, w_idx)
-        # print(x_view)
 
         f_view = gr.load(f[nf:, :, :, :], shape=(SZ, TNF), mapping=f_map)
-        # print(f_view)
 
         r = gr.zeros(shape=(x_view.shape[0], f_view.shape[1]), dtype=out.dtype)
         for k in range(KI):
@@ -247,8 +238,6 @@ def test_implicit_gemm(n, c, nf, stride):
             x_slice = gr.vload(x_view[:, k_start:], shape=(TN, KB))
             f_slice = gr.vload(f_view[k_start:, :], shape=(KB, TNF))
             r += np.dot(x_slice, f_slice)
-        # print(r.shape)
-        # print(r)
 
         gr.store(out[n:, nf:, i:, j:], r, mapping=out_map)
 
