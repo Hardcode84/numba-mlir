@@ -388,6 +388,11 @@ typing.type_resolver ["py_ir.call"] {
   typing.type_resolver_return %3
 }
 
+typing.type_resolver ["typing.get_ident_param"] {
+  %3 = typing.type_constant #typing.type_attr<!typing.value> : !typing.value
+  typing.type_resolver_return %3
+}
+
 // join types
 
 typing.type_resolver "join_types" {
