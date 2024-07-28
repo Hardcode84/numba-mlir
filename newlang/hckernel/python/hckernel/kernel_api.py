@@ -62,7 +62,7 @@ def resolve_symbols(func, symbols):
 
             return res
 
-        new_closure = tuple([resolve_cell(cell) for cell in old_closure])
+        new_closure = tuple(resolve_cell(cell) for cell in old_closure)
 
     def resolve_global(val):
         res = resolve_impl(val)
