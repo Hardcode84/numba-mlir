@@ -300,7 +300,8 @@ def Typing_GetAttrOp : Typing_OpBase<"get_attr", [
 }
 
 def Typing_GetIdentNameOp : Typing_OpBase<"get_ident_name", [
-  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>,
+  DeclareOpInterfaceMethods<TypingKeyInterface>
 ]> {
   let arguments = (ins Typing_ValueType:$ident);
   let results = (outs Typing_ValueType:$result);
@@ -309,7 +310,8 @@ def Typing_GetIdentNameOp : Typing_OpBase<"get_ident_name", [
 }
 
 def Typing_GetIdentParamOp : Typing_OpBase<"get_ident_param", [
-  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>,
+  DeclareOpInterfaceMethods<TypingKeyInterface>
 ]> {
   let arguments = (ins
     Typing_ValueType:$ident,
