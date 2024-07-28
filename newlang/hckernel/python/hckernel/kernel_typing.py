@@ -281,7 +281,8 @@ def resolver(target: ValueType):
 @type_resolver(_registry, ["py_ir.call"])
 def resolver(func: ValueType):
     check_type(func, GroupLoad)
+    buffer = get_arg(1)
     shape = get_arg(2)
     check_is_tuple(shape)
     elements = get_type_param(shape, "elements")
-    return make_type("Tensor", dims=elements)
+    return make_type("Tensor", dims=elements, dtype=get_type_param(buffer, "dtype"))
