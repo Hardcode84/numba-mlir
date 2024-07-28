@@ -15,7 +15,10 @@ from hckernel.kernel_sim import (
     create_mapping,
     kernel,
     sym,
+    typename,
 )
+
+DT = typename.DT
 
 
 def ceil_div(a, b):
@@ -27,7 +30,9 @@ def test_reduction_1():
     TN = TunableParam(N, 2, range(1, 64))
 
     @kernel(work_shape=ceil_div(WS, N), group_shape=GS, tunables=TN)
-    def reduction(gr: CurrentGroup, a: Buffer[WS], result: Buffer[1], gshape: GS):
+    def reduction(
+        gr: CurrentGroup, a: Buffer[WS, DT], result: Buffer[1, DT], gshape: GS
+    ):
         a_view = gr.load(a[gr.work_offset[0] * N :], shape=gr.size * N)
         atomic_ref(result)[0] += a_view.sum()
 
@@ -44,7 +49,9 @@ def test_reduction_2():
     TN = TunableParam(N, 2, range(1, 64))
 
     @kernel(work_shape=ceil_div(WS, N), group_shape=GS, tunables=TN)
-    def reduction(group: CurrentGroup, a: Buffer[WS], result: Buffer[1], gshape: GS):
+    def reduction(
+        group: CurrentGroup, a: Buffer[WS, DT], result: Buffer[1, DT], gshape: GS
+    ):
         temp_result = group.zeros(group.size, dtype=a.dtype)
         for i in range(N):
             work_offset = group.work_offset[0] * N + i * group.size
@@ -78,9 +85,9 @@ def test_dot_1():
     @kernel(work_shape=WORK_SHAPE, group_shape=GROUP_SHAPE, tunables=(TMI, TNI, TKB))
     def dot(
         gr: CurrentGroup,
-        a: Buffer[M, K],
-        b: Buffer[K, N],
-        out: Buffer[M, N],
+        a: Buffer[M, K, DT],
+        b: Buffer[K, N, DT],
+        out: Buffer[M, N, DT],
         gshape: GROUP_SHAPE,
     ):
         m_start = gr.work_offset[0] * MI
@@ -125,9 +132,9 @@ def test_dot_2():
     @kernel(work_shape=WORK_SHAPE, group_shape=GROUP_SHAPE, tunables=(TMI, TNI))
     def dot(
         gr: CurrentGroup,
-        a: Buffer[M, K],
-        b: Buffer[K, N],
-        out: Buffer[M, N],
+        a: Buffer[M, K, DT],
+        b: Buffer[K, N, DT],
+        out: Buffer[M, N, DT],
         gshape: GROUP_SHAPE,
     ):
         m_start = gr.work_offset[0] * MI
@@ -218,9 +225,9 @@ def test_implicit_gemm(n, c, nf, stride):
     @kernel(work_shape=WORK_SHAPE, group_shape=GROUP_SHAPE, tunables=(TTN, TTNF, TKB))
     def conv(
         gr: CurrentGroup,
-        x: Buffer[N, C, H, W],
-        f: Buffer[NF, C, HF, WF],
-        out: Buffer[N, NF, H_OUT, W_OUT],
+        x: Buffer[N, C, H, W, DT],
+        f: Buffer[NF, C, HF, WF, DT],
+        out: Buffer[N, NF, H_OUT, W_OUT, DT],
     ):
         n, nf, w_idx = gr.work_offset
 
@@ -262,9 +269,9 @@ def test_pairwise_distance():
     @kernel(work_shape=WORK_SHAPE, group_shape=GROUP_SHAPE, tunables=(TMI, TNI))
     def pw_distance(
         gr: CurrentGroup,
-        a: Buffer[M, D],
-        b: Buffer[N, D],
-        out: Buffer[M, N],
+        a: Buffer[M, D, DT],
+        b: Buffer[N, D, DT],
+        out: Buffer[M, N, DT],
         gshape: GROUP_SHAPE,
     ):
         m_start = gr.work_offset[0] * MI
@@ -299,7 +306,9 @@ def test_softmax_over_axis():
     TMI = TunableParam(MI, 1, range(1, 8))
 
     @kernel(work_shape=ceil_div(M, MI), group_shape=GM, tunables=TMI)
-    def softmax(gr: CurrentGroup, a: Buffer[M, N], out: Buffer[M, N], gshape: GM):
+    def softmax(
+        gr: CurrentGroup, a: Buffer[M, N, DT], out: Buffer[M, N, DT], gshape: GM
+    ):
         m_start = gr.work_offset[0] * MI
         m_block = gr.shape[0] * MI
 

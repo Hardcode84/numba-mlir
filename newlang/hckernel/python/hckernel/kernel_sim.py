@@ -77,8 +77,10 @@ def _visit_arg_annotation(idx, ann, prev_handler):
         def handler(subs, args):
             val = args[idx]
             ann_args = typing.get_args(ann)[0]
-            assert len(val.shape) == len(ann_args)
-            for s, v in zip(ann_args, val.shape):
+            shape = ann_args[:-1]
+            dtype = ann_args[-1]
+            assert len(val.shape) == len(shape)
+            for s, v in zip(shape, val.shape):
                 if not isinstance(s, Symbol):
                     continue
 

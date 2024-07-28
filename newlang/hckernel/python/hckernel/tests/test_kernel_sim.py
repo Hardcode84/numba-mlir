@@ -6,15 +6,18 @@ import numpy as np
 import pytest
 
 from hckernel.kernel_sim import (
-    kernel,
-    sym,
+    Buffer,
     CurrentGroup,
     CurrentSubGroup,
     CurrentWorkitem,
-    Buffer,
     TunableParam,
     atomic_ref,
+    kernel,
+    sym,
+    typename,
 )
+
+DT = typename.DT
 
 
 @pytest.mark.parametrize(
@@ -377,7 +380,7 @@ def test_buffer_dims1():
     G = sym.G
 
     @kernel(work_shape=G)
-    def test(gr: CurrentGroup, arr: Buffer[G]):
+    def test(gr: CurrentGroup, arr: Buffer[G, DT]):
         @gr.workitems
         def inner(wi: CurrentWorkitem):
             gid = wi.global_id()[0]
@@ -396,7 +399,7 @@ def test_buffer_dims2():
     G2 = sym.G2
 
     @kernel(work_shape=(G1, G2))
-    def test(gr: CurrentGroup, arr: Buffer[G1, G2]):
+    def test(gr: CurrentGroup, arr: Buffer[G1, G2, DT]):
         @gr.workitems
         def inner(wi: CurrentWorkitem):
             gid = wi.global_id()[:2]
@@ -414,7 +417,7 @@ def test_symbol_resolving_freevar():
     G = sym.G
 
     @kernel(work_shape=G)
-    def test(gr: CurrentGroup, arr: Buffer[G]):
+    def test(gr: CurrentGroup, arr: Buffer[G, DT]):
         arr[:] = G
 
     src = np.zeros(12)
@@ -427,7 +430,7 @@ GG = sym.GG
 
 def test_symbol_resolving_global():
     @kernel(work_shape=GG)
-    def test(gr: CurrentGroup, arr: Buffer[GG]):
+    def test(gr: CurrentGroup, arr: Buffer[GG, DT]):
         arr[:] = GG
 
     src = np.zeros(12)
@@ -440,7 +443,7 @@ def test_symbol_tuning_param_freevar():
     TG = TunableParam(G, 5, range(0, 10))
 
     @kernel(work_shape=10, tunables=TG)
-    def test(gr: CurrentGroup, arr: Buffer[10]):
+    def test(gr: CurrentGroup, arr: Buffer[10, DT]):
         arr[:] = G
 
     src = np.zeros(10)
@@ -454,7 +457,7 @@ def test_symbol_tuning_param_global():
     TG = TunableParam(GG, 5, range(0, 10))
 
     @kernel(work_shape=10, tunables=TG)
-    def test(gr: CurrentGroup, arr: Buffer[10]):
+    def test(gr: CurrentGroup, arr: Buffer[10, DT]):
         arr[:] = GG
 
     src = np.zeros(10)
