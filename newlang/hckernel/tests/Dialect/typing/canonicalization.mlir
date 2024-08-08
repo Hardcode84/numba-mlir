@@ -18,3 +18,17 @@ func.func private @func(!typing<expr ( !typing<symbol "A"> ) -> d0 >)
 // CHECK: ![[EXPR:.*]] = !typing<expr (![[SYM1]], ![[SYM2]]) -> d0 + d1>
 // CHECK: func.func private @func(![[EXPR]])
 func.func private @func(!typing<expr ( !typing<symbol "A">, !typing<symbol "B"> ) -> d0 + d1 >)
+
+// -----
+
+// CHECK: ![[SYM:.*]] = !typing<symbol "B">
+// CHECK: ![[EXPR:.*]] = !typing<expr (![[SYM]]) -> d0>
+// CHECK: func.func private @func(![[EXPR]])
+func.func private @func(!typing<expr ( !typing<symbol "A">, !typing<symbol "B"> ) -> d1 >)
+
+// -----
+
+// CHECK: ![[SYM:.*]] = !typing<symbol "A">
+// CHECK: ![[EXPR:.*]] = !typing<expr (![[SYM]]) -> d0 * 2>
+// CHECK: func.func private @func(![[EXPR]])
+func.func private @func(!typing<expr ( !typing<symbol "A">, !typing<symbol "A"> ) -> d0 + d1 >)

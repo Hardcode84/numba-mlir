@@ -780,9 +780,74 @@ parseExprType(mlir::AsmParser &parser,
   return mlir::success();
 }
 
+static bool removeDuplicates(llvm::SmallVectorImpl<mlir::Type> &params,
+                             mlir::AffineExpr &expr) {
+  bool changed = false;
+  auto *ctx = expr.getContext();
+  llvm::SmallDenseMap<mlir::Type, unsigned> paramIdx;
+  mlir::SmallVector<mlir::AffineExpr> replacement(params.size());
+  for (auto &&[i, param] : llvm::enumerate(params)) {
+    auto it = paramIdx.find(param);
+    if (it == paramIdx.end()) {
+      auto id = unsigned(i);
+      paramIdx.insert({param, id});
+      replacement[i] = mlir::getAffineDimExpr(id, ctx);
+      continue;
+    }
+
+    replacement[i] = mlir::getAffineDimExpr(it->second, ctx);
+    changed = true;
+  }
+
+  expr = expr.replaceDims(replacement);
+  return changed;
+}
+
+static bool removeUnused(llvm::SmallVectorImpl<mlir::Type> &params,
+                         mlir::AffineExpr &expr) {
+  auto *ctx = expr.getContext();
+  llvm::SmallBitVector used(params.size());
+  expr.walk([&](mlir::AffineExpr e) {
+    if (auto dim = mlir::dyn_cast<mlir::AffineDimExpr>(e)) {
+      assert(dim.getPosition() < used.size());
+      used.set(dim.getPosition());
+    }
+  });
+  if (used.all())
+    return false;
+
+  for (auto i : llvm::reverse(llvm::seq<size_t>(0, used.size()))) {
+    if (used[i])
+      continue;
+
+    params.erase(params.begin() + i);
+  }
+
+  unsigned offset = 0;
+  mlir::SmallVector<mlir::AffineExpr> replacement(used.size());
+  for (auto i : llvm::seq<size_t>(0, used.size())) {
+    replacement[i] = mlir::getAffineDimExpr(offset, ctx);
+    if (used[i])
+      ++offset;
+  }
+
+  expr = expr.replaceDims(replacement);
+  return true;
+}
+
 static std::pair<llvm::SmallVector<mlir::Type>, mlir::AffineExpr>
 simplifyExpr(llvm::ArrayRef<mlir::Type> params, mlir::AffineExpr expr) {
   llvm::SmallVector<mlir::Type> retParams(params);
+
+  bool changed;
+  do {
+    changed = false;
+    if (removeDuplicates(retParams, expr))
+      changed = true;
+
+    if (removeUnused(retParams, expr))
+      changed = true;
+  } while (changed);
 
   return {retParams, expr};
 }
