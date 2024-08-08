@@ -133,11 +133,11 @@ def Typing_UnionType : Typing_Type<"Union", "union", [], "::mlir::Type"> {
 
 def Typing_ExprType : Typing_Type<"Expr", "expr", [], "::mlir::Type"> {
   let parameters = (ins
-    OptionalArrayRefParameter<"::mlir::Type">:$params,
+    ArrayRefParameter<"::mlir::Type">:$params,
     "::mlir::AffineExpr":$expr
   );
 
-  let assemblyFormat = "$expr ( `:` $params^ )?";
+  let assemblyFormat = "custom<ExprType>($params, $expr)";
 }
 
 

@@ -3,3 +3,10 @@
 // CHECK: ![[EXPR:.*]] = !typing<expr 0>
 // CHECK: func.func private @func(![[EXPR]])
 func.func private @func(!typing<expr 0>)
+
+// -----
+
+// CHECK: ![[SYM:.*]] = !typing<symbol "A">
+// CHECK: ![[EXPR:.*]] = !typing<expr (![[SYM]]) -> d0>
+// CHECK: func.func private @func(![[EXPR]])
+func.func private @func(!typing<expr ( !typing<symbol "A"> ) -> d0 >)

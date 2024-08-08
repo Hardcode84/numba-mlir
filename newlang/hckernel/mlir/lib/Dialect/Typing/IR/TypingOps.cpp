@@ -747,17 +747,49 @@ hc::typing::MakeUnionOp::interpret(InterpreterState &state) {
   return true;
 }
 
-namespace mlir {
-template <> struct FieldParser<AffineExpr> {
-  static FailureOr<AffineExpr> parse(AsmParser &parser) {
-    AffineExpr ret;
-    if (parser.parseAffineExpr(std::nullopt, ret) || !ret)
-      return failure();
+static mlir::ParseResult
+parseExprType(mlir::AsmParser &parser,
+              llvm::SmallVectorImpl<mlir::Type> &params,
+              mlir::AffineExpr &expr) {
+  if (!parser.parseLParen()) {
+    auto result =
+        mlir::FieldParser<llvm::SmallVector<mlir::Type>>::parse(parser);
+    if (mlir::failed(result))
+      return parser.emitError(parser.getCurrentLocation(),
+                              "Failed to parse params list");
 
-    return ret;
+    params = *result;
+
+    if (parser.parseRParen())
+      return parser.emitError(parser.getCurrentLocation(), "\")\" expected");
+    if (parser.parseArrow())
+      return parser.emitError(parser.getCurrentLocation(), "\"->\" expected");
   }
-};
-} // namespace mlir
+
+  auto *ctx = parser.getContext();
+  llvm::SmallVector<std::pair<llvm::StringRef, mlir::AffineExpr>> paramExprs;
+  for (auto &&[i, p] : llvm::enumerate(params)) {
+    auto str = mlir::StringAttr::get(ctx, "d" + llvm::Twine(i)).getValue();
+    paramExprs.emplace_back(str, mlir::getAffineDimExpr(i, ctx));
+  }
+
+  if (parser.parseAffineExpr(paramExprs, expr))
+    return parser.emitError(parser.getCurrentLocation(),
+                            "affine expr expected");
+
+  return mlir::success();
+}
+
+static void printExprType(mlir::AsmPrinter &printer,
+                          llvm::ArrayRef<mlir::Type> params,
+                          mlir::AffineExpr expr) {
+  if (!params.empty()) {
+    printer << "(";
+    llvm::interleaveComma(params, printer);
+    printer << ") -> ";
+  }
+  printer << expr;
+}
 
 #include "hc/Dialect/Typing/IR/TypingOpsDialect.cpp.inc"
 
