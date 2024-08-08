@@ -131,6 +131,16 @@ def Typing_UnionType : Typing_Type<"Union", "union", [], "::mlir::Type"> {
 }
 
 
+def Typing_ExprType : Typing_Type<"Expr", "expr", [], "::mlir::Type"> {
+  let parameters = (ins
+    OptionalArrayRefParameter<"::mlir::Type">:$params,
+    "::mlir::AffineExpr":$expr
+  );
+
+  let assemblyFormat = "$expr ( `:` $params^ )?";
+}
+
+
 def Typing_TypeConstantOp : Typing_OpBase<"type_constant", [
     ConstantLike, Pure,
     DeclareOpInterfaceMethods<TypeInferenceInterface>,

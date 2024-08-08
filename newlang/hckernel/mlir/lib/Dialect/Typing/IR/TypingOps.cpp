@@ -18,24 +18,28 @@ struct TypingAsmDialectInterface : public mlir::OpAsmDialectInterface {
   using OpAsmDialectInterface::OpAsmDialectInterface;
 
   AliasResult getAlias(mlir::Type type, llvm::raw_ostream &os) const final {
-    if (auto ident = llvm::dyn_cast<hc::typing::IdentType>(type)) {
+    if (llvm::isa<hc::typing::IdentType>(type)) {
       os << "ident";
       return AliasResult::OverridableAlias;
     }
-    if (auto seq = llvm::dyn_cast<hc::typing::SequenceType>(type)) {
+    if (llvm::isa<hc::typing::SequenceType>(type)) {
       os << "seq";
       return AliasResult::OverridableAlias;
     }
-    if (auto sym = llvm::dyn_cast<hc::typing::SymbolType>(type)) {
+    if (llvm::isa<hc::typing::SymbolType>(type)) {
       os << "sym";
       return AliasResult::OverridableAlias;
     }
-    if (auto lit = llvm::dyn_cast<hc::typing::LiteralType>(type)) {
+    if (llvm::isa<hc::typing::LiteralType>(type)) {
       os << "literal";
       return AliasResult::OverridableAlias;
     }
-    if (auto lit = llvm::dyn_cast<hc::typing::UnionType>(type)) {
+    if (llvm::isa<hc::typing::UnionType>(type)) {
       os << "union";
+      return AliasResult::OverridableAlias;
+    }
+    if (llvm::isa<hc::typing::ExprType>(type)) {
+      os << "expr";
       return AliasResult::OverridableAlias;
     }
     return AliasResult::NoAlias;
@@ -742,6 +746,18 @@ hc::typing::MakeUnionOp::interpret(InterpreterState &state) {
       hc::typing::UnionType::get(getContext(), types.getArrayRef());
   return true;
 }
+
+namespace mlir {
+template <> struct FieldParser<AffineExpr> {
+  static FailureOr<AffineExpr> parse(AsmParser &parser) {
+    AffineExpr ret;
+    if (parser.parseAffineExpr(std::nullopt, ret) || !ret)
+      return failure();
+
+    return ret;
+  }
+};
+} // namespace mlir
 
 #include "hc/Dialect/Typing/IR/TypingOpsDialect.cpp.inc"
 
