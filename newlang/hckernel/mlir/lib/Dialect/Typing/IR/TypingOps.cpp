@@ -821,6 +821,35 @@ static bool removeUnused(llvm::SmallVectorImpl<mlir::Type> &params,
   return true;
 }
 
+static void sortParams(llvm::SmallVectorImpl<mlir::Type> &params,
+                       mlir::AffineExpr &expr) {
+  llvm::SmallDenseMap<mlir::Type, unsigned> origPos;
+  for (auto &&[i, param] : llvm::enumerate(params))
+    origPos[param] = unsigned(i);
+
+  auto cmp = [](mlir::Type lhs, mlir::Type rhs) -> bool {
+    auto lhsSym = mlir::dyn_cast<hc::typing::SymbolType>(lhs);
+    if (!lhsSym)
+      return false;
+
+    auto rhsSym = mlir::dyn_cast<hc::typing::SymbolType>(rhs);
+    if (!rhsSym)
+      return true;
+
+    return lhsSym.getName().getValue() < rhsSym.getName().getValue();
+  };
+
+  std::stable_sort(params.begin(), params.end(), cmp);
+
+  auto *ctx = expr.getContext();
+  mlir::SmallVector<mlir::AffineExpr> replacement(params.size());
+  for (auto &&[i, param] : llvm::enumerate(params)) {
+    auto orig = origPos.find(param)->second;
+    replacement[orig] = mlir::getAffineSymbolExpr(i, ctx);
+  }
+  expr = expr.replaceSymbols(replacement);
+}
+
 static std::pair<llvm::SmallVector<mlir::Type>, mlir::AffineExpr>
 simplifyExpr(llvm::ArrayRef<mlir::Type> params, mlir::AffineExpr expr) {
   llvm::SmallVector<mlir::Type> retParams(params);
@@ -838,6 +867,7 @@ simplifyExpr(llvm::ArrayRef<mlir::Type> params, mlir::AffineExpr expr) {
       changed = true;
   } while (changed);
 
+  sortParams(retParams, expr);
   return {retParams, mlir::simplifyAffineExpr(expr, 0, retParams.size())};
 }
 
