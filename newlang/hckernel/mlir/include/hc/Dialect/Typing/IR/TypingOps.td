@@ -137,7 +137,16 @@ def Typing_ExprType : Typing_Type<"Expr", "expr", [], "::mlir::Type"> {
     "::mlir::AffineExpr":$expr
   );
 
+  let skipDefaultBuilders = 1;
   let assemblyFormat = "custom<ExprType>($params, $expr)";
+
+  let builders = [
+    TypeBuilder<(ins "::llvm::ArrayRef<::mlir::Type>":$params,
+                     "::mlir::AffineExpr":$expr), [{
+      auto [newParams, newExpr] = ::simplifyExpr(params, expr);
+      return Base::get($_ctxt, std::move(newParams), std::move(newExpr));
+    }]>
+  ];
 }
 
 

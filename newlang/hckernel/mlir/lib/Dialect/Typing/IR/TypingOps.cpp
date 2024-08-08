@@ -780,6 +780,13 @@ parseExprType(mlir::AsmParser &parser,
   return mlir::success();
 }
 
+static std::pair<llvm::SmallVector<mlir::Type>, mlir::AffineExpr>
+simplifyExpr(llvm::ArrayRef<mlir::Type> params, mlir::AffineExpr expr) {
+  llvm::SmallVector<mlir::Type> retParams(params);
+
+  return {retParams, expr};
+}
+
 static void printExprType(mlir::AsmPrinter &printer,
                           llvm::ArrayRef<mlir::Type> params,
                           mlir::AffineExpr expr) {
