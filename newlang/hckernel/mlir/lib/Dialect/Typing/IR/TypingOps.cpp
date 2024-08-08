@@ -747,6 +747,27 @@ hc::typing::MakeUnionOp::interpret(InterpreterState &state) {
   return true;
 }
 
+static bool expandLiterals(llvm::SmallVectorImpl<mlir::Type> &params,
+                           mlir::AffineExpr &expr) {
+  bool changed = false;
+  for (auto &&[i, param] : llvm::enumerate(params)) {
+    auto lit = mlir::dyn_cast<hc::typing::LiteralType>(param);
+    if (!lit)
+      continue;
+
+    auto attr = mlir::dyn_cast<mlir::IntegerAttr>(lit.getValue());
+    if (!attr)
+      continue;
+
+    auto *ctx = expr.getContext();
+    expr = expr.replace(
+        mlir::getAffineSymbolExpr(i, ctx),
+        mlir::getAffineConstantExpr(attr.getValue().getSExtValue(), ctx));
+    changed = true;
+  }
+  return changed;
+}
+
 static bool expandNested(llvm::SmallVectorImpl<mlir::Type> &params,
                          mlir::AffineExpr &expr) {
   for (auto &&[i, param] : llvm::enumerate(params)) {
@@ -857,6 +878,9 @@ simplifyExpr(llvm::ArrayRef<mlir::Type> params, mlir::AffineExpr expr) {
   bool changed;
   do {
     changed = false;
+    if (expandLiterals(retParams, expr))
+      changed = true;
+
     if (expandNested(retParams, expr))
       changed = true;
 
