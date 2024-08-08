@@ -780,6 +780,25 @@ parseExprType(mlir::AsmParser &parser,
   return mlir::success();
 }
 
+static bool expandNested(llvm::SmallVectorImpl<mlir::Type> &params,
+                         mlir::AffineExpr &expr) {
+  for (auto &&[i, param] : llvm::enumerate(params)) {
+    auto nested = mlir::dyn_cast<hc::typing::ExprType>(param);
+    if (!nested)
+      continue;
+
+    auto nestedParams = nested.getParams();
+    auto nestedExpr = nested.getExpr();
+    nestedExpr = nestedExpr.shiftDims(nestedParams.size(), params.size());
+    params.append(nestedParams.begin(), nestedParams.end());
+    auto *ctx = expr.getContext();
+    params[i] = mlir::NoneType::get(ctx);
+    expr = expr.replace(mlir::getAffineDimExpr(i, ctx), nestedExpr);
+    return true;
+  }
+  return false;
+}
+
 static bool removeDuplicates(llvm::SmallVectorImpl<mlir::Type> &params,
                              mlir::AffineExpr &expr) {
   bool changed = false;
@@ -842,6 +861,9 @@ simplifyExpr(llvm::ArrayRef<mlir::Type> params, mlir::AffineExpr expr) {
   bool changed;
   do {
     changed = false;
+    if (expandNested(retParams, expr))
+      changed = true;
+
     if (removeDuplicates(retParams, expr))
       changed = true;
 
