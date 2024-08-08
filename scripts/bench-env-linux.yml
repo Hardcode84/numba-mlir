@@ -2,16 +2,16 @@ name: bench
 channels:
   - dppy/label/dev
   - conda-forge
-  - intel
+  - https://software.repos.intel.com/python/conda/
   - nodefaults
 dependencies:
   - python=3.10
   - asv=0.6
   - numba-mlir
   - dpctl
-  - dpcpp_linux-64
+  - dpcpp_linux-64 = 2024.2
   - icc_rt
-  - intel::numpy
+  - https://software.repos.intel.com/python/conda/::numpy
   - py-cpuinfo
   - tomli
   - scipy
