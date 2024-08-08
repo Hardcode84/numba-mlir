@@ -747,6 +747,100 @@ hc::typing::MakeUnionOp::interpret(InterpreterState &state) {
   return true;
 }
 
+static bool expandNested(llvm::SmallVectorImpl<mlir::Type> &params,
+                         mlir::AffineExpr &expr) {
+  for (auto &&[i, param] : llvm::enumerate(params)) {
+    auto nested = mlir::dyn_cast<hc::typing::ExprType>(param);
+    if (!nested)
+      continue;
+
+    auto nestedParams = nested.getParams();
+    auto nestedExpr = nested.getExpr();
+    nestedExpr = nestedExpr.shiftSymbols(nestedParams.size(), params.size());
+    params.append(nestedParams.begin(), nestedParams.end());
+    auto *ctx = expr.getContext();
+    params[i] = mlir::NoneType::get(ctx);
+    expr = expr.replace(mlir::getAffineSymbolExpr(i, ctx), nestedExpr);
+    return true;
+  }
+  return false;
+}
+
+static bool removeDuplicates(llvm::SmallVectorImpl<mlir::Type> &params,
+                             mlir::AffineExpr &expr) {
+  bool changed = false;
+  auto *ctx = expr.getContext();
+  llvm::SmallDenseMap<mlir::Type, unsigned> paramIdx;
+  mlir::SmallVector<mlir::AffineExpr> replacement(params.size());
+  for (auto &&[i, param] : llvm::enumerate(params)) {
+    auto it = paramIdx.find(param);
+    if (it == paramIdx.end()) {
+      auto id = unsigned(i);
+      paramIdx.insert({param, id});
+      replacement[i] = mlir::getAffineSymbolExpr(id, ctx);
+      continue;
+    }
+
+    replacement[i] = mlir::getAffineSymbolExpr(it->second, ctx);
+    changed = true;
+  }
+
+  expr = expr.replaceSymbols(replacement);
+  return changed;
+}
+
+static bool removeUnused(llvm::SmallVectorImpl<mlir::Type> &params,
+                         mlir::AffineExpr &expr) {
+  auto *ctx = expr.getContext();
+  llvm::SmallBitVector used(params.size());
+  expr.walk([&](mlir::AffineExpr e) {
+    if (auto sym = mlir::dyn_cast<mlir::AffineSymbolExpr>(e)) {
+      assert(sym.getPosition() < used.size());
+      used.set(sym.getPosition());
+    }
+  });
+  if (used.all())
+    return false;
+
+  for (auto i : llvm::reverse(llvm::seq<size_t>(0, used.size()))) {
+    if (used[i])
+      continue;
+
+    params.erase(params.begin() + i);
+  }
+
+  unsigned offset = 0;
+  mlir::SmallVector<mlir::AffineExpr> replacement(used.size());
+  for (auto i : llvm::seq<size_t>(0, used.size())) {
+    replacement[i] = mlir::getAffineSymbolExpr(offset, ctx);
+    if (used[i])
+      ++offset;
+  }
+
+  expr = expr.replaceSymbols(replacement);
+  return true;
+}
+
+static std::pair<llvm::SmallVector<mlir::Type>, mlir::AffineExpr>
+simplifyExpr(llvm::ArrayRef<mlir::Type> params, mlir::AffineExpr expr) {
+  llvm::SmallVector<mlir::Type> retParams(params);
+
+  bool changed;
+  do {
+    changed = false;
+    if (expandNested(retParams, expr))
+      changed = true;
+
+    if (removeDuplicates(retParams, expr))
+      changed = true;
+
+    if (removeUnused(retParams, expr))
+      changed = true;
+  } while (changed);
+
+  return {retParams, expr};
+}
+
 static mlir::ParseResult
 parseExprType(mlir::AsmParser &parser,
               llvm::SmallVectorImpl<mlir::Type> &params,
@@ -769,8 +863,8 @@ parseExprType(mlir::AsmParser &parser,
   auto *ctx = parser.getContext();
   llvm::SmallVector<std::pair<llvm::StringRef, mlir::AffineExpr>> paramExprs;
   for (auto &&[i, p] : llvm::enumerate(params)) {
-    auto str = mlir::StringAttr::get(ctx, "d" + llvm::Twine(i)).getValue();
-    paramExprs.emplace_back(str, mlir::getAffineDimExpr(i, ctx));
+    auto str = mlir::StringAttr::get(ctx, "s" + llvm::Twine(i)).getValue();
+    paramExprs.emplace_back(str, mlir::getAffineSymbolExpr(i, ctx));
   }
 
   if (parser.parseAffineExpr(paramExprs, expr))
@@ -778,100 +872,6 @@ parseExprType(mlir::AsmParser &parser,
                             "affine expr expected");
 
   return mlir::success();
-}
-
-static bool expandNested(llvm::SmallVectorImpl<mlir::Type> &params,
-                         mlir::AffineExpr &expr) {
-  for (auto &&[i, param] : llvm::enumerate(params)) {
-    auto nested = mlir::dyn_cast<hc::typing::ExprType>(param);
-    if (!nested)
-      continue;
-
-    auto nestedParams = nested.getParams();
-    auto nestedExpr = nested.getExpr();
-    nestedExpr = nestedExpr.shiftDims(nestedParams.size(), params.size());
-    params.append(nestedParams.begin(), nestedParams.end());
-    auto *ctx = expr.getContext();
-    params[i] = mlir::NoneType::get(ctx);
-    expr = expr.replace(mlir::getAffineDimExpr(i, ctx), nestedExpr);
-    return true;
-  }
-  return false;
-}
-
-static bool removeDuplicates(llvm::SmallVectorImpl<mlir::Type> &params,
-                             mlir::AffineExpr &expr) {
-  bool changed = false;
-  auto *ctx = expr.getContext();
-  llvm::SmallDenseMap<mlir::Type, unsigned> paramIdx;
-  mlir::SmallVector<mlir::AffineExpr> replacement(params.size());
-  for (auto &&[i, param] : llvm::enumerate(params)) {
-    auto it = paramIdx.find(param);
-    if (it == paramIdx.end()) {
-      auto id = unsigned(i);
-      paramIdx.insert({param, id});
-      replacement[i] = mlir::getAffineDimExpr(id, ctx);
-      continue;
-    }
-
-    replacement[i] = mlir::getAffineDimExpr(it->second, ctx);
-    changed = true;
-  }
-
-  expr = expr.replaceDims(replacement);
-  return changed;
-}
-
-static bool removeUnused(llvm::SmallVectorImpl<mlir::Type> &params,
-                         mlir::AffineExpr &expr) {
-  auto *ctx = expr.getContext();
-  llvm::SmallBitVector used(params.size());
-  expr.walk([&](mlir::AffineExpr e) {
-    if (auto dim = mlir::dyn_cast<mlir::AffineDimExpr>(e)) {
-      assert(dim.getPosition() < used.size());
-      used.set(dim.getPosition());
-    }
-  });
-  if (used.all())
-    return false;
-
-  for (auto i : llvm::reverse(llvm::seq<size_t>(0, used.size()))) {
-    if (used[i])
-      continue;
-
-    params.erase(params.begin() + i);
-  }
-
-  unsigned offset = 0;
-  mlir::SmallVector<mlir::AffineExpr> replacement(used.size());
-  for (auto i : llvm::seq<size_t>(0, used.size())) {
-    replacement[i] = mlir::getAffineDimExpr(offset, ctx);
-    if (used[i])
-      ++offset;
-  }
-
-  expr = expr.replaceDims(replacement);
-  return true;
-}
-
-static std::pair<llvm::SmallVector<mlir::Type>, mlir::AffineExpr>
-simplifyExpr(llvm::ArrayRef<mlir::Type> params, mlir::AffineExpr expr) {
-  llvm::SmallVector<mlir::Type> retParams(params);
-
-  bool changed;
-  do {
-    changed = false;
-    if (expandNested(retParams, expr))
-      changed = true;
-
-    if (removeDuplicates(retParams, expr))
-      changed = true;
-
-    if (removeUnused(retParams, expr))
-      changed = true;
-  } while (changed);
-
-  return {retParams, expr};
 }
 
 static void printExprType(mlir::AsmPrinter &printer,
