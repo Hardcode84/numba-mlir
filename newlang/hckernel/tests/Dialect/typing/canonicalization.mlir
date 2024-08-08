@@ -38,6 +38,6 @@ func.func private @func(!typing<expr ( !typing<symbol "A">, !typing<symbol "A"> 
 // CHECK: ![[SYM1:.*]] = !typing<symbol "C">
 // CHECK: ![[SYM2:.*]] = !typing<symbol "A">
 // CHECK: ![[SYM3:.*]] = !typing<symbol "B">
-// CHECK: ![[EXPR:.*]] = !typing<expr (![[SYM1]], ![[SYM2]], ![[SYM3]]) -> s1 * s2 + s0>
+// CHECK: ![[EXPR:.*]] = !typing<expr (![[SYM1]], ![[SYM2]], ![[SYM3]]) -> s0 + s1 * s2>
 // CHECK: func.func private @func(![[EXPR]])
 func.func private @func(!typing<expr ( !typing<expr ( !typing<symbol "A">, !typing<symbol "B"> ) -> s0 * s1 >, !typing<symbol "C"> ) -> s0 + s1 >)

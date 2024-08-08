@@ -838,7 +838,7 @@ simplifyExpr(llvm::ArrayRef<mlir::Type> params, mlir::AffineExpr expr) {
       changed = true;
   } while (changed);
 
-  return {retParams, expr};
+  return {retParams, mlir::simplifyAffineExpr(expr, 0, retParams.size())};
 }
 
 static mlir::ParseResult
