@@ -52,7 +52,12 @@ def check_is_buffer(t: ValueType):
 
 @func
 def check_is_tensor(t: ValueType):
-    check(is_same(get_type_name(t), "tensor"))
+    check(is_same(get_type_name(t), "Tensor"))
+
+
+@func
+def check_is_shaped(t: ValueType):
+    check(is_same(get_type_name(t), "Buffer") or is_same(get_type_name(t), "Tensor"))
 
 
 @func
@@ -257,9 +262,19 @@ def resolver(target: ValueType, index: ValueType):
     )
 
 
+@type_resolver(_registry, ["py_ir.getitem"])
+def resolver(target: ValueType, index: ValueType):
+    check_is_tensor(target)
+    return make_type(
+        "Tensor",
+        dims=getitem_typing(get_type_param(target, "dims"), index),
+        dtype=get_type_param(target, "dtype"),
+    )
+
+
 @type_resolver(_registry, ["py_ir.getattr", "shape"])
 def resolver(target: ValueType):
-    check_is_buffer(target)
+    check_is_shaped(target)
     dims = get_type_param(target, "dims")
     return make_type("Tuple", elements=dims)
 
