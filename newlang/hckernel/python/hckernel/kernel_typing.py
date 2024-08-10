@@ -287,6 +287,14 @@ def resolver(target: ValueType, index: ValueType):
     )
 
 
+@type_resolver(_registry, ["py_ir.binop"])
+def resolver(lhs: ValueType, rhs: ValueType):
+    # TODO: broadcasting
+    check_is_tensor(lhs)
+    check(is_same(lhs, rhs))
+    return lhs
+
+
 @type_resolver(_registry, ["py_ir.getattr", "load"])
 def resolver(target: ValueType):
     check_is_current_group(target)
