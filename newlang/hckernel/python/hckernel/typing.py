@@ -156,3 +156,8 @@ def get_type_name(type):
 @_register_func
 def get_type_param(type, name):
     _stub_error()
+
+
+@_register_func
+def get_global_attr(name):
+    _stub_error()

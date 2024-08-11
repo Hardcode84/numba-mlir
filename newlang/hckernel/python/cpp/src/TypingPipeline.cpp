@@ -167,6 +167,11 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
                                                             args[0], name);
     return mlir::success();
   }
+  if (auto name = isStrLiteralArg("get_global_attr", vt, {})) {
+    builder.replaceOpWithNewOp<hc::typing::GetGlobalAttrOp>(call, callResType,
+                                                            name);
+    return mlir::success();
+  }
 
   auto matchMakeType = [&]() -> bool {
     if (!checkFuncName("make_type"))
