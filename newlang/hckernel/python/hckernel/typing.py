@@ -119,6 +119,11 @@ def get_arg(index):
 
 
 @_register_func
+def get_named_arg(name):
+    _stub_error()
+
+
+@_register_func
 def make_symbol(name):
     _stub_error()
 

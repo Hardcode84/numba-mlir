@@ -607,6 +607,33 @@ mlir::FailureOr<bool> hc::typing::GetArgOp::interpret(InterpreterState &state) {
 }
 
 mlir::FailureOr<bool>
+hc::typing::GetNamedArgOp::interpret(InterpreterState &state) {
+  auto iface =
+      mlir::dyn_cast_if_present<hc::typing::GetNamedArgInterface>(state.op);
+  if (!iface)
+    return emitError("GetNamedArgInterface is not available");
+
+  auto res = iface.getNamedArg(getName());
+  if (mlir::failed(res))
+    return emitError("getNamedArg failed");
+
+  mlir::Value val = *res;
+  if (!val) {
+    state.state[getResult()] = mlir::NoneType::get(getContext());
+    return true;
+  }
+
+  for (auto &&[i, arg] : llvm::enumerate(state.op->getOperands())) {
+    if (arg == val) {
+      state.state[getResult()] = state.args[i];
+      return true;
+    }
+  }
+
+  return emitError("Invalid named arg");
+}
+
+mlir::FailureOr<bool>
 hc::typing::GetAttrOp::interpret(InterpreterState &state) {
   auto op = state.op;
   if (!op)

@@ -172,6 +172,11 @@ static mlir::LogicalResult convertCall(mlir::PatternRewriter &builder,
                                                             name);
     return mlir::success();
   }
+  if (auto name = isStrLiteralArg("get_named_arg", vt, {})) {
+    builder.replaceOpWithNewOp<hc::typing::GetNamedArgOp>(call, callResType,
+                                                          name);
+    return mlir::success();
+  }
 
   auto matchMakeType = [&]() -> bool {
     if (!checkFuncName("make_type"))

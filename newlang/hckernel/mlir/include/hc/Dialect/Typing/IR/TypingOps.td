@@ -309,6 +309,15 @@ def Typing_GetArgOp : Typing_OpBase<"get_arg", [
   let assemblyFormat = "attr-dict $index";
 }
 
+def Typing_GetNamedArgOp : Typing_OpBase<"get_named_arg", [
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
+  let arguments = (ins StrAttr:$name);
+  let results = (outs Typing_ValueType:$result);
+
+  let assemblyFormat = "attr-dict $name";
+}
+
 def Typing_GetAttrOp : Typing_OpBase<"get_attr", [
   Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
 ]> {
