@@ -409,4 +409,13 @@ def Typing_MakeUnionOp : Typing_OpBase<"make_union", [
   let assemblyFormat = "attr-dict $args";
 }
 
+def Typing_GetGlobalAttrOp : Typing_OpBase<"get_global_attr", [
+  Pure, DeclareOpInterfaceMethods<TypingInterpreterInterface>
+]> {
+  let arguments = (ins StrAttr:$name);
+  let results = (outs Typing_ValueType:$result);
+
+  let assemblyFormat = "attr-dict $name";
+}
+
 #endif // TYPING_OPS

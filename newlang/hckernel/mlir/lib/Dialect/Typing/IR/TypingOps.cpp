@@ -747,6 +747,28 @@ hc::typing::MakeUnionOp::interpret(InterpreterState &state) {
   return true;
 }
 
+mlir::FailureOr<bool>
+hc::typing::GetGlobalAttrOp::interpret(InterpreterState &state) {
+  if (!state.op)
+    return emitError("op is not set");
+
+  auto mod = state.op->getParentOfType<mlir::ModuleOp>();
+  if (!mod)
+    return emitError("no module");
+
+  auto name = getNameAttr();
+  auto attr = mod->getAttr(name);
+  if (!attr)
+    return emitError("Attribute ") << name.getValue() << " not found";
+
+  auto typeAttr = mlir::dyn_cast<hc::typing::TypeAttr>(attr);
+  if (!typeAttr)
+    return emitError("Attribute ") << attr << " is not TypeAttr";
+
+  state.state[getResult()] = typeAttr.getTypeVal();
+  return true;
+}
+
 static bool expandLiterals(llvm::SmallVectorImpl<mlir::Type> &params,
                            mlir::AffineExpr &expr) {
   bool changed = false;

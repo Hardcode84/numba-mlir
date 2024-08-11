@@ -437,3 +437,29 @@ py_ir.module {
   }
   %6 = py_ir.call %5 : !py_ir.undefined  () -> !py_ir.undefined
 }
+
+// -----
+
+module attributes {test.test = #typing.type_attr<i32> : !typing.value} {
+typing.type_resolver ["py_ir.loadvar", "CurrentGroup"] {
+  %0 = typing.get_global_attr "test.test"
+  typing.type_resolver_return %0
+}
+
+// CHECK-LABEL: py_ir.module {
+//       CHECK:  py_ir.func "func"
+//       CHECK:  ^bb0(%[[ARG:.*]]: i32):
+//       CHECK:  %[[R:.*]] = py_ir.getattr %[[ARG]] : i32 attr "foo" -> !py_ir.undefined
+//       CHECK:  py_ir.return %[[R]] : !py_ir.undefined
+
+py_ir.module {
+  %0 = py_ir.loadvar "CurrentGroup" : !py_ir.undefined
+  %1 = py_ir.func "func" (group:%0) : !py_ir.undefined capture () -> !py_ir.undefined {
+  ^bb0(%arg0: !py_ir.undefined):
+    %2 = py_ir.getattr %arg0 : !py_ir.undefined attr "foo" -> !py_ir.undefined
+    py_ir.return %2 : !py_ir.undefined
+  }
+  %3 = py_ir.call %1 : !py_ir.undefined  () -> !py_ir.undefined
+}
+
+}
