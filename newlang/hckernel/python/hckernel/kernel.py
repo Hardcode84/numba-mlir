@@ -75,7 +75,6 @@ def _get_symbol_attr(term):
             lhs, rhs = term.args
             lhs = _get_symbol_attr(lhs)
             rhs = _get_symbol_attr(rhs)
-            print(lhs, rhs)
             return lhs * rhs
 
     assert False, f"Can't convert value {sym} : {type(sym)}"
