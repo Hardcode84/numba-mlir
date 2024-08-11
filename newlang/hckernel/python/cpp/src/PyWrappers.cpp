@@ -24,8 +24,12 @@ void popContext(mlir::MLIRContext *ctx) {
   translateContext(ctx)->contextExit(py::none(), py::none(), py::none());
 }
 
-template <typename T> static bool genIsA(MlirType type) {
+template <typename T> static bool genTypeIsA(MlirType type) {
   return mlir::isa<T>(unwrap(type));
+}
+
+template <typename T> static bool genAttrIsA(MlirAttribute attr) {
+  return mlir::isa<T>(unwrap(attr));
 }
 
 template <typename T> static MlirTypeID genGetTypeID() {
@@ -39,7 +43,8 @@ using namespace mlir::python;
 namespace {
 class PyValueType : public PyConcreteType<PyValueType> {
 public:
-  static constexpr IsAFunctionTy isaFunction = genIsA<hc::typing::ValueType>;
+  static constexpr IsAFunctionTy isaFunction =
+      genTypeIsA<hc::typing::ValueType>;
   static constexpr GetTypeIDFunctionTy getTypeIdFunction =
       genGetTypeID<hc::typing::ValueType>;
   static constexpr const char *pyClassName = "ValueType";
@@ -58,7 +63,8 @@ public:
 
 class PyIdentType : public PyConcreteType<PyIdentType> {
 public:
-  static constexpr IsAFunctionTy isaFunction = genIsA<hc::typing::IdentType>;
+  static constexpr IsAFunctionTy isaFunction =
+      genTypeIsA<hc::typing::IdentType>;
   static constexpr GetTypeIDFunctionTy getTypeIdFunction =
       genGetTypeID<hc::typing::IdentType>;
   static constexpr const char *pyClassName = "IdentType";
@@ -88,11 +94,86 @@ public:
         py::arg("context") = py::none(), "Create ident type");
   }
 };
+
+class PySequenceType : public PyConcreteType<PySequenceType> {
+public:
+  static constexpr IsAFunctionTy isaFunction =
+      genTypeIsA<hc::typing::SequenceType>;
+  static constexpr GetTypeIDFunctionTy getTypeIdFunction =
+      genGetTypeID<hc::typing::SequenceType>;
+  static constexpr const char *pyClassName = "SequenceType";
+  using PyConcreteType::PyConcreteType;
+
+  static void bindDerived(ClassTy &c) {
+    c.def_static(
+        "get",
+        [](py::iterable params, DefaultingPyMlirContext context) {
+          llvm::SmallVector<mlir::Type> paramsArr;
+          for (auto param : params)
+            paramsArr.emplace_back(unwrap(param.cast<PyType>()));
+
+          auto ctx = unwrap(context->get());
+          MlirType t = wrap(hc::typing::SequenceType::get(ctx, paramsArr));
+          return PySequenceType(context->getRef(), t);
+        },
+        py::arg("params"), py::arg("context") = py::none(),
+        "Create sequence type");
+  }
+};
+
+class PySymbolType : public PyConcreteType<PySymbolType> {
+public:
+  static constexpr IsAFunctionTy isaFunction =
+      genTypeIsA<hc::typing::SymbolType>;
+  static constexpr GetTypeIDFunctionTy getTypeIdFunction =
+      genGetTypeID<hc::typing::SymbolType>;
+  static constexpr const char *pyClassName = "SymbolType";
+  using PyConcreteType::PyConcreteType;
+
+  static void bindDerived(ClassTy &c) {
+    c.def_static(
+        "get",
+        [](py::str name, DefaultingPyMlirContext context) {
+          auto ctx = unwrap(context->get());
+          MlirType t =
+              wrap(hc::typing::SymbolType::get(ctx, name.cast<std::string>()));
+          return PySequenceType(context->getRef(), t);
+        },
+        py::arg("params"), py::arg("context") = py::none(),
+        "Create symbol type");
+  }
+};
+
+class PyTypeAttr : public PyConcreteAttribute<PyTypeAttr> {
+public:
+  static constexpr IsAFunctionTy isaFunction = genAttrIsA<hc::typing::TypeAttr>;
+  static constexpr GetTypeIDFunctionTy getTypeIdFunction =
+      genGetTypeID<hc::typing::TypeAttr>;
+  static constexpr const char *pyClassName = "TypeAttr";
+  using PyConcreteAttribute::PyConcreteAttribute;
+
+  static void bindDerived(ClassTy &c) {
+    c.def_static(
+        "get",
+        [](PyType type) {
+          mlir::Type t = unwrap(type);
+          MlirAttribute typeAttr = wrap(hc::typing::TypeAttr::get(t));
+          return PyTypeAttr(
+              mlir::python::PyMlirContext::forContext(wrap(t.getContext())),
+              typeAttr);
+        },
+        "Create TypeAttr value");
+  }
+};
 } // namespace
 
 static void populateTypingTypes(py::module &m) {
   PyValueType::bind(m);
   PyIdentType::bind(m);
+  PySequenceType::bind(m);
+  PySymbolType::bind(m);
+
+  PyTypeAttr::bind(m);
 }
 
 void populateMlirModule(py::module &m) {

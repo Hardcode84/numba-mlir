@@ -93,6 +93,15 @@ static mlir::OwningOpRef<mlir::Operation *> importImpl(Context &context,
 
     newMod = std::move(preMod);
   }
+  auto globalAttrs = desc.attr("global_attrs");
+  if (!globalAttrs.is_none()) {
+    for (auto &&[key, val] : globalAttrs.cast<py::dict>()) {
+      auto keyAttr =
+          mlir::StringAttr::get(mlirContext, key.cast<std::string>());
+      auto attr = unwrap(val.cast<mlir::python::PyAttribute>());
+      newMod->setAttr(keyAttr, attr);
+    }
+  }
   return newMod;
 }
 

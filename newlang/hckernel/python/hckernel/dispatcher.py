@@ -21,6 +21,7 @@ FuncDesc = namedtuple(
         "literals",
         "dispatcher_deps",
         "prelink_module",
+        "global_attrs",
     ],
 )
 from .typename import Typename
@@ -67,7 +68,7 @@ def _process_annotation(ann):
         assert False, f"Unsupported annotation: {type(ann)} {ann}"
 
 
-def _get_desc(func, dispatcher_cls, prelink_module):
+def _get_desc(func, dispatcher_cls, prelink_module, global_attrs):
     if not isinstance(func, FunctionType):
         raise RuntimeError(f"Unsupported object {type(func)}")
 
@@ -112,13 +113,21 @@ def _get_desc(func, dispatcher_cls, prelink_module):
             literals=literals,
             dispatcher_deps=dispatcher_deps,
             prelink_module=prelink_mod,
+            global_attrs=global_attrs,
         )
 
     return _wrapper
 
 
-def create_dispatcher(func, prelink_module=None, dispatcher=Dispatcher):
+def create_dispatcher(
+    func, prelink_module=None, dispatcher=Dispatcher, global_attrs=None
+):
     return dispatcher(
         mlir_context,
-        _get_desc(func, dispatcher_cls=dispatcher, prelink_module=prelink_module),
+        _get_desc(
+            func,
+            dispatcher_cls=dispatcher,
+            prelink_module=prelink_module,
+            global_attrs=global_attrs,
+        ),
     )

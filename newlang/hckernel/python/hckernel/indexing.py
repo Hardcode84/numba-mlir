@@ -9,7 +9,16 @@ IndexExpr = sympy.core.Expr
 
 
 def index_symbol(name: str) -> IndexSymbol:
-    return sympy.Symbol(name, integer=True)
+    sym = sympy.Symbol(name, integer=True)
+    _reg_symbol_impl(sym, name, __name__, overwrite=True)
+    return sym
+
+
+def _index_symbol_internal(name: str) -> IndexSymbol:
+    name = "$" + name
+    sym = sympy.Symbol(name, integer=True)
+    _reg_symbol_impl(sym, name, __name__, overwrite=True)
+    return sym
 
 
 def index_expr(value: Any) -> IndexExpr:
@@ -20,7 +29,6 @@ def index_expr(value: Any) -> IndexExpr:
 class _IndexSymbolExpando:
     def __getattr__(self, n):
         s = index_symbol(n)
-        _reg_symbol_impl(s, n, __name__, overwrite=True)
         return s
 
 

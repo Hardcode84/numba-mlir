@@ -3,6 +3,8 @@
 from .kernel_api import _verify_kernel_params
 from .kernel_api import *
 from .dispatcher import create_dispatcher
+from .indexing import _index_symbol_internal
+from .mlir import typing
 
 
 def _get_num_dims(arg):
@@ -63,6 +65,26 @@ def _get_typing_module():
     return get_typing_module()
 
 
+def _get_symbol_attr(sym):
+    return typing.SymbolType.get(sym.name)
+
+
+def _get_shape_attr(src):
+    seq = typing.SequenceType.get([_get_symbol_attr(s) for s in src])
+    return typing.TypeAttr.get(seq)
+
+
+def _get_global_attrs(work_shape, group_shape, subgroup_size, literals):
+    ret = {}
+    n = len(work_shape)
+    if group_shape is None:
+        group_shape = tuple(_index_symbol_internal(f"G{i}") for i in range(n))
+    elif not isinstance(group_shape, (list, tuple)):
+        group_shape = (group_shape,)
+    ret["kernel.group_shape"] = _get_shape_attr(group_shape)
+    return ret
+
+
 def kernel(
     work_shape,
     group_shape=None,
@@ -77,6 +99,9 @@ def kernel(
         new_current_group = [CurrentGroup1, CurrentGroup2, CurrentGroup3][gr_index]
         mapping = {CurrentGroup: new_current_group}
         new_func = _resolve_globals(func, mapping)
-        return create_dispatcher(new_func, prelink_module=_get_typing_module)
+        attrs = _get_global_attrs(work_shape, group_shape, subgroup_size, literals)
+        return create_dispatcher(
+            new_func, prelink_module=_get_typing_module, global_attrs=attrs
+        )
 
     return _kernel_impl
