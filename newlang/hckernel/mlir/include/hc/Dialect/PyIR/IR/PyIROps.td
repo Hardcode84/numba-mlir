@@ -455,7 +455,8 @@ def PyIR_TupleUnpackOp : PyIR_OpBase<"tuple_unpack"> {
 def PyIR_SliceOp : PyIR_OpBase<"slice", [
   Pure,
   AttrSizedOperandSegments,
-  DeclareOpInterfaceMethods<TypingKeyInterface>
+  DeclareOpInterfaceMethods<TypingKeyInterface>,
+  DeclareOpInterfaceMethods<GetNamedArgInterface>
 ]> {
   let arguments = (ins
       Optional<AnyType>:$lower,

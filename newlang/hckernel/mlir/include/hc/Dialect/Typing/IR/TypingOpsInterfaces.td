@@ -102,4 +102,19 @@ def DataflowJoinInterface : OpInterface<"DataflowJoinInterface"> {
   ];
 }
 
+def GetNamedArgInterface : OpInterface<"GetNamedArgInterface"> {
+  let cppNamespace = "::hc::typing";
+
+  let methods = [
+    InterfaceMethod<
+      "",
+      "::mlir::FailureOr<::mlir::Value>",
+      "getNamedArg",
+      (ins
+        "::mlir::StringRef":$name
+      )>
+  ];
+}
+
+
 #endif // TYPING_OPS_INTERFACES

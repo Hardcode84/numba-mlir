@@ -346,6 +346,20 @@ void hc::py_ir::GetAttrOp::getTypingKeyArgs(
   args.emplace_back(getNameAttr());
 }
 
+mlir::FailureOr<mlir::Value>
+hc::py_ir::SliceOp::getNamedArg(mlir::StringRef name) {
+  if (name == "lower")
+    return getLower();
+
+  if (name == "upper")
+    return getUpper();
+
+  if (name == "step")
+    return getStep();
+
+  return mlir::failure();
+}
+
 static bool parseArgList(
     mlir::OpAsmParser &parser,
     llvm::SmallVectorImpl<mlir::OpAsmParser::UnresolvedOperand> &argsOperands,
@@ -394,8 +408,8 @@ static void printArgList(mlir::OpAsmPrinter &printer, Op /*op*/,
     } else {
       printer << ", ";
     }
-    auto nameStr =
-        (name ? name.cast<mlir::StringAttr>().getValue() : llvm::StringRef());
+    auto nameStr = (name ? mlir::cast<mlir::StringAttr>(name).getValue()
+                         : llvm::StringRef());
     if (!nameStr.empty())
       printer << nameStr << ':';
     printer.printOperand(arg);
