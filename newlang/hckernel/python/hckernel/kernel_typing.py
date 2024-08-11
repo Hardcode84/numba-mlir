@@ -25,8 +25,6 @@ CurrentGroup1 = typing.IdentType.get("hckernel.kernel_api.CurrentGroup1")
 CurrentGroup2 = typing.IdentType.get("hckernel.kernel_api.CurrentGroup2")
 CurrentGroup3 = typing.IdentType.get("hckernel.kernel_api.CurrentGroup3")
 
-Slice = typing.IdentType.get("Slice")
-
 GroupLoad = typing.IdentType.get("hckernel.kernel_api.CurrentGroup.load")
 
 
@@ -197,9 +195,11 @@ def resolver(target: ValueType, index: ValueType):
 
 
 @type_resolver(_registry, ["py_ir.slice"])
-def resolver(a: ValueType, b: ValueType, c: ValueType):
-    # check(get_num_args() == 3) TODO
-    return Slice  # TODO
+def resolver():
+    lower = get_named_arg("lower")
+    upper = get_named_arg("upper")
+    step = get_named_arg("step")
+    return make_type("Slice", lower=lower, upper=upper, step=step)
 
 
 @func
