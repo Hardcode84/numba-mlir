@@ -292,6 +292,17 @@ void hc::py_ir::CallOp::getCanonicalizationPatterns(
   results.insert<MakeStaticCall>(context);
 }
 
+mlir::FailureOr<mlir::Value>
+hc::py_ir::CallOp::getNamedArg(mlir::StringRef name) {
+  for (auto &&[argName, arg] : llvm::zip_equal(
+           getArgsNames().getAsValueRange<mlir::StringAttr>(), getArgs())) {
+    if (name == argName)
+      return arg;
+  }
+
+  return mlir::Value{};
+}
+
 mlir::LogicalResult hc::py_ir::StaticCallOp::verifySymbolUses(
     mlir::SymbolTableCollection &symbolTable) {
   // Check that the callee attribute was specified.

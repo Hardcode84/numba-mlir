@@ -306,7 +306,8 @@ def PyIR_ReturnOp : PyIR_OpBase<"return", [
 }
 
 def PyIR_CallOp : PyIR_OpBase<"call", [
-  DeclareOpInterfaceMethods<TypingKeyInterface>
+  DeclareOpInterfaceMethods<TypingKeyInterface>,
+  DeclareOpInterfaceMethods<GetNamedArgInterface>
 ]> {
   let arguments = (ins
     AnyType:$func,
