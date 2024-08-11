@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import sympy
 from .kernel_api import _verify_kernel_params
 from .kernel_api import *
 from .dispatcher import create_dispatcher
@@ -65,8 +66,19 @@ def _get_typing_module():
     return get_typing_module()
 
 
-def _get_symbol_attr(sym):
-    return typing.SymbolType.get(sym.name)
+def _get_symbol_attr(term):
+    match term:
+        case sympy.Symbol():
+            return typing.SymbolType.get(term.name)
+
+        case sympy.Mul():
+            lhs, rhs = term.args
+            lhs = _get_symbol_attr(lhs)
+            rhs = _get_symbol_attr(rhs)
+            print(lhs, rhs)
+            return lhs * rhs
+
+    assert False, f"Can't convert value {sym} : {type(sym)}"
 
 
 def _get_shape_attr(src):
@@ -78,10 +90,16 @@ def _get_global_attrs(work_shape, group_shape, subgroup_size, literals):
     ret = {}
     n = len(work_shape)
     if group_shape is None:
-        group_shape = tuple(_index_symbol_internal(f"G{i}") for i in range(n))
+        group_shape = tuple(_index_symbol_internal(f"GROUP_SHAPE{i}") for i in range(n))
     elif not isinstance(group_shape, (list, tuple)):
         group_shape = (group_shape,)
+
+    group_id = tuple(_index_symbol_internal(f"GROUP_ID{i}") for i in range(n))
+    work_offset = tuple(i * s for i, s in zip(group_id, group_shape))
+
     ret["kernel.group_shape"] = _get_shape_attr(group_shape)
+    ret["kernel.group_id"] = _get_shape_attr(group_id)
+    ret["kernel.work_offset"] = _get_shape_attr(work_offset)
     return ret
 
 

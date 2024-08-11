@@ -175,20 +175,9 @@ def resolver(a: ValueType):
 
 @type_resolver(_registry, ["py_ir.getattr", "work_offset"])
 def resolver(a: ValueType):
-    check_type(a, CurrentGroup1)
-    return Index
-
-
-@type_resolver(_registry, ["py_ir.getattr", "work_offset"])
-def resolver(a: ValueType):
-    check_type(a, CurrentGroup2)
-    return make_tuple2(Index, Index)
-
-
-@type_resolver(_registry, ["py_ir.getattr", "work_offset"])
-def resolver(a: ValueType):
-    check_type(a, CurrentGroup3)
-    return make_tuple3(Index, Index, Index)
+    check_is_current_group(a)
+    off = get_global_attr("kernel.work_offset")
+    return make_type("Tuple", elements=off)
 
 
 @type_resolver(_registry, ["py_ir.getattr", "shape"])

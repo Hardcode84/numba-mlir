@@ -2,6 +2,7 @@
 
 #include "PyWrappers.hpp"
 
+#include <mlir/CAPI/AffineExpr.h>
 #include <mlir/CAPI/IR.h>
 #include <mlir/IR/Builders.h>
 
@@ -121,6 +122,8 @@ public:
   }
 };
 
+template <typename ClassTy> static void defExprOpearators(ClassTy &c);
+
 class PySymbolType : public PyConcreteType<PySymbolType> {
 public:
   static constexpr IsAFunctionTy isaFunction =
@@ -137,12 +140,56 @@ public:
           auto ctx = unwrap(context->get());
           MlirType t =
               wrap(hc::typing::SymbolType::get(ctx, name.cast<std::string>()));
-          return PySequenceType(context->getRef(), t);
+          return PySymbolType(context->getRef(), t);
         },
         py::arg("params"), py::arg("context") = py::none(),
         "Create symbol type");
+
+    defExprOpearators(c);
   }
 };
+
+class PyExprType : public PyConcreteType<PyExprType> {
+public:
+  static constexpr IsAFunctionTy isaFunction = genTypeIsA<hc::typing::ExprType>;
+  static constexpr GetTypeIDFunctionTy getTypeIdFunction =
+      genGetTypeID<hc::typing::ExprType>;
+  static constexpr const char *pyClassName = "ExprType";
+  using PyConcreteType::PyConcreteType;
+
+  static void bindDerived(ClassTy &c) {
+    c.def_static(
+        "get",
+        [](py::list params, PyAffineExpr expr) {
+          auto ctx = unwrap(expr.get()).getContext();
+          llvm::SmallVector<mlir::Type> paramsArr;
+          for (auto p : params)
+            paramsArr.emplace_back(unwrap(p.cast<mlir::python::PyType>()));
+
+          auto type =
+              hc::typing::ExprType::get(ctx, paramsArr, unwrap(expr.get()));
+          return PyExprType(expr.getContext(), wrap(type));
+        },
+        py::arg("params"), py::arg("expr"), "Create expr type");
+
+    defExprOpearators(c);
+  }
+};
+
+template <typename Op>
+static PyExprType makeExpr(mlir::python::PyType lhs, mlir::python::PyType rhs) {
+  auto ulhs = unwrap(lhs.get());
+  auto urhs = unwrap(rhs.get());
+  auto ctx = ulhs.getContext();
+  auto op = Op()(mlir::getAffineSymbolExpr(0, ctx),
+                 mlir::getAffineSymbolExpr(1, ctx));
+  auto expr = hc::typing::ExprType::get(ctx, {ulhs, urhs}, op);
+  return PyExprType(lhs.getContext(), wrap(expr));
+}
+
+template <typename ClassTy> static void defExprOpearators(ClassTy &c) {
+  c.def("__mul__", &makeExpr<std::multiplies<void>>, py::arg("rhs"), "mul op");
+}
 
 class PyTypeAttr : public PyConcreteAttribute<PyTypeAttr> {
 public:
@@ -172,6 +219,7 @@ static void populateTypingTypes(py::module &m) {
   PyIdentType::bind(m);
   PySequenceType::bind(m);
   PySymbolType::bind(m);
+  PyExprType::bind(m);
 
   PyTypeAttr::bind(m);
 }
